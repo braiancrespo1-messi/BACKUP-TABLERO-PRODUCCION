@@ -746,11 +746,11 @@ function toggleSidebar() {
 }
 
 // --- ACTIVITY LOG (Novedades) ---
-function logActivity(action, details, type = 'info', pedidoId = null, eventId = null) {
+function logActivity(action, details, type = 'info', pedidoId = null, eventId = null, clientNameOverride = null) {
     let logs = JSON.parse(localStorage.getItem('tmc_activity_logs') || '[]');
     const now = new Date();
 
-    let clientName = "";
+    let clientName = clientNameOverride || "";
     if (pedidoId && pedidoId !== 'STOCK' && typeof dataPedidos !== 'undefined') {
         const p = dataPedidos.find(x => String(x.NUMERO) === String(pedidoId));
         if (p) clientName = p.CLIENTE || "";
@@ -879,6 +879,8 @@ function getEventEnrichedData(ev) {
     let artName = ev.name || ev.text || "Artículo Desconocido";
     let clientName = ev.cliente || "Manual/Stock";
     let orderDate = "N/A";
+    let deliveryDate = null;
+    let diasDespacho = null;
 
     // 1. Enrich from Pedidos
     if (ev.pedidoId && ev.pedidoId !== 'STOCK' && typeof dataPedidos !== 'undefined') {
@@ -886,6 +888,8 @@ function getEventEnrichedData(ev) {
         if (p) {
             clientName = p.CLIENTE || clientName;
             artName = p.PRODUCTO || artName;
+            deliveryDate = p.PEDI_FECHA_DE_ENTREGA || null;
+            diasDespacho = p.PEDI_DIAS_PARA_EL_DESPACH !== undefined && p.PEDI_DIAS_PARA_EL_DESPACH !== null ? Number(p.PEDI_DIAS_PARA_EL_DESPACH) : null;
             if (p.FECHA_PEDI) {
                 try {
                     let d = new Date(p.FECHA_PEDI);
@@ -905,7 +909,7 @@ function getEventEnrichedData(ev) {
         }
     }
 
-    return { artName, clientName, orderDate };
+    return { artName, clientName, orderDate, deliveryDate, diasDespacho };
 }
 
 // --- UI LOGIC ---
@@ -1728,12 +1732,18 @@ function renderCalendar() {
             }
 
             // --- FINAL TOOLTIP LOGIC V5 (Consolidated) ---
-            const { artName, clientName, orderDate } = getEventEnrichedData(ev);
+            const { artName, clientName, orderDate, deliveryDate, diasDespacho } = getEventEnrichedData(ev);
 
             // Format: Emojis, No Qty, Real Order Date
             let specText = ev.text ? `\n📝 ${ev.text}` : "";
             let timeText = ev.time ? `⏰ ${ev.time} Hs\n` : "";
             let tooltip = `${timeText}📄 ${artName}${specText}\n👤 ${clientName}\n📦 Pedido #${ev.pedidoId || 'N/A'}\n🗓️ ${orderDate}`;
+            if (deliveryDate) {
+                tooltip += `\n📅 Pactado: ${formatDate(deliveryDate)}`;
+                if (diasDespacho !== null) {
+                    tooltip += ` (${diasDespacho} días)`;
+                }
+            }
             if (ev.rescheduleHistory && ev.rescheduleHistory.length > 0) {
                 tooltip += `\n\n🔄 Historial de Cambios:`;
                 ev.rescheduleHistory.forEach(h => {
@@ -1786,6 +1796,12 @@ function renderCalendar() {
                             </span>
                             <span style="font-weight:600 !important; color:#475569 !important; white-space:nowrap !important; flex-shrink: 0; margin-left: auto;">#${ev.pedidoId || 'Stock'}</span>
                         </div>
+                        ${deliveryDate ? `
+                        <div style="display:flex; align-items:center; gap:4px; font-size:0.75rem !important; margin-top:3px; color:${ev.date >= deliveryDate.split('T')[0] ? '#dc2626' : '#16a34a'} !important; font-weight:600 !important; background:${ev.date >= deliveryDate.split('T')[0] ? '#fef2f2' : '#f0fdf4'} !important; border: 1px solid ${ev.date >= deliveryDate.split('T')[0] ? '#fecaca' : '#bbf7d0'} !important; padding:2px 6px !important; border-radius:4px !important; width: fit-content; font-family:'Inter', sans-serif !important;">
+                            <span>🤝 Pactado: ${formatDate(deliveryDate)}</span>
+                            ${diasDespacho !== null ? `<span style="opacity:0.85;">(${diasDespacho} días)</span>` : ''}
+                        </div>
+                        ` : ''}
                         ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#dc2626 !important; background:#fef2f2 !important; border-left: 3px solid #ef4444 !important; padding:4px 8px !important; border-radius:0 4px 4px 0 !important; font-style:normal !important; margin-top:2px;">⚠️ ${ev.text}</div>` : ''}
                     </div>
                 `;
@@ -2058,6 +2074,16 @@ async function drop(ev) {
         cleanupDragEffects();
 
         if (data === "PENDING_ORDER" && draggedPendingOrder) {
+            // Check delivery date warning
+            const warning = checkDeliveryDateWarning(draggedPendingOrder.pedidoId, date);
+            if (warning) {
+                const proceed = await confirmCommercialAlert(draggedPendingOrder.pedidoId, date, warning.deliveryDate);
+                if (!proceed) {
+                    renderCalendar();
+                    return;
+                }
+            }
+
             // Create new calendar event
             const newEvent = {
                 id: Date.now(),
@@ -2077,6 +2103,10 @@ async function drop(ev) {
             const cleanPedidoId = (newEvent.pedidoId && newEvent.pedidoId !== 'STOCK' && newEvent.pedidoId !== 'CALENDARIO') ? newEvent.pedidoId : null;
             logActivity('Agendado', `${draggedPendingOrder.sku} (${draggedPendingOrder.qty} u.) agendado para el ${formatDate(date)} vía Drag & Drop`, 'info', cleanPedidoId, newEvent.id);
 
+            if (warning) {
+                logActivity('Alerta Comercial', `El lote de ${newEvent.sku} (${newEvent.qty} u.) se agendó para el ${formatDate(date)}, superando o igualando la fecha pactada (${formatDate(warning.deliveryDate)}).`, 'warning', cleanPedidoId, newEvent.id);
+            }
+
             draggedPendingOrder = null;
             renderCalendar();
         } else {
@@ -2084,6 +2114,16 @@ async function drop(ev) {
             if (evIndex >= 0) {
                 const item = calendarEvents[evIndex];
                 if (item.date !== date) {
+                    // Check delivery date warning
+                    const warning = checkDeliveryDateWarning(item.pedidoId, date);
+                    if (warning) {
+                        const proceed = await confirmCommercialAlert(item.pedidoId, date, warning.deliveryDate);
+                        if (!proceed) {
+                            renderCalendar();
+                            return;
+                        }
+                    }
+
                     // Date changed! Ask for reason
                     const reasonData = await askRescheduleReason(item.date, date);
                     if (reasonData) {
@@ -2106,6 +2146,10 @@ async function drop(ev) {
                         let commentStr = reasonData.comment ? ` - Obs: "${reasonData.comment}"` : "";
                         const cleanPedidoId = (item.pedidoId && item.pedidoId !== 'STOCK' && item.pedidoId !== 'CALENDARIO') ? item.pedidoId : null;
                         logActivity('Reprogramación', `${item.sku} movido de ${formatDate(oldDate)} a ${formatDate(date)}. Motivo: ${reasonData.reason}${commentStr}`, 'info', cleanPedidoId, item.id);
+
+                        if (warning) {
+                            logActivity('Alerta Comercial', `El lote de ${item.sku} (${item.qty} u.) se reprogramó para el ${formatDate(date)}, superando o igualando la fecha pactada (${formatDate(warning.deliveryDate)}). Motivo: ${reasonData.reason}${commentStr}`, 'warning', cleanPedidoId, item.id);
+                        }
                     } else {
                         // User cancelled or closed the prompt
                         renderCalendar(); // Refresh to revert card position
@@ -2525,6 +2569,15 @@ async function scheduleItem(sku, nombre, inputId, pedidoId = null, grupo = "", t
 
     if (!result) return; // Cancelled
 
+    // Check delivery date warning
+    const warning = checkDeliveryDateWarning(pedidoId, result.date);
+    if (warning) {
+        const proceed = await confirmCommercialAlert(pedidoId, result.date, warning.deliveryDate);
+        if (!proceed) {
+            return;
+        }
+    }
+
     // Add Event
     const newEvent = {
         id: Date.now(),
@@ -2543,6 +2596,10 @@ async function scheduleItem(sku, nombre, inputId, pedidoId = null, grupo = "", t
 
     const cleanPedidoId = (pedidoId && pedidoId !== 'STOCK' && pedidoId !== 'CALENDARIO') ? pedidoId : null;
     logActivity('Agendado', `${sku} (${result.qty} u.) agendado para el ${formatDate(result.date)}`, 'info', cleanPedidoId, newEvent.id);
+
+    if (warning) {
+        logActivity('Alerta Comercial', `El lote de ${sku} (${result.qty} u.) se agendó para el ${formatDate(result.date)}, superando o igualando la fecha pactada (${formatDate(warning.deliveryDate)}).`, 'warning', cleanPedidoId, newEvent.id);
+    }
 
     // Notify and Switch Tab
     // Friendly Date Format & Custom Alert Title
@@ -2718,11 +2775,12 @@ async function deleteEvent(id) {
                             return;
                         }
 
+                        // Log activity BEFORE deleting so logActivity finds the event in calendarEvents
+                        logActivity('Eliminación', `${ev.sku} (${ev.qty} u.) eliminado del calendario`, 'warning', ev.pedidoId, ev.id);
+
                         calendarEvents = calendarEvents.filter(e => e.id != id);
                         saveCalendar();
                         cloudDeleteEvent(id);
-
-                        logActivity('Eliminación', `${ev.sku} (${ev.qty} u.) eliminado del calendario`, 'warning', ev.pedidoId, ev.id);
 
                         renderCalendar();
                         updateSidebarActions(); // Assuming this function exists and updates the UI
@@ -3602,6 +3660,15 @@ async function reprogramEvent(eventId) {
         const oldTime = ev.time || "";
 
         if (oldDate !== result.date) {
+            // Check delivery date warning
+            const warning = checkDeliveryDateWarning(ev.pedidoId, result.date);
+            if (warning) {
+                const proceed = await confirmCommercialAlert(ev.pedidoId, result.date, warning.deliveryDate);
+                if (!proceed) {
+                    return;
+                }
+            }
+
             // Date changed! Ask for reason
             const reasonData = await askRescheduleReason(oldDate, result.date);
             if (!reasonData) {
@@ -3629,6 +3696,10 @@ async function reprogramEvent(eventId) {
             let commentStr = reasonData.comment ? ` - Obs: "${reasonData.comment}"` : "";
             let timeMsg = result.time ? ` a las ${result.time}` : "";
             logActivity('Reprogramación', `${ev.sku} movido de ${formatDate(oldDate)} a ${formatDate(result.date)}${timeMsg}. Motivo: ${reasonData.reason}${commentStr}`, 'info', cleanPedidoId, ev.id);
+
+            if (warning) {
+                logActivity('Alerta Comercial', `El lote de ${ev.sku} (${ev.qty} u.) se reprogramó para el ${formatDate(result.date)}, superando o igualando la fecha pactada (${formatDate(warning.deliveryDate)}). Motivo: ${reasonData.reason}${commentStr}`, 'warning', cleanPedidoId, ev.id);
+            }
         } else {
             // Only time changed, no need to ask for reschedule reason
             ev.time = result.time;
@@ -4394,3 +4465,50 @@ function openActivityHistoryModal() {
         size: 'wide'
     });
 }
+
+// --- VALIDACIÓN DE FECHA DE ENTREGA PACTADA ---
+function checkDeliveryDateWarning(pedidoId, targetDate) {
+    if (!pedidoId || pedidoId === 'STOCK' || pedidoId === 'CALENDARIO') return null;
+    if (typeof dataPedidos === 'undefined' || !dataPedidos) return null;
+    const p = dataPedidos.find(x => String(x.NUMERO) === String(pedidoId));
+    if (!p || !p.PEDI_FECHA_DE_ENTREGA) return null;
+    
+    // Extraer solo la porción de fecha YYYY-MM-DD
+    const deliveryDateStr = p.PEDI_FECHA_DE_ENTREGA.split('T')[0];
+    if (targetDate >= deliveryDateStr) {
+        return {
+            deliveryDate: deliveryDateStr,
+            formattedDeliveryDate: formatDate(deliveryDateStr),
+            client: p.CLIENTE || ""
+        };
+    }
+    return null;
+}
+
+function confirmCommercialAlert(pedidoId, targetDate, deliveryDate) {
+    return new Promise(resolve => {
+        showModal({
+            title: '⚠️ Alerta de Compromiso de Entrega',
+            content: `
+                <div style="text-align: center; padding: 10px; font-family: 'Inter', sans-serif;">
+                    <div style="font-size: 3em; margin-bottom: 10px;">⚠️</div>
+                    <div style="font-size: 1.1em; color: #d35400; font-weight: bold; margin-bottom: 10px;">
+                        No se cumplirá con la fecha de entrega pactada
+                    </div>
+                    <p style="color: #333; font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">
+                        La fecha de entrega pactada con el cliente es el <strong>${formatDate(deliveryDate)}</strong>.<br>
+                        Se está intentando programar para el <strong>${formatDate(targetDate)}</strong>.
+                    </p>
+                    <p style="color: #666; font-size: 0.85rem; font-style: italic; background: #fff3e0; padding: 8px; border-radius: 4px; border-left: 4px solid #e67e22; text-align: left;">
+                        Si decide continuar, se registrará una <strong>Alerta Comercial</strong> en el sistema para que se notifique al área comercial de inmediato.
+                    </p>
+                </div>
+            `,
+            actions: [
+                { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(false) },
+                { text: 'Continuar de todos modos', class: 'btn-danger', style: 'background: #d35400;', onClick: () => resolve(true), close: true }
+            ]
+        });
+    });
+}
+
