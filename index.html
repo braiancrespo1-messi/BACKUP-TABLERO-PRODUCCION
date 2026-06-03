@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TMC 2.0 - Portal de Aplicativos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --bg-main: #0b0f19;
+      --bg-card: #0f172a;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.08);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 40%), var(--bg-main);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+    }
+
+    .tmc-container {
+      width: 100%;
+      max-width: 1200px;
+      padding: 40px 24px;
+      box-sizing: border-box;
+    }
+
+    .tmc-header {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: tmcFadeIn 0.8s ease-out;
+    }
+
+    .tmc-header h1 {
+      font-size: 38px;
+      font-weight: 800;
+      margin: 0 0 10px 0;
+      background: linear-gradient(to right, #60a5fa, #3b82f6, #1d4ed8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .tmc-header p {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin: 0;
+      font-weight: 400;
+    }
+
+    /* Live Stats Card */
+    .tmc-stats-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 40px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: tmcSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tmc-stats-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tmc-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .tmc-stat-item {
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .tmc-stat-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(59, 130, 246, 0.2);
+    }
+
+    .tmc-stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .tmc-stat-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .tmc-stat-value.success { color: var(--success); }
+    .tmc-stat-value.danger { color: var(--danger); }
+
+    /* Portal Grid */
+    .tmc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 24px;
+      animation: tmcSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tmc-card {
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 200px;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .tmc-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+      transition: background-color 0.3s ease;
+    }
+
+    .tmc-card:hover {
+      transform: translateY(-5px);
+      background: rgba(15, 23, 42, 0.7);
+      border-color: rgba(59, 130, 246, 0.3);
+      box-shadow: 0 20px 35px rgba(0, 0, 0, 0.35);
+    }
+
+    .tmc-card:hover::before {
+      background: linear-gradient(90deg, var(--primary), #60a5fa);
+    }
+
+    .tmc-card-top {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tmc-card-icon {
+      font-size: 32px;
+      margin-bottom: 4px;
+    }
+
+    .tmc-card-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+
+    .tmc-card-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .tmc-card-footer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-top: 20px;
+      transition: transform 0.2s ease;
+    }
+
+    .tmc-card:hover .tmc-card-footer {
+      transform: translateX(4px);
+    }
+
+    /* Spinner */
+    .tmc-spinner-small {
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top: 2px solid var(--primary);
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      animation: tmcSpin 1s linear infinite;
+      display: inline-block;
+      margin-left: 6px;
+    }
+
+    @keyframes tmcSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes tmcFadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes tmcSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .tmc-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .tmc-grid {
+        grid-template-columns: 1fr;
+      }
+      .tmc-header h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tmc-container">
+    <div class="tmc-header">
+      <h1>TMC Crespo 2.0</h1>
+      <p>Portal de Gestión Operativa y Suite de Aplicativos Internos</p>
+    </div>
+
+    <!-- Live Financial Stats Dashboard Widget -->
+    <div class="tmc-stats-card">
+      <div class="tmc-stats-title">
+        <span>Resumen Consolidado de Cuentas Corrientes (YiQi ERP)</span>
+        <span id="tmc-stats-loader" style="font-size: 11px; font-weight: 500; text-transform: none; color: var(--text-muted);">
+          Actualizando... <span class="tmc-spinner-small"></span>
+        </span>
+      </div>
+      <div class="tmc-stats-grid">
+        <div class="tmc-stat-item">
+          <div class="tmc-stat-label">Saldo Neto Consolidado</div>
+          <div id="stat-saldo-neto" class="tmc-stat-value">-</div>
+        </div>
+        <div class="tmc-stat-item">
+          <div class="tmc-stat-label">Total Deuda Pendiente</div>
+          <div id="stat-deudores" class="tmc-stat-value danger">-</div>
+        </div>
+        <div class="tmc-stat-item">
+          <div class="tmc-stat-label">Total Saldo a Favor</div>
+          <div id="stat-acreedores" class="tmc-stat-value success">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Grid -->
+    <div class="tmc-grid">
+      <!-- 1. Cuentas Corrientes Clientes -->
+      <a href="ADMINSITRATIVAS INTERNAS/cuentas_corrientes_clientes.html" class="tmc-card">
+        <div class="tmc-card-top">
+          <div class="tmc-card-icon">💳</div>
+          <h3 class="tmc-card-title">Cuentas Corrientes Clientes</h3>
+          <p class="tmc-card-desc">Consulta de movimientos, saldos históricos e imputación FIFO de adelantos en vivo.</p>
+        </div>
+        <div class="tmc-card-footer">Ingresar al Módulo →</div>
+      </a>
+
+      <!-- 2. Nuevo Recibo Manual -->
+      <a href="TMC RECIBOS/index.html" class="tmc-card">
+        <div class="tmc-card-top">
+          <div class="tmc-card-icon">💵</div>
+          <h3 class="tmc-card-title">Registrar Nuevo Recibo</h3>
+          <p class="tmc-card-desc">Carga manual de cobros multicanal (efectivo, cheques, transferencias, retenciones) e imputación FIFO a comprobantes pendientes en vivo.</p>
+        </div>
+        <div class="tmc-card-footer">Emitir Recibo →</div>
+      </a>
+
+      <!-- 3. Tablero Operativo / Calendario -->
+      <a href="TABLERO_V2/index.html" class="tmc-card">
+        <div class="tmc-card-top">
+          <div class="tmc-card-icon">📅</div>
+          <h3 class="tmc-card-title">Tablero y Agenda V2</h3>
+          <p class="tmc-card-desc">Calendario mensual de entregas, carga de notas de producción y novedades del día.</p>
+        </div>
+        <div class="tmc-card-footer">Abrir Calendario →</div>
+      </a>
+
+      <!-- 4. OP Manager -->
+      <a href="OP_MANAGER/index.html" class="tmc-card">
+        <div class="tmc-card-top">
+          <div class="tmc-card-icon">⚙️</div>
+          <h3 class="tmc-card-title">Order Manager</h3>
+          <p class="tmc-card-desc">Administración y control total de órdenes de fabricación, códigos de producción y prioridades.</p>
+        </div>
+        <div class="tmc-card-footer">Administrar Órdenes →</div>
+      </a>
+
+      <!-- 5. Task Board -->
+      <a href="tmc-task-board/index.html" class="tmc-card">
+        <div class="tmc-card-top">
+          <div class="tmc-card-icon">📋</div>
+          <h3 class="tmc-card-title">Task Board Kanban</h3>
+          <p class="tmc-card-desc">Seguimiento visual de tareas operativas y de producción en columnas Kanban.</p>
+        </div>
+        <div class="tmc-card-footer">Ver Tareas →</div>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const OBTENER_CONSOLIDADO_URL = "https://obtenerconsolidadosaldos-vb5plcbgra-uc.a.run.app";
+
+    const formatCurrency = (val) => {
+      if (val === null || val === undefined || isNaN(val)) return "-";
+      return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+    };
+
+    async function loadStats() {
+      const loader = document.getElementById("tmc-stats-loader");
+      try {
+        const response = await fetch(OBTENER_CONSOLIDADO_URL);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const res = await response.json();
+        
+        if (res.success && res.stats) {
+          document.getElementById("stat-saldo-neto").textContent = formatCurrency(res.stats.saldoNeto);
+          document.getElementById("stat-deudores").textContent = formatCurrency(res.stats.totalDeudores);
+          document.getElementById("stat-acreedores").textContent = formatCurrency(Math.abs(res.stats.totalAcreedores));
+          loader.innerHTML = "Actualizado recién";
+        } else {
+          loader.innerHTML = "Error al leer estadísticas";
+        }
+      } catch (err) {
+        console.error("Error loading stats:", err);
+        loader.innerHTML = "Error de conexión";
+      }
+    }
+
+    // Load stats on page load
+    loadStats();
+  </script>
+</body>
+</html>

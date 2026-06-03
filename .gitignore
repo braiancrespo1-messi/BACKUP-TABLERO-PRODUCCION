@@ -1,0 +1,22 @@
+# Node modules
+**/node_modules/
+package-lock.json
+
+# Firebase temporary files
+**/.firebase/
+**/firebase-debug.log
+**/firestore-debug.log
+**/ui-debug.log
+
+# IDE and Agent metadata
+**/.brains/
+**/.tempmediaStorage/
+**/.system_generated/
+**/brain/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+
+# Local backup directories
+**/BACKUP */

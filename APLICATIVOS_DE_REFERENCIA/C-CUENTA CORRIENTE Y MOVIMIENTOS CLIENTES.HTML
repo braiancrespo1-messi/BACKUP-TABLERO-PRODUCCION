@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Autogestión TMC</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --bg-soft:#111829;
+      --card:#0f172a;
+      --card-soft:#111827;
+      --accent:#f6c453;
+      --accent-soft:#facc6b;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --line:#1f2937;
+      --error:#ef4444;
+      --ok:#22c55e;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      min-height:100vh;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+      background:radial-gradient(circle at top,#1f2937 0,var(--bg) 45%,#020617 100%);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+    .app{
+      width:100%;
+      max-width:960px;
+    }
+    .brand-row{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .logo{
+      width:46px;height:46px;
+      border-radius:12px;
+      background:#111827;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      font-size:18px;
+      box-shadow:0 10px 35px rgba(0,0,0,.6);
+    }
+    .brand-title{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .brand-title h1{
+      font-size:22px;
+      letter-spacing:.3px;
+    }
+    .brand-sub{
+      font-size:13px;
+      color:var(--muted);
+    }
+    .card{
+      background:linear-gradient(145deg,var(--card-soft),var(--card));
+      border-radius:20px;
+      border:1px solid #111827;
+      box-shadow:0 18px 55px rgba(0,0,0,.65);
+      padding:22px 22px 20px;
+    }
+    .card + .card{margin-top:14px;}
+
+    .card-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:14px;
+      gap:8px;
+    }
+    .card-header h2{
+      font-size:20px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .pill{
+      font-size:12px;
+      padding:3px 9px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#020617;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .pill.ok{border-color:#14532d;color:#bbf7d0;background:rgba(22,163,74,.15);}
+    .pill.err{border-color:#7f1d1d;color:#fecaca;background:rgba(239,68,68,.12);}
+
+    .title-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:18px;
+    }
+    .title-row h2{
+      font-size:24px;
+    }
+    .title-row span{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    label{
+      font-size:14px;
+      color:var(--muted);
+      display:block;
+      margin-bottom:6px;
+    }
+    .input-row{
+      margin-bottom:18px;
+    }
+    input[type="number"], input[type="text"]{
+      width:100%;
+      padding:11px 13px;
+      border-radius:999px;
+      border:1px solid #1f2937;
+      background:#020617;
+      color:var(--text);
+      font-size:16px;
+      outline:none;
+      transition:border-color .15s,box-shadow .15s,background .15s;
+    }
+    input:focus{
+      border-color:#facc6b;
+      box-shadow:0 0 0 1px rgba(250,204,21,.6);
+      background:#020617;
+    }
+
+    button{
+      border:none;
+      cursor:pointer;
+      font-family:inherit;
+    }
+    .btn-main{
+      width:100%;
+      border-radius:999px;
+      padding:12px 16px;
+      font-size:15px;
+      font-weight:600;
+      color:#020617;
+      background:linear-gradient(135deg,var(--accent),var(--accent-soft));
+      box-shadow:0 10px 30px rgba(250,204,21,.35);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      transition:transform .08s,box-shadow .08s,filter .08s;
+    }
+    .btn-main:hover{filter:brightness(1.05);}
+    .btn-main:active{transform:translateY(1px);box-shadow:0 6px 18px rgba(0,0,0,.6);}
+    .btn-main[disabled]{
+      opacity:.6;
+      cursor:default;
+      box-shadow:none;
+      transform:none;
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:8px;
+    }
+    .error-text{
+      font-size:13px;
+      color:var(--error);
+      margin-top:6px;
+    }
+
+    .hidden{display:none !important;}
+
+    /* DASHBOARD */
+    .dash-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:8px;
+      margin-bottom:6px;
+    }
+    .dash-header-main{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .client-name{
+      font-size:18px;
+      font-weight:600;
+    }
+    .client-id{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .saldo-main{
+      font-size:34px;
+      font-weight:700;
+      letter-spacing:.8px;
+      margin:12px 0 6px;
+    }
+    .saldo-caption{
+      font-size:13px;
+      color:var(--muted);
+    }
+    .saldo-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-top:14px;
+      flex-wrap:wrap;
+    }
+    .btn-ghost{
+      border-radius:999px;
+      padding:8px 14px;
+      font-size:13px;
+      background:#020617;
+      color:var(--text);
+      border:1px solid #1f2937;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      cursor:pointer;
+      transition:background .1s,border-color .1s,transform .08s;
+    }
+    .btn-ghost:hover{
+      background:#111827;
+      border-color:#374151;
+    }
+    .btn-ghost:active{transform:translateY(1px);}
+    .btn-ghost[disabled]{opacity:.6;cursor:default;transform:none;}
+
+    /* MOVIMIENTOS */
+    .mov-sub{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+    .table-wrap{
+      margin-top:4px;
+      border-radius:14px;
+      border:1px solid #111827;
+      background:#020617;
+      max-height:420px;
+      overflow:auto;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:13px;
+      min-width:560px;
+    }
+    thead{
+      position:sticky;
+      top:0;
+      background:#020617;
+      z-index:2;
+    }
+    th,td{
+      padding:7px 10px;
+      border-bottom:1px solid #111827;
+      text-align:left;
+      white-space:nowrap;
+    }
+    th{
+      font-weight:500;
+      color:var(--muted);
+      position:sticky;
+      top:0;
+      background:#020617;
+    }
+    tbody tr:nth-child(even){
+      background:#020617;
+    }
+    tbody tr:nth-child(odd){
+      background:#030712;
+    }
+    tbody tr:hover{
+      background:#111827;
+    }
+    td.right{text-align:right;}
+    .mov-empty{
+      padding:12px 10px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .badge-small{
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      background:#020617;
+      border:1px solid #1f2937;
+      color:var(--muted);
+    }
+
+    @media (max-width:640px){
+      .card{padding:18px 16px 16px;}
+      .saldo-main{font-size:28px;}
+      .brand-row{margin-bottom:10px;}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- CABECERA -->
+  <div class="brand-row">
+    <div class="logo">TMC</div>
+    <div class="brand-title">
+      <h1>Autogestión TMC</h1>
+      <div class="brand-sub" id="brandSub">Ingresá tu número de cliente</div>
+    </div>
+  </div>
+
+  <!-- CARD LOGIN -->
+  <div id="viewLogin" class="card">
+    <div class="title-row">
+      <h2>Bienvenido 👋</h2>
+      <span>Identificate para ver tus pedidos, hacer uno nuevo o ver tu cuenta corriente.</span>
+    </div>
+    <div class="input-row">
+      <label for="inputCliente">N° de cliente</label>
+      <input id="inputCliente" type="number" inputmode="numeric" placeholder="Ej: 8000" />
+      <div id="loginError" class="error-text hidden"></div>
+    </div>
+    <button id="btnLogin" class="btn-main" type="button">
+      <span>Continuar</span> <span aria-hidden="true">➜</span>
+    </button>
+    <div class="hint">* Más adelante se puede sumar PIN o mail asociado.</div>
+  </div>
+
+  <!-- CARD DASHBOARD -->
+  <div id="viewDash" class="card hidden">
+    <div class="dash-header">
+      <div class="dash-header-main">
+        <div class="client-name" id="lblClientName">Cliente</div>
+        <div class="client-id" id="lblClientId">N° de cliente</div>
+      </div>
+      <div>
+        <span id="pillStatus" class="pill ok">Conectado a YiQi</span>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #111827;margin:10px 0 14px;opacity:.6;" />
+
+    <div>
+      <h2 style="font-size:22px;display:flex;align-items:center;gap:6px;">
+        Saldo / Cuenta Corriente <span aria-hidden="true">💳</span>
+      </h2>
+      <p class="saldo-caption" style="margin-top:4px;">
+        Mostramos primero el saldo total y debajo el detalle.
+      </p>
+      <div class="saldo-main" id="lblSaldoTotal">$ 0,00</div>
+      <div class="saldo-row">
+        <div class="saldo-caption">
+          Información actualizada desde YiQi.
+        </div>
+        <button id="btnVerMovs" class="btn-ghost" type="button">
+          Ver últimos movimientos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD MOVIMIENTOS -->
+  <div id="viewMovs" class="card hidden">
+    <div class="card-header">
+      <h2>Últimos movimientos</h2>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span id="movCount" class="badge-small">–</span>
+        <button id="btnRefrescarMovs" class="btn-ghost" type="button" style="padding:6px 10px;font-size:12px;">
+          Actualizar
+        </button>
+      </div>
+    </div>
+    <p class="mov-sub">Detalle de movimientos de cuenta corriente para este cliente.</p>
+    <div class="table-wrap" id="movTableWrap">
+      <div class="mov-empty" id="movEmpty">Todavía no cargamos los movimientos.</div>
+      <table id="tblMovs" class="hidden">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Comprobante</th>
+          <th class="right">Debe</th>
+          <th class="right">Haber</th>
+          <th class="right">Saldo</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ==================== CONFIG ==================== */
+
+const CONFIG = {
+  USERNAME: "XXXXXXXXXXXX",
+  PASSWORD: "XXXXXXXXXXXXXX",
+  SCHEMA_ID: 1491,
+  CLIENTES: { entityId: 345, smartieId: 2603 },  // APP - CLIENTES
+  SALDOS:   { entityId: 1161, smartieId: 1930, field: "IMPORTE" },
+  MOVS:     { entityId: 1161, smartieId: 2633 },
+  TOKEN_URLS: [
+    "https://api.yiqi.com.ar/token",
+    "https://api.yiqi.com.ar/connect/token"
+  ],
+  GETLIST_BASE: "https://api.yiqi.com.ar/api/instancesApi/GetList",
+  UPDATE_FILTERS_URL: "https://api.yiqi.com.ar/api/smartiesApi/UpdateFilters"
+};
+
+/* ==================== UTILIDADES ==================== */
+
+const $ = sel => document.querySelector(sel);
+
+function show(el){ el.classList.remove('hidden'); }
+function hide(el){ el.classList.add('hidden'); }
+
+function setBrandSub(text){
+  const el = $("#brandSub");
+  if(el) el.textContent = text;
+}
+
+function fmtMoney(num){
+  const n = Number(num) || 0;
+  return new Intl.NumberFormat("es-AR", {
+    style:"currency",
+    currency:"ARS",
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  }).format(n);
+}
+
+function parseNumber(value){
+  if(value === null || value === undefined) return 0;
+  if(typeof value === "number") return value;
+  let s = String(value).trim();
+  if(!s) return 0;
+  // quita símbolos de moneda y espacios
+  s = s.replace(/[^\d,.\-]/g,"");
+  // si tiene coma como decimal, cambiar
+  if(s.indexOf(",") >= 0 && s.indexOf(".") >= 0){
+    // asume . miles , decimal -> quita puntos, cambia coma por punto
+    s = s.replace(/\./g,"").replace(",",".");
+  }else if(s.indexOf(",") >= 0 && s.indexOf(".") === -1){
+    s = s.replace(",",".");
+  }
+  const n = Number(s);
+  return Number.isNaN(n) ? 0 : n;
+}
+
+/* ==================== AUTH / API BASE ==================== */
+
+let token = null;
+let tokenVenceMs = 0;
+
+function setConnPill(ok, msg){
+  const pill = $("#pillStatus");
+  if(!pill) return;
+  pill.textContent = msg || (ok ? "Conectado a YiQi" : "Sin conexión a YiQi");
+  pill.className = "pill " + (ok ? "ok" : "err");
+}
+
+async function loginYiQi(){
+  const payload = new URLSearchParams({
+    username: CONFIG.USERNAME,
+    password: CONFIG.PASSWORD,
+    grant_type: "password"
+  });
+  let lastErr = null;
+  for(const url of CONFIG.TOKEN_URLS){
+    try{
+      const resp = await fetch(url,{
+        method:"POST",
+        headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+        body: payload
+      });
+      if(!resp.ok) throw new Error("HTTP "+resp.status);
+      const json = await resp.json();
+      token = json.access_token;
+      tokenVenceMs = Date.now() + ((json.expires_in ? json.expires_in-60 : 3000)*1000);
+      setConnPill(true);
+      return true;
+    }catch(e){
+      lastErr = e;
+    }
+  }
+  console.error("Error login YiQi", lastErr);
+  setConnPill(false,"Error al conectar a YiQi");
+  return false;
+}
+
+async function ensureToken(){
+  if(!token || Date.now() > tokenVenceMs){
+    return loginYiQi();
+  }
+  return true;
+}
+
+async function apiPost(url, body){
+  await ensureToken();
+  let resp = await fetch(url,{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Accept":"application/json",
+      "Authorization":"Bearer "+token
+    },
+    body: JSON.stringify(body || {})
+  });
+  if(resp.status === 401){
+    await loginYiQi();
+    resp = await fetch(url,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Accept":"application/json",
+        "Authorization":"Bearer "+token
+      },
+      body: JSON.stringify(body || {})
+    });
+  }
+  if(!resp.ok) throw new Error("HTTP "+resp.status);
+  return resp.json();
+}
+
+/* Helpers para normalizar respuestas de smarties */
+
+function pickRowsContainer(resp){
+  if(Array.isArray(resp?.rows)) return { rows: resp.rows, container: resp };
+  if(Array.isArray(resp?.data?.rows)) return { rows: resp.data.rows, container: resp.data };
+  if(Array.isArray(resp?.data)) return { rows: resp.data, container: resp };
+  if(Array.isArray(resp?.instances)) return { rows: resp.instances, container: resp };
+  if(Array.isArray(resp?.items)) return { rows: resp.items, container: resp };
+  return { rows: [], container: resp };
+}
+
+function colKey(def){
+  if(typeof def === "string") return def;
+  return def?.field ?? def?.columnName ?? def?.dataField ?? def?.name ?? def?.id ?? def?.key;
+}
+
+function normalizeResponse(resp){
+  const { rows, container } = pickRowsContainer(resp);
+  const colsDef = Array.isArray(container?.columns) ? container.columns : null;
+
+  if(rows.length && typeof rows[0] === "object" && !Array.isArray(rows[0])){
+    const keys = colsDef ? colsDef.map(colKey) : Object.keys(rows[0]);
+    return { rows, keys };
+  }
+  if(rows.length && Array.isArray(rows[0]) && colsDef){
+    const keys = colsDef.map(colKey);
+    const objs = rows.map(arr => {
+      const o = {};
+      for(let i=0;i<keys.length;i++){
+        o[keys[i]] = arr[i];
+      }
+      return o;
+    });
+    return { rows: objs, keys };
+  }
+  return { rows: [], keys: [] };
+}
+
+async function fetchSmartieAll({ entityId, schemaId, smartieId, pageSize = 50, maxPages = 1000 }){
+  const base = `${CONFIG.GETLIST_BASE}?entityId=${entityId}&schemaId=${schemaId}&smartieId=${smartieId}`;
+  let page = 1;
+  const all = [];
+  while(page <= maxPages){
+    const resp = await apiPost(base,{ page, pageSize });
+    const norm = normalizeResponse(resp);
+    if(!norm.rows.length) break;
+    all.push(...norm.rows);
+    if(norm.rows.length < pageSize) break;
+    page++;
+  }
+  return all;
+}
+
+async function updateSmartieFilterById({ smartieId, schemaId, idValue }){
+  const body = {
+    smartieId: String(smartieId),
+    schemaId: schemaId,
+    selectedColumns: [
+      {
+        field: "ID",
+        operationType: 0,
+        sortType: null,
+        filterOperator: 1,
+        comparation: idValue,
+        pivotMode: 0
+      }
+    ]
+  };
+  return apiPost(CONFIG.UPDATE_FILTERS_URL, body);
+}
+
+/* ==================== ESTADO GLOBAL ==================== */
+
+let currentClient = null;   // objeto completo de la smartie 2603
+let currentSaldoTotal = 0;  // tomado de smartie 1930
+let movsLoadedOnce = false;
+
+/* ==================== LOGIN / CLIENTE ==================== */
+
+async function buscarClientePorId(id){
+  const rows = await fetchSmartieAll({
+    entityId: CONFIG.CLIENTES.entityId,
+    schemaId: CONFIG.SCHEMA_ID,
+    smartieId: CONFIG.CLIENTES.smartieId,
+    pageSize: 50
+  });
+
+  const match = rows.find(r => {
+    const v1 = r.ID ?? r.id ?? r.Identificador ?? r.IdentificadorCliente;
+    return String(v1) === String(id);
+  });
+  return match || null;
+}
+
+async function cargarSaldoTotalParaCliente(id){
+  // filtramos desde YiQi para que devuelva solo ese cliente
+  await updateSmartieFilterById({
+    smartieId: CONFIG.SALDOS.smartieId,
+    schemaId: CONFIG.SCHEMA_ID,
+    idValue: id
+  });
+  const rows = await fetchSmartieAll({
+    entityId: CONFIG.SALDOS.entityId,
+    schemaId: CONFIG.SCHEMA_ID,
+    smartieId: CONFIG.SALDOS.smartieId,
+    pageSize: 50
+  });
+  if(!rows.length) return 0;
+  const campo = CONFIG.SALDOS.field;
+  const v = rows[0][campo];
+  return parseNumber(v);
+}
+
+/* ==================== MOVIMIENTOS ==================== */
+
+async function cargarMovimientos(){
+  if(!currentClient) return;
+
+  const btn = $("#btnVerMovs");
+  const btnRef = $("#btnRefrescarMovs");
+  const tbl = $("#tblMovs");
+  const tbody = $("#tblMovs tbody");
+  const emptyDiv = $("#movEmpty");
+  const movCount = $("#movCount");
+
+  btn.disabled = true;
+  btn.textContent = "Cargando movimientos…";
+  btnRef.disabled = true;
+
+  hide(tbl);
+  emptyDiv.textContent = "Cargando movimientos…";
+
+  try{
+    // 1) aplicar filtro por ID en la smartie 2633
+    await updateSmartieFilterById({
+      smartieId: CONFIG.MOVS.smartieId,
+      schemaId: CONFIG.SCHEMA_ID,
+      idValue: currentClient.ID ?? currentClient.id
+    });
+
+    // 2) traer ya filtrado desde YiQi
+    const rows = await fetchSmartieAll({
+      entityId: CONFIG.MOVS.entityId,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.MOVS.smartieId,
+      pageSize: 100
+    });
+
+    if(!rows.length){
+      emptyDiv.textContent = "Este cliente todavía no tiene movimientos registrados.";
+      movCount.textContent = "0 movimientos";
+      return;
+    }
+
+    // Aseguramos orden cronológico ascendente por FECHA
+    rows.sort((a,b)=>{
+      const da = new Date(a.FECHA || a.Fecha || a.fecha || a["FECHA "]);
+      const db = new Date(b.FECHA || b.Fecha || b.fecha || b["FECHA "]);
+      return da - db;
+    });
+
+    // Calculamos deltas y saldo por movimiento usando el saldo total final
+    const deltas = rows.map(r => {
+      const debe  = parseNumber(r.DEBE  ?? r.Debe  ?? r.debe);
+      const haber = parseNumber(r.HABER ?? r.Haber ?? r.haber);
+      return debe - haber; // signo igual que en YiQi
+    });
+
+    let saldo = currentSaldoTotal;
+    for(let i = rows.length - 1; i >= 0; i--){
+      rows[i]._saldo = saldo;
+      saldo -= deltas[i];
+    }
+
+    // Opcional: quedarnos solo con los últimos N movimientos (para no explotar la tabla)
+    const MAX_MOVS = 200;
+    const sliceStart = rows.length > MAX_MOVS ? rows.length - MAX_MOVS : 0;
+    const toShow = rows.slice(sliceStart);
+
+    tbody.innerHTML = "";
+    for(const r of toShow){
+      const tr = document.createElement("tr");
+      const fecha = r.FECHA ?? r.Fecha ?? r.fecha ?? "";
+      const comp  = r.COMPROBANTE ?? r.Comprobante ?? r.comprobante ?? "";
+      const debe  = parseNumber(r.DEBE  ?? r.Debe  ?? r.debe);
+      const haber = parseNumber(r.HABER ?? r.Haber ?? r.haber);
+      const saldoFila = Number(r._saldo ?? 0);
+
+      tr.innerHTML = `
+        <td>${fecha}</td>
+        <td>${comp}</td>
+        <td class="right">${debe ? fmtMoney(debe) : ""}</td>
+        <td class="right">${haber ? fmtMoney(haber) : ""}</td>
+        <td class="right">${fmtMoney(saldoFila)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    movCount.textContent = `${toShow.length} movs (de ${rows.length})`;
+    emptyDiv.textContent = "";
+    show(tbl);
+    movsLoadedOnce = true;
+  }catch(e){
+    console.error(e);
+    emptyDiv.textContent = "No se pudieron cargar los movimientos. Probá de nuevo.";
+    movCount.textContent = "Error";
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Ver últimos movimientos";
+    btnRef.disabled = false;
+  }
+}
+
+/* ==================== EVENTOS UI ==================== */
+
+async function handleLogin(){
+  const input = $("#inputCliente");
+  const errEl = $("#loginError");
+  const btn = $("#btnLogin");
+
+  const raw = input.value.trim();
+  hide(errEl);
+
+  if(!raw){
+    errEl.textContent = "Ingresá tu número de cliente.";
+    show(errEl);
+    return;
+  }
+  if(!/^\d+$/.test(raw)){
+    errEl.textContent = "El número de cliente solo puede contener dígitos.";
+    show(errEl);
+    return;
+  }
+
+  const id = Number(raw);
+
+  btn.disabled = true;
+  btn.innerHTML = '<span>Cargando datos del cliente…</span>';
+
+  try{
+    setBrandSub("Conectando con YiQi…");
+    const ok = await ensureToken();
+    if(!ok){
+      errEl.textContent = "No pudimos conectarnos a YiQi. Intentá de nuevo en unos segundos.";
+      show(errEl);
+      return;
+    }
+    setBrandSub("Buscando cliente en YiQi…");
+
+    const cli = await buscarClientePorId(id);
+    if(!cli){
+      alert("No encontramos un cliente habilitado con ese número. Revisá el dato.");
+      setBrandSub("Ingresá tu número de cliente");
+      return;
+    }
+    currentClient = cli;
+
+    const nombre = cli.CLIE_NOMBRE ?? cli.CLIE_RAZON_SOCIAL ?? cli.Nombre ?? ("Cliente "+id);
+    $("#lblClientName").textContent = nombre;
+    $("#lblClientId").textContent = "PARAPAN #"+id;
+    setBrandSub("Cliente #"+id+" identificado");
+
+    // Saldo general
+    setBrandSub("Obteniendo saldo general del cliente…");
+    currentSaldoTotal = await cargarSaldoTotalParaCliente(id);
+    $("#lblSaldoTotal").textContent = fmtMoney(currentSaldoTotal);
+
+    hide($("#viewLogin"));
+    show($("#viewDash"));
+    show($("#viewMovs"));
+
+    setBrandSub("Autogestión para "+nombre);
+  }catch(e){
+    console.error(e);
+    errEl.textContent = "Ocurrió un error al buscar el cliente. Probá nuevamente.";
+    show(errEl);
+    setBrandSub("Ingresá tu número de cliente");
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = '<span>Continuar</span> <span aria-hidden="true">➜</span>';
+  }
+}
+
+/* ==================== INIT ==================== */
+
+window.addEventListener("DOMContentLoaded", () => {
+  $("#btnLogin").addEventListener("click", handleLogin);
+  $("#inputCliente").addEventListener("keydown", e => {
+    if(e.key === "Enter") handleLogin();
+  });
+
+  $("#btnVerMovs").addEventListener("click", () => {
+    if(!movsLoadedOnce){
+      cargarMovimientos();
+    }else{
+      // ya cargados, solo hacemos scroll
+      document.querySelector("#viewMovs").scrollIntoView({behavior:"smooth",block:"start"});
+    }
+  });
+
+  $("#btnRefrescarMovs").addEventListener("click", () => {
+    cargarMovimientos();
+  });
+});
+</script>
+</body>
+</html>

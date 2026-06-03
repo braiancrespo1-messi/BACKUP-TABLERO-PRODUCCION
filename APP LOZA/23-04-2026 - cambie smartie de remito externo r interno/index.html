@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión Remitos Internos - TMC</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="header-left">
+                <img src="logo_tmc.png" alt="TMC Logo" style="height: 40px; margin-right: 15px;">
+                <h1>Bandejas Enlozadas</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="nav-tab" onclick="switchMainTab('fabrica')">🚜 Fábrica</button>
+                <button class="nav-tab" onclick="switchMainTab('logistica')">🚚 Logística</button>
+                <button class="nav-tab" onclick="switchMainTab('lozametal')">🌋 Lozametal</button>
+                <button class="nav-tab" onclick="switchMainTab('calidad')">🔬 Control Calidad</button>
+                <button class="nav-tab" onclick="switchMainTab('admin')">💰 Administración</button>
+            </nav>
+            <div class="header-right" style="display: flex; align-items: center; gap: 15px;">
+                <button class="btn-icon" onclick="Settings.openPanel()" title="Configuración de Smarties" style="font-size: 1.2rem;">⚙️</button>
+                <div id="status-indicator" class="status-dot red" title="Desconectado"></div>
+            </div>
+        </header>
+
+        <!-- TAB: FABRICA -->
+        <div id="tab-fabrica" class="main-content tab-pane active">
+            <!-- COL 0: ALTA DE PRODUCCION -->
+            <div class="col" id="col-alta-produccion">
+                <div class="col-header">
+                    <span>🏗️ Alta de Producción</span>
+                </div>
+                <div class="col-body">
+                    <div style="padding: 0.5rem;">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Artículo</label>
+                            <div class="dropdown-wrapper">
+                                <input type="text" id="alta-sku-search" class="form-control"
+                                    placeholder="Buscar artículo..." onfocus="filterAltaArticles()"
+                                    oninput="filterAltaArticles()">
+                                <div id="alta-sku-results" class="search-results-dropdown" style="display:none;"></div>
+                                <input type="hidden" id="alta-mate-id">
+                            </div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" id="alta-qty" class="form-control" min="1" placeholder="0">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Observaciones (Opcional)</label>
+                            <input type="text" id="alta-obs" class="form-control" placeholder="...">
+                        </div>
+                        <button class="btn btn-primary w-100" style="margin-top: 1rem;" onclick="registrarProduccion()">
+                            ⚡ Registrar Producción
+                        </button>
+                    </div>
+
+                    <!-- Actividad Reciente (Opcional) -->
+                    <div style="margin-top: 2rem; padding: 0.5rem; border-top: 1px dashed var(--border-color);">
+                        <div class="flex-between" style="margin-bottom: 0.5rem; align-items: center;">
+                            <h4 style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">REGISTROS RECIENTES</h4>
+                            <button class="btn-icon" onclick="fetchAltasRecientes()" title="Actualizar Registros">🔄</button>
+                        </div>
+                        <div id="alta-recent-list" class="text-sm" style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
+                            <p class="text-muted text-center italic">Cargando registros...</p>
+                        </div>
+                    </div>
+
+                    <!-- Pendientes de Procesar -->
+                    <div style="margin-top: 1rem; padding: 0.5rem; border-top: 1px dashed var(--border-color);">
+                        <div class="flex-between" style="margin-bottom: 0.5rem; align-items: center;">
+                            <h4 style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">PENDIENTES (HOY)</h4>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn btn-sm btn-outline" onclick="procesarAltasPendientes()" title="Procesar Remitos de Compra" style="font-size: 0.7rem; padding: 2px 6px;">🛠️ Procesar Todo</button>
+                                <button class="btn-icon" onclick="fetchAltasPendientes()" title="Actualizar Pendientes">🔄</button>
+                            </div>
+                        </div>
+                        <div id="alta-pendientes-list" class="text-sm" style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
+                            <p class="text-muted text-center italic">Cargando pendientes...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COL 1: STOCK ORIGEN -->
+            <div class="col">
+                <div class="col-header">
+                    <span>🏭 Stock</span>
+                    <div style="display:flex; gap:0.25rem; align-items:center;">
+                        <button id="btn-fabrica" class="btn btn-sm btn-primary active"
+                            onclick="toggleStockView('FABRICA')">Fábrica</button>
+                        <button id="btn-revestimientos" class="btn btn-sm"
+                            onclick="toggleStockView('REVESTIMIENTOS')">Jaulas Cerradas</button>
+                        <button class="btn-icon" onclick="fetchStock()" title="Actualizar Stock">🔄</button>
+                    </div>
+                </div>
+                <div style="padding: 0.5rem;">
+                    <input type="text" id="search-stock" class="form-control" placeholder="🔍 Buscar artículo..."
+                        oninput="filtrarStock()">
+                </div>
+                <div class="col-body" id="stock-list">
+                    <!-- Items populated via JS -->
+                    <p class="text-muted text-center" style="padding:1rem;">Cargando stock...</p>
+                </div>
+            </div>
+
+            <!-- COL 2: JAULAS -->
+            <div class="col">
+                <div class="col-header">
+                    <span>🚚 Jaulas</span>
+                    <div style="display:flex; gap:0.25rem; align-items:center;">
+                        <button class="btn btn-primary btn-sm" onclick="crearNuevoRemito()">+ Nueva</button>
+                        <button class="btn-icon" onclick="fetchActiveRemitos()" title="Actualizar Jaulas">🔄</button>
+                    </div>
+                </div>
+                <div class="col-body" id="remito-list">
+                    <!-- Remitos populated via JS -->
+                </div>
+            </div>
+
+            <!-- COL 3: DETALLE ACTIVO -->
+            <div class="col">
+                <div class="col-header">
+                    <span>📝 Detalle de Jaula</span>
+                    <div id="active-jaula-badge" class="badge-jaula" style="display:none;">Jaula N° ...</div>
+                    <div>
+                        <span id="active-remito-id" class="badge bg-blue" style="display:none;">#000</span>
+                    </div>
+                </div>
+
+                <div id="detail-panel" style="display:none; flex-direction:column; height:100%;">
+                    <div class="col-body" id="remito-items">
+                        <!-- Items added to Remito -->
+                    </div>
+
+                    <div style="padding: 1rem; border-top: 1px solid var(--border-color); background: #f8fafc;">
+                        <div class="flex-between" style="margin-bottom: 0.5rem;">
+                            <strong>Total Items:</strong>
+                            <span id="total-items">0</span>
+                        </div>
+                        <div id="remito-actions">
+                            <button class="btn btn-success" style="width:100%;" onclick="guardarItemsEnYiqi()">💾
+                                Guardar Items en YiQi</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="empty-state"
+                    style="flex:1; display:flex; justify-content:center; align-items:center; color:var(--text-muted);">
+                    <p>Selecciona o crea un remito para ver detalles.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: LOGISTICA -->
+        <div id="tab-logistica" class="main-content tab-pane">
+            <!-- COL 1: JAULAS ARMADAS -->
+            <div class="col" style="flex: 1.5;">
+                <div class="col-header">
+                    <span>📦 Jaulas Armadas</span>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-icon" onclick="toggleSelectAllCages()" title="Seleccionar Todas">☑️</button>
+                        <button class="btn-icon" onclick="fetchProcessedCages()" title="Actualizar">🔄</button>
+                    </div>
+                </div>
+                <div class="col-body" id="logistica-cages-list">
+                    <p class="text-muted text-center" style="padding:1rem;">Cargando jaulas...</p>
+                </div>
+            </div>
+
+            <!-- COL 2: DESPACHO -->
+            <div class="col" style="flex: 1.5;">
+                <div class="col-header">
+                    <span>🚚 Despacho a Lozametal</span>
+                    <div id="selection-count" class="badge bg-blue" style="display:none;">0 Seleccionadas</div>
+                </div>
+                <div class="col-body" id="logistica-summary">
+                    <div id="logistica-empty-state"
+                        style="display:flex; flex-direction: column; justify-content: flex-start; align-items:center; height:100%; color:var(--text-muted); text-align:center; gap: 1rem; padding-top: 4rem;">
+                        <p>Selecciona jaulas para preparar el despacho.</p>
+                        <button class="btn btn-sm btn-outline" style="font-size: 0.85rem;"
+                            onclick="toggleSelectAllCages()">
+                            📦 Seleccionar Todas las Jaulas
+                        </button>
+                    </div>
+                    <div id="logistica-preview" style="display:none; padding:1rem;">
+                        <h4 style="margin-top:0;">Resumen del Envío</h4>
+                        <div id="logistica-items-table"></div>
+                    </div>
+                </div>
+                <div class="col-footer"
+                    style="padding:1rem; border-top:1px solid var(--border-color); background: #f8fafc;">
+                    <div id="logistica-selected-list"
+                        style="margin-bottom: 0.8rem; font-size: 0.9rem; color: #475569; display: none;">
+                        <strong>Jaulas N°:</strong> <span id="selected-cages-text">--</span>
+                    </div>
+                    <button id="btn-despachar" class="btn btn-success" style="width:100%;" disabled
+                        onclick="createLogisticsRemito()">
+                        🚀 Generar Remito a Lozametal
+                    </button>
+                </div>
+            </div>
+
+            <!-- COL 3: TRAZABILIDAD DE IDA -->
+            <div class="col" id="col-trazabilidad-ida" style="flex: 3.5; border-left: 2px solid #e2e8f0; background: #fdfdfd;">
+                <div class="col-header" style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; display:flex; align-items:center; gap: 10px;">
+                    <span style="flex:1; display:flex; align-items:center; gap:5px;">
+                        <div class="tooltip-container">
+                            <span style="cursor:help;">📍</span>
+                            <div class="tooltip-content legend-tooltip">
+                                <div class="legend-title">Referencias de Estado</div>
+                                <div class="legend-item"><div class="legend-dot" style="background:#94a3b8;"></div><b>Gris Pizarra:</b> Fábrica (Armada)</div>
+                                <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;"></div><b>Azul:</b> En viaje (Mustang)</div>
+                                <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6;"></div><b>Violeta:</b> Recepción PL</div>
+                                <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div><b>Verde:</b> Ingresada (Lozametal)</div>
+                                <div class="legend-item"><div class="legend-square-red"></div><b>Marco Rojo:</b> ¡Alerta SLA! Demorado</div>
+                            </div>
+                        </div>
+                        Trazabilidad de Ida
+                    </span>
+                    <select id="trazabilidad-filter" class="form-control" style="width: auto; padding: 2px 5px; font-size: 0.8rem;" onchange="applyTrackingFilter()">
+                        <option value="active">Ocultar Completadas</option>
+                        <option value="all">Ver Todas</option>
+                        <option value="fabrica">En Fábrica</option>
+                        <option value="mustang">En Viaje (Mustang)</option>
+                        <option value="recepcion">En Recepción (PL)</option>
+                        <option value="lozametal">En Lozametal</option>
+                    </select>
+                    <button class="btn-icon" onclick="fetchTrackingBoard()" title="Refrescar">🔄</button>
+                </div>
+                <div class="col-body" id="tracking-board-list" style="padding: 0.5rem 0.5rem; background: #f8fafc;">
+                    <p class="text-muted text-center italic" style="padding:2rem; font-size:0.8rem;">Cargando trazabilidad...</p>
+                </div>
+            </div>
+
+            <!-- COL 4: TRAZABILIDAD DE VUELTA (NUEVA) -->
+            <div class="col" id="col-trazabilidad-vuelta" style="flex: 3.5; border-left: 2px solid #e2e8f0; background: #fdfdfd;">
+                <div class="col-header" style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                    <span>🔄 Trazabilidad de Vuelta</span>
+                    <button class="btn-icon" onclick="fetchTrackingBoard()" title="Refrescar">🔄</button>
+                </div>
+                <div class="col-body" id="tracking-returns-list" style="padding: 0.5rem 0.5rem; background: #f8fafc;">
+                    <p class="text-muted text-center italic" style="padding:2rem; font-size:0.8rem;">Próximamente: Retorno de Jaulas</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTHER TABS PLACEHOLDERS -->
+
+
+        <div id="tab-lozametal" class="main-content tab-pane" style="display:none; gap: 2.5rem; padding: 1.5rem; flex-wrap: nowrap; overflow-x: auto;">
+            <!-- COL 1: PENDIENTES DE RECEPCION (BULTOS) -->
+            <div class="col" style="flex: 2; min-width: 320px; max-width: 400px;">
+                <div class="col-header">
+                    <span>📥 Pendientes de Recepción</span>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-icon" onclick="toggleSelectAllPendientes()" title="Seleccionar Todas">☑️</button>
+                        <button class="btn-icon" onclick="fetchPendientesLozametal()" title="Actualizar">🔄</button>
+                    </div>
+                </div>
+                <div class="col-body" id="lozametal-pendientes-list" style="padding: 10px;">
+                    <p class="text-muted text-center" style="padding:1rem;">Cargando remitos...</p>
+                </div>
+                <!-- Action Footer -->
+                <div id="pendientes-footer" style="display:none; padding:1rem; border-top:1px solid var(--border-color); background: #f8fafc;">
+                    <button class="btn btn-success" style="width:100%; font-size: 1rem; padding: 0.75rem;" onclick="procesarRecepcionBultosMasiva()">
+                        📦 Recibir <span id="pendientes-count">0</span> Bultos
+                    </button>
+                </div>
+            </div>
+
+            <!-- COL 2: JAULAS A REVISAR (PLAYA) -->
+            <div class="col" style="flex: 2; min-width: 320px; max-width: 400px;">
+                <div class="col-header">
+                    <span>🏗️ Jaulas a Revisar</span>
+                    <div>
+                        <span id="playa-count-badge" class="badge bg-blue" style="display:none;"></span>
+                    </div>
+                </div>
+                <div class="col-body" id="lozametal-playa-list" style="padding: 10px;">
+                    <p class="text-muted text-center" style="padding:1rem; font-style:italic;">No hay jaulas esperando revisión.</p>
+                </div>
+            </div>
+
+            <!-- COL 3: DESCONSOLIDACION Y CONTROL -->
+            <div class="col" style="flex: 2.5; min-width: 380px;">
+                <div class="col-header">
+                    <span>🔬 Control de Jaula</span>
+                    <div>
+                        <span id="active-control-badge" class="badge bg-orange" style="display:none;"></span>
+                    </div>
+                </div>
+                <div id="control-detail-panel" style="display:none; flex-direction:column; height:100%;">
+                    <div class="col-body" id="control-items" style="padding: 0;">
+                        <!-- Items a controlar -->
+                    </div>
+                    
+                    <div class="col-footer" style="padding:1rem; border-top:1px solid var(--border-color); background: #f8fafc;">
+                        <button id="btn-finalizar-control" class="btn btn-primary" style="width:100%; font-size: 1.05rem; padding: 0.75rem;" disabled onclick="finalizarControlJaula()">
+                            ✅ Finalizar Control y Dar de Alta
+                        </button>
+                    </div>
+                </div>
+                <div id="control-empty-state" style="flex:1; display:flex; justify-content:center; align-items:center; color:var(--text-muted); text-align:center; padding: 1rem;">
+                    <p>Selecciona una jaula de 'Jaulas a Revisar' para comenzar la validación de sus ítems.</p>
+                </div>
+            </div>
+
+            <!-- COL 4: STOCK REAL LOZAMETAL -->
+            <div class="col" style="flex: 2.5; min-width: 350px;">
+                <div class="col-header">
+                    <span>📦 Stock Lozametal</span>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button class="btn-icon" onclick="toggleStockLozametalSearch()" title="Buscar">🔍</button>
+                        <button class="btn-icon" onclick="fetchStockLozametal()" title="Actualizar Stock">🔄</button>
+                    </div>
+                </div>
+                <div id="search-container-lozametal" style="display:none; padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    <input type="text" id="search-stock-lozametal" class="form-control" placeholder="🔍 Buscar por nombre o SKU..." oninput="filtrarStockLozametal()">
+                </div>
+                <div class="col-body" id="lozametal-stock-list" style="padding: 0;">
+                    <p class="text-muted text-center" style="padding:1rem;">Cargando stock...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ADMINISTRACION (CENTRALIZADA) -->
+        <div id="tab-admin" class="tab-pane">
+            
+            <!-- COL 1: HISTORIAL DE GUIAS -->
+            <div class="col col-guias">
+                <div class="col-header" style="background: #eff6ff; color: #1e40af;">
+                    <span>📋 Historial de Guías</span>
+                    <button class="btn-icon" onclick="renderGuiasCosto()" title="Actualizar">🔄</button>
+                </div>
+                <div id="costos-guias-list" class="col-body" style="padding: 1rem;">
+                    <p class="text-muted text-center" style="padding:1rem;">Cargando guías...</p>
+                </div>
+            </div>
+
+            <!-- COL 2: REGISTRO DE DISCREPANCIAS -->
+            <div class="col col-discrepancias">
+                <div class="col-header" style="background: #fff7ed; color: #b45309;">
+                    <span>⚠️ Discrepancias en Control</span>
+                    <button class="btn-icon" onclick="renderDiscrepancias()" title="Actualizar">🔄</button>
+                </div>
+                <div id="loza-discrepancias-list" class="col-body" style="padding: 1rem;">
+                    <p class="text-muted text-center" style="padding:1rem;">Cargando registros...</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB: CALIDAD -->
+        <div id="tab-calidad" class="main-content tab-pane" style="display: flex; gap: 1rem; padding: 1rem; height: calc(100vh - 120px); overflow-x: auto; align-items: stretch;">
+            <!-- COLUMNA 1: ORIGEN (STOCK CRUDO) -->
+            <div class="col" style="flex: 2; min-width: 420px;">
+                <div class="col-header" style="background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                    <span>🏭 Stock en Loza</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="position: relative; width: 140px;">
+                            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: #94a3b8;"></i>
+                            <input type="text" id="calidad-stock-search" placeholder="Filtrar..." 
+                                   oninput="filterCalidadStock()" 
+                                   style="width: 100%; padding: 4px 8px 4px 28px; border-radius: 20px; border: 1px solid #e2e8f0; font-size: 0.75rem; outline: none; background: #f8fafc;">
+                        </div>
+                        <button class="btn-icon" onclick="fetchStockLozametal()" title="Actualizar Stock">🔄</button>
+                    </div>
+                </div>
+                <div class="col-body" id="calidad-stock-list" style="padding: 0;">
+                    <p class="text-muted text-center italic" style="padding:2rem;">Cargando stock...</p>
+                </div>
+            </div>
+
+            <!-- COLUMNA 2: INGRESO DE JAULAS -->
+            <div class="col" style="flex: 1; min-width: 260px; background: white;">
+                <div class="col-header" style="background: white; color: #1e40af; border-bottom: 1px solid #e2e8f0;">
+                    <span>📥 Ingreso Jaulas</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button class="btn btn-sm btn-primary" onclick="showNewCageModal()" style="padding: 4px 10px; font-size: 0.75rem; font-weight: 700;">+ Nueva</button>
+                        <button class="btn-icon" onclick="fetchOpenCages()" title="Actualizar Lista">🔄</button>
+                    </div>
+                </div>
+                <div class="col-body" id="calidad-cages-list" style="padding: 0.5rem;">
+                    <p class="text-muted text-center" style="font-size:0.85rem; padding: 2rem;">No hay jaulas.</p>
+                </div>
+            </div>
+
+            <!-- COLUMNA 4: CONTROL DE INGRESO (VISTA UNIFICADA) -->
+            <div class="col" style="flex: 2; min-width: 450px; background: white;">
+                <div class="col-header" style="background: white; color: #1e293b; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0;">
+                    <span id="calidad-control-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; margin-right: 10px; font-weight: 700;">
+                        ⚖️ Control de Jaula
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div id="calidad-basket-sync-status" style="font-size: 0.7rem; font-weight: 700;"></div>
+                        <button class="btn-icon" onclick="if(activeCalidadCage) selectCalidadCage(activeCalidadCage.id)" title="Refrescar Control">🔄</button>
+                    </div>
+                </div>
+                <div class="col-body" style="display: flex; flex-direction: column; height: 100%;">
+                    <!-- Columna de Carga eliminada por redundancia, el contenido se ve aquí -->
+                    <div id="calidad-control-view" style="flex: 1; overflow-y: auto; padding: 1rem;">
+                        <p class="text-muted text-center italic" style="margin-top: 2rem;">Selecciona una jaula para comenzar.</p>
+                    </div>
+                    
+                    <div id="calidad-control-footer" class="calidad-footer" style="padding: 1rem; border-top: 2px solid #fde68a; background: #fff7ed; display: none;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 0.9rem;">
+                             <strong>Artículos cargados:</strong>
+                             <span id="calidad-total-items-badge" class="badge bg-orange">0</span>
+                        </div>
+                        <button class="btn btn-success w-100" onclick="procesarIngresoFinal()" style="height: 50px; font-weight: 800; font-size: 1.1rem; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">
+                            🚀 Procesar Ingreso Final
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-overlay">
+        <div style="text-align:center;">
+            <div style="font-size: 2rem;">⏳</div>
+            <p>Procesando...</p>
+        </div>
+    </div>
+
+    <!-- Custom Modal Structure -->
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-box">
+            <span id="modal-icon" class="modal-icon">✨</span>
+            <div id="modal-title" class="modal-title">Título</div>
+            <div id="modal-message" class="modal-message">Mensaje aquí</div>
+            <div id="modal-actions" class="modal-actions">
+                <!-- Buttons injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="app-footer">Esperando acciones...</div>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="logica.js"></script>
+</body>
+
+</html>

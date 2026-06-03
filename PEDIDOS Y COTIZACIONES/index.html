@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo Comercial: Cotizaciones y Pedidos — TMC</title>
+    <link rel="stylesheet" href="estilos.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- App Loader Overlay -->
+    <div id="app-loader" class="loader-overlay" style="display: none;">
+        <div class="loader-spinner"></div>
+        <div id="loader-text" class="loader-text">Cargando...</div>
+    </div>
+
+    <!-- Modal Notifications -->
+    <div id="app-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header" id="modal-title">Aviso</div>
+            <div class="modal-body" id="modal-content"></div>
+            <div class="modal-footer" id="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-brand">
+                <span class="brand-icon">💼</span>
+                <div>
+                    <h1 class="brand-title">Módulo Comercial</h1>
+                    <p class="brand-subtitle">TMC — Panel de Cotizaciones y Carga de Pedidos</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div id="sync-indicator" class="sync-indicator offline" title="Estado de Conexión YiQi">
+                    <span class="indicator-dot"></span>
+                    <span id="sync-text" class="indicator-text">Desconectado</span>
+                </div>
+                <button id="btn-sync-articles" class="btn btn-secondary" onclick="syncArticlesMaster()" title="Sincronizar catálogo de artículos">
+                    🔄 Catálogo
+                </button>
+                <button class="btn btn-icon" onclick="location.reload()" title="Refrescar Aplicación">🔄</button>
+            </div>
+        </header>
+
+        <!-- Columns Layout -->
+        <div class="columns-grid">
+            
+            <!-- Column 1: Client Panel -->
+            <section class="column-panel client-panel">
+                <div class="panel-header">
+                    <span class="panel-header-icon">👤</span>
+                    <h2 class="panel-header-title">Atención al Cliente</h2>
+                </div>
+                
+                <!-- Client Search Box -->
+                <div class="search-box-container">
+                    <label for="client-search" class="form-label">Buscar Cliente</label>
+                    <div class="search-input-wrapper">
+                        <input type="text" id="client-search" class="form-input" placeholder="Nombre, CUIT o Código..." autocomplete="off">
+                        <span class="search-clear" id="client-search-clear" style="display:none;">✕</span>
+                    </div>
+                    <div id="client-search-results" class="autocomplete-results" style="display: none;"></div>
+                </div>
+
+                <!-- Client Details Card -->
+                <div id="client-details-container">
+                    <div class="empty-state">
+                        <div class="empty-icon">🔍</div>
+                        <p class="empty-title">Sin cliente seleccionado</p>
+                        <p class="empty-desc">Ingresá el código, nombre o CUIT para cargar su ficha y lista de precios neteados.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Column 2: Article Master & Live Stock -->
+            <section class="column-panel articles-panel">
+                <div class="panel-header">
+                    <span class="panel-header-icon">📦</span>
+                    <h2 class="panel-header-title">Catálogo de Artículos</h2>
+                    <span id="articles-count" class="badge">0 items</span>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="search-box-container">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="article-search" class="form-input" placeholder="Buscar por SKU o descripción..." disabled>
+                        <span class="search-clear" id="article-search-clear" style="display:none;">✕</span>
+                    </div>
+                    <div class="filter-options-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filter-stock-only" disabled>
+                            <span>Solo con Stock</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Articles Grid List -->
+                <div class="articles-list-wrapper">
+                    <div id="articles-empty" class="empty-state">
+                        <div class="empty-icon">📦</div>
+                        <p class="empty-title">Catálogo no inicializado</p>
+                        <p class="empty-desc">Los artículos se cargarán de forma instantánea una vez seleccionado un cliente.</p>
+                    </div>
+                    <table class="data-table" id="articles-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Descripción</th>
+                                <th class="text-center">Stock</th>
+                                <th class="text-right">P. Base</th>
+                                <th class="text-right color-net">P. Neto</th>
+                                <th class="text-right color-final">P. Final</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="articles-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Column 3: Cart / Document Creator -->
+            <section class="column-panel cart-panel">
+                <div class="panel-header">
+                    <span class="panel-header-icon">🛒</span>
+                    <h2 class="panel-header-title">Canasta de Venta</h2>
+                </div>
+
+                <!-- Cart Items Container -->
+                <div class="cart-items-wrapper">
+                    <div id="cart-empty" class="empty-state">
+                        <div class="empty-icon">🛒</div>
+                        <p class="empty-title">Canasta vacía</p>
+                        <p class="empty-desc">Agregá artículos desde la columna central haciendo clic en el botón "+".</p>
+                    </div>
+                    <table class="data-table" id="cart-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Detalle</th>
+                                <th class="text-center" style="width: 70px;">Cant</th>
+                                <th class="text-center" style="width: 60px;">Dto%</th>
+                                <th class="text-right">Unit Net</th>
+                                <th class="text-right">Total Net</th>
+                                <th class="text-center" style="width: 35px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-tbody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Document Form Details -->
+                <div class="cart-form-details" id="cart-form-container" style="display: none;">
+                    <div class="form-group">
+                        <label for="doc-observations" class="form-label">Observaciones del Pedido</label>
+                        <textarea id="doc-observations" class="form-textarea" placeholder="Instrucciones de entrega, detalles del contacto, observaciones comerciales..."></textarea>
+                    </div>
+
+                    <!-- Totals Box -->
+                    <div class="totals-card">
+                        <div class="totals-row">
+                            <span class="totals-label">Subtotal Neto</span>
+                            <span class="totals-val" id="total-subtotal-net">$0,00</span>
+                        </div>
+                        <div class="totals-row">
+                            <span class="totals-label">Descuento Global</span>
+                            <span class="totals-val text-discount" id="total-global-discount">-$0,00</span>
+                        </div>
+                        <div class="totals-row">
+                            <span class="totals-label">IVA Facturado</span>
+                            <span class="totals-val" id="total-iva-amount">$0,00</span>
+                        </div>
+                        <div class="totals-row total-highlight">
+                            <span class="totals-label">TOTAL GENERAL</span>
+                            <span class="totals-val" id="total-final-amount">$0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="cart-actions-row">
+                        <button class="btn btn-secondary flex-grow" id="btn-action-quote" onclick="submitDocument('BORRADOR')">
+                            📝 Guardar Cotización
+                        </button>
+                        <button class="btn btn-primary flex-grow" id="btn-action-order" onclick="submitDocument('RESERVAR')">
+                            🚀 Cargar Pedido
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Script references -->
+    <script src="logica.js"></script>
+</body>
+</html>

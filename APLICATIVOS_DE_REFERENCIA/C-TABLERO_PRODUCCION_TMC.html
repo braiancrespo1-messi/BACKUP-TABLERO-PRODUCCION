@@ -1,0 +1,3107 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero de Producción TMC</title>
+    <style>
+        /* Context Menu Styles */
+        .context-menu {
+            display: none;
+            position: absolute;
+            z-index: 10000;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            padding: 5px 0;
+            min-width: 150px;
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-menu-item:hover {
+            background-color: #f1f5f9;
+            color: #2563eb;
+        }
+
+        :root {
+            /* S A T U R N - Soft Modern Palette */
+            --bg-color: #f1f5f9;
+            /* Slate 100 */
+            --text-color: #334155;
+            /* Slate 700 */
+            --primary-color: #2563eb;
+            /* Blue 600 */
+            --primary-dark: #1d4ed8;
+            /* Blue 700 */
+            --accent-color: #0ea5e9;
+            /* Sky 500 */
+            --danger-color: #ef4444;
+            /* Red 500 */
+            --warning-bg: #fef2f2;
+            /* Red 50 */
+            --card-bg: #ffffff;
+            --border-color: #cbd5e1;
+            /* Slate 300 */
+            --success-color: #10b981;
+            /* Emerald 500 */
+            --priority-high: #f97316;
+            /* Orange 500 */
+            --priority-med: #eab308;
+            /* Yellow 500 */
+            --highlight-bom: #f8fafc;
+            /* Slate 50 */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --radius: 8px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            /* Modern stack */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            margin: 0;
+            padding-top: 80px;
+            /* Reduced padding for fixed header */
+            /* Space for fixed header */
+            line-height: 1.5;
+            margin: 0;
+            padding-top: 110px;
+            /* Increased padding for 2-row header */
+            /* Space for fixed header */
+
+            /* FIXED COMPACT HEADER */
+            /* FIXED COMPACT HEADER */
+            header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background-color: var(--card-bg);
+                padding: 12px 24px;
+                box-shadow: var(--shadow-sm);
+                z-index: 1000;
+                display: flex;
+                border-bottom: 1px solid var(--border-color);
+                flex-direction: column;
+                /* Stacked Rows */
+                justify-content: center;
+                align-items: stretch;
+                height: auto;
+                /* Dynamic Height */
+                padding-bottom: 0;
+            }
+
+            .calendar-nav {
+                display: flex;
+                justify-content: center;
+                /* Centered Navigation */
+                align-items: center;
+                gap: 20px;
+                margin-bottom: 5px;
+                /* Reduced from 20px */
+            }
+
+            h1 {
+                margin: 0;
+                font-size: 1.25rem;
+                color: var(--text-color);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-weight: 700;
+            }
+
+            .controls {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+
+            button {
+                background-color: var(--primary-color);
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: var(--radius);
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 0.9rem;
+                transition: all 0.2s ease;
+                box-shadow: var(--shadow-sm);
+            }
+
+            button:hover {
+                background-color: var(--primary-dark);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
+            }
+
+            button:active {
+                transform: translateY(0);
+            }
+
+            button.action-btn {
+                padding: 4px 10px;
+                font-size: 0.85em;
+            }
+
+            button.btn-produce {
+                background-color: var(--success-color);
+            }
+
+            button.btn-config {
+                background-color: #64748b;
+                /* Slate 500 */
+            }
+
+            input.local-search {
+                padding: 6px 12px;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius);
+                width: 200px;
+                font-size: 0.85rem;
+            }
+
+            /* COMPACT FILTER CHIPS */
+            .cal-filters-bar {
+                padding: 5px !important;
+                gap: 5px !important;
+                margin-bottom: 5px !important;
+            }
+
+            .filter-chip {
+                padding: 3px 10px !important;
+                font-size: 0.75em !important;
+                border-radius: 12px !important;
+                min-height: 24px;
+            }
+
+            input[type="text"]:focus {
+                outline: none;
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+            }
+
+            label {
+                font-size: 0.9rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+                color: var(--text-color);
+            }
+
+            /* TABS SYSTEM - Pill Design */
+            .tabs {
+                display: flex;
+                gap: 8px;
+                padding: 4px;
+                background: #f1f5f9;
+                /* Slate 100 */
+                border-radius: var(--radius);
+                border: 1px solid var(--border-color);
+                width: fit-content;
+            }
+
+            .tab-btn {
+                background: none;
+                border: none;
+                padding: 8px 16px;
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: #64748b;
+                /* Slate 500 */
+                cursor: pointer;
+                border-radius: 6px;
+                transition: all 0.2s;
+            }
+
+            .tab-btn:hover {
+                background-color: rgba(255, 255, 255, 0.5);
+                color: var(--primary-color);
+            }
+
+            .tab-btn.active {
+                background-color: white;
+                color: var(--primary-color);
+                box-shadow: var(--shadow-sm);
+                margin-bottom: 0;
+                border: none;
+            }
+
+            .tab-indicator {
+                display: inline-block;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                margin-right: 5px;
+            }
+
+            /* TABLES */
+            .container {
+                max-width: 1200px;
+                /* Narrower for better readability */
+                margin: 0 auto;
+                padding: 0 10px;
+            }
+
+            .table-view {
+                display: none;
+                /* Hidden by default */
+                background-color: var(--card-bg);
+                border-radius: 0 0 8px 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                padding: 10px 10px 0 10px;
+                /* Reduced from 20px */
+                animation: fadeIn 0.3s;
+            }
+
+            .table-view.active {
+                display: block;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+
+                to {
+                    opacity: 1;
+                }
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.85rem;
+            }
+
+            th,
+            td {
+                text-align: left;
+                padding: 5px 8px;
+                /* Reduced vertical padding */
+                border-bottom: 1px solid var(--border-color);
+                vertical-align: middle;
+            }
+
+            th {
+                background-color: #f8f9fa;
+                color: var(--primary-color);
+                font-weight: 600;
+                cursor: pointer;
+                user-select: none;
+                position: sticky;
+                top: 0;
+                white-space: nowrap;
+            }
+
+            th:hover {
+                background-color: #e9ecef;
+            }
+
+            th::after {
+                content: ' ↕';
+                font-size: 0.8em;
+                opacity: 0.5;
+            }
+
+            tr:hover {
+                background-color: #f9f9f9;
+            }
+
+            /* Conditional Styles */
+            .priority-high {
+                color: var(--priority-high);
+                font-weight: bold;
+            }
+
+            .low-stock {
+                background-color: var(--warning-bg) !important;
+            }
+
+            .low-stock-text {
+                color: var(--danger-color);
+                font-weight: bold;
+            }
+
+            /* BOM COMPACT STYLE */
+            .bom-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .bom-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background-color: var(--highlight-bom);
+                border: 1px solid #efefef;
+                border-left: 3px solid var(--accent-color);
+                border-radius: 4px;
+                padding: 6px 8px;
+                margin-bottom: 6px;
+                gap: 10px;
+            }
+
+            .bom-details {
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .bom-top-line {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 2px;
+            }
+
+            .bom-name {
+                font-weight: 600;
+                font-size: 0.9em;
+                color: #333;
+            }
+
+            .bom-sku-tag {
+                font-family: monospace;
+                font-weight: bold;
+                color: var(--primary-color);
+                background: #e8e8e8;
+                padding: 1px 4px;
+                border-radius: 3px;
+                font-size: 0.8em;
+            }
+
+            .bom-calc-line {
+                font-size: 0.8em;
+                color: #666;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .calc-hl {
+                color: var(--priority-high);
+                font-weight: bold;
+            }
+
+            .qty-input-sm {
+                width: 50px;
+                padding: 4px;
+                text-align: center;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                font-weight: bold;
+                font-size: 0.9em;
+            }
+
+
+            /* MODAL CONFIG */
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 2000;
+                display: none;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .modal {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                width: 300px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            }
+
+            .modal h3 {
+                margin-top: 0;
+            }
+
+            .col-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .modal-actions {
+                margin-top: 15px;
+                text-align: right;
+            }
+
+            .loading,
+            .error-msg {
+                text-align: center;
+                padding: 20px;
+                margin-top: 50px;
+            }
+
+            .error-msg {
+                color: var(--danger-color);
+                font-weight: bold;
+            }
+
+            .info-bar {
+                background-color: #e8f6f3;
+                color: #0e6655;
+                padding: 8px;
+                border-radius: 4px;
+                font-weight: bold;
+                font-size: 0.9rem;
+                margin-bottom: 10px;
+                border: 1px solid #a2d9ce;
+            }
+
+            /* LOADING OVERLAY */
+            .loading-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.85);
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+            }
+
+            .spinner {
+                border: 6px solid #f3f3f3;
+                border-top: 6px solid var(--accent-color);
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .loading-text {
+                font-size: 1.2rem;
+                color: var(--primary-color);
+                font-weight: bold;
+            }
+
+            /* DEBUG FOOTER */
+            .debug-footer {
+                position: fixed;
+                bottom: 5px;
+                right: 5px;
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid #ccc;
+                padding: 5px 10px;
+                font-size: 0.75rem;
+                color: #555;
+                border-radius: 4px;
+                z-index: 9999;
+                box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+                opacity: 0.6;
+                transition: opacity 0.3s;
+                max-width: 90%;
+                display: flex;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+
+            .debug-footer:hover {
+                opacity: 1;
+            }
+
+            .debug-item {
+                display: flex;
+                gap: 4px;
+            }
+
+            /* ACTION GROUP STYLE */
+            .action-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                justify-content: center;
+            }
+
+            .action-btns-col {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            /* Override btn-icon for better visibility */
+            .btn-icon {
+                background: none;
+                border: 1px solid transparent;
+                font-size: 1.3rem;
+                cursor: pointer;
+                padding: 2px 4px;
+                line-height: 1;
+                transition: all 0.2s;
+                border-radius: 4px;
+            }
+
+            .btn-icon:hover {
+                background-color: #f1f1f1;
+                border-color: #ddd;
+                transform: scale(1.1);
+            }
+
+            .debug-label {
+                font-weight: bold;
+                color: #333;
+            }
+
+            /* NEW BUTTON STYLES */
+            .btn-icon {
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                padding: 2px 6px;
+                transition: transform 0.2s;
+            }
+
+            .btn-icon:hover {
+                transform: scale(1.2);
+                background-color: rgba(0, 0, 0, 0.05);
+                border-radius: 4px;
+            }
+
+            /* CONTEXT MENU */
+            #context-menu {
+                position: absolute;
+                background: white;
+                border: 1px solid #ccc;
+                box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+                border-radius: 4px;
+                z-index: 10000;
+                display: none;
+                min-width: 150px;
+            }
+
+            .ctx-item {
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .ctx-item:last-child {
+                border-bottom: none;
+            }
+
+            .ctx-item:hover {
+                background-color: #f5f5f5;
+            }
+
+            .ctx-danger:hover {
+                background-color: #ffe6e6;
+                color: #d32f2f;
+            }
+
+            /* CALENDAR STYLES */
+            .calendar-grid {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 5px;
+                margin-top: 10px;
+            }
+
+            .cal-day-header {
+                font-weight: bold;
+                text-align: center;
+                padding: 5px;
+                background: #eee;
+            }
+
+            .cal-day {
+                border: 1px solid #ddd;
+                min-height: 80px;
+                padding: 5px;
+                background: #fff;
+                font-size: 0.8em;
+            }
+
+            .cal-day:hover {
+                background: #f9f9f9;
+            }
+
+            .cal-event strong {
+                font-size: 1.25em;
+                /* Larger SKU */
+                display: inline-block;
+            }
+
+            .cal-event span {
+                font-size: 1.6em;
+                /* EVEN LARGER Qty per user request STEP 1 */
+                font-weight: 900;
+                color: #2c3e50;
+                text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
+            }
+
+            /* Filter Chips */
+            .cal-filters-bar {
+                display: flex;
+                flex-wrap: nowrap;
+                /* Single Line */
+                overflow-x: auto;
+                /* Horizontal Scroll */
+                gap: 8px;
+                justify-content: flex-start;
+                margin-bottom: 15px;
+                padding: 10px 5px;
+                background: #fff;
+                border-bottom: 1px solid #eee;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .cal-filters-bar::-webkit-scrollbar {
+                height: 4px;
+            }
+
+            .cal-filters-bar::-webkit-scrollbar-thumb {
+                background: #ccc;
+                border-radius: 4px;
+            }
+
+            /* COMPACT FILTERS (Horizontal Scroll) */
+            .cal-filters-bar {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                gap: 5px;
+                margin-bottom: 5px;
+                padding: 4px 5px;
+                /* Added left padding */
+                justify-content: flex-start;
+                /* Ensure start alignment for overflow */
+                scrollbar-width: none;
+            }
+
+            .cal-filters-bar::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* Chrome hide scroll */
+
+            .filter-chip {
+                padding: 2px 8px;
+                border-radius: 12px;
+                cursor: pointer;
+                font-size: 0.75rem;
+                font-weight: 600;
+                transition: all 0.2s;
+                user-select: none;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                height: 24px;
+                white-space: nowrap;
+                /* Keep text inline */
+                flex-shrink: 0;
+                /* Don't squash */
+            }
+
+            .filter-chip.active {
+                opacity: 1;
+                background: #fff;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                font-weight: bold;
+            }
+
+            .filter-chip:hover {
+                opacity: 0.9;
+                transform: translateY(-1px);
+            }
+
+            .cal-events {
+                margin-top: 4px;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .cal-event {
+                background: transparent;
+                /* Google Style */
+                color: #3c4043;
+                padding: 1px 4px;
+                border-radius: 4px;
+                font-size: 0.85em;
+                cursor: pointer;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: background 0.1s;
+            }
+
+            .cal-event:hover {
+                background-color: rgba(60, 64, 67, 0.08);
+            }
+
+            .event-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+
+            /* GLOBAL LOADER */
+            #global-loader {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.9);
+                z-index: 9999;
+                display: none;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .loader-spinner {
+                border: 5px solid #f3f3f3;
+                border-top: 5px solid var(--primary-color);
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .loader-text {
+                margin-top: 20px;
+                font-size: 1.2rem;
+                color: var(--text-color);
+                font-weight: 600;
+            }
+
+            /* CALENDAR NAV STYLES */
+            .cal-nav-select {
+                padding: 5px 10px;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                font-size: 1rem;
+                background: white;
+                font-weight: 600;
+                color: var(--text-color);
+                cursor: pointer;
+            }
+
+            .today-dot {
+                width: 8px;
+                height: 8px;
+                background-color: var(--primary-color);
+                border-radius: 50%;
+                position: absolute;
+                top: 6px;
+                right: 6px;
+            }
+
+            .cal-day.is-today {
+                background-color: var(--highlight-bom) !important;
+                border: 2px solid var(--primary-color) !important;
+            }
+
+            /* MODAL SYSTEM (Modern & Responsive) */
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
+                z-index: 2000;
+                display: none;
+                justify-content: center;
+                align-items: center;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .modal-overlay.open {
+                display: flex;
+                opacity: 1;
+            }
+
+            .modal-card {
+                background: white;
+                padding: 24px;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                width: 90%;
+                max-width: 400px;
+                transform: scale(0.9);
+                transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .modal-overlay.open .modal-card {
+                transform: scale(1);
+            }
+
+            .modal-header {
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: var(--text-color);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .modal-body {
+                font-size: 1rem;
+                color: #4b5563;
+                /* Slate 600 */
+                line-height: 1.6;
+            }
+
+            .modal-input {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius);
+                font-size: 1rem;
+                margin-top: 8px;
+                box-sizing: border-box;
+            }
+
+            .modal-input:focus {
+                outline: none;
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+            .modal-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+                margin-top: 8px;
+            }
+
+            .btn-modal {
+                padding: 10px 20px;
+                font-size: 1rem;
+                min-width: 80px;
+            }
+
+            .btn-secondary {
+                background-color: #e2e8f0;
+                /* Slate 200 */
+                color: #1e293b;
+                /* Slate 800 */
+                box-shadow: none;
+            }
+
+            .btn-secondary:hover {
+                background-color: #cbd5e1;
+                /* Slate 300 */
+                transform: translateY(-1px);
+            }
+
+            .btn-danger {
+                background-color: var(--danger-color);
+                color: white;
+            }
+
+            .btn-danger:hover {
+                background-color: #dc2626;
+                /* Red 600 */
+            }
+
+            .highlight-pulse {
+                animation: highlight-pulse 0.5s ease-in-out 3;
+                /* Faster, 3 times */
+                z-index: 10;
+                position: relative;
+                box-shadow: 0 0 15px rgba(255, 69, 0, 0.9);
+                /* Red-Orange */
+                transform: scale(1.05);
+                border: 2px solid #ff4500;
+            }
+
+            @keyframes highlight-pulse {
+                0% {
+                    background-color: rgba(255, 69, 0, 0.2);
+                    transform: scale(1);
+                }
+
+                50% {
+                    background-color: rgba(255, 69, 0, 0.8);
+                    transform: scale(1.1);
+                }
+
+                100% {
+                    background-color: rgba(255, 69, 0, 0.2);
+                    transform: scale(1);
+                }
+            }
+    </style>
+</head>
+
+<body>
+    <!-- CUSTOM MODAL COMPONENT -->
+    <div id="app-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header" id="modal-title"></div>
+            <div class="modal-body" id="modal-content"></div>
+            <div class="modal-footer" id="modal-actions"></div>
+        </div>
+    </div>
+
+    <header>
+        <!-- ROW 1: Title & Refresh -->
+        <div
+            style="display:flex; justify-content:space-between; align-items:center; padding-bottom:5px; padding-right:10px;">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <h1 style="font-size:1.1rem; margin:0;">🏭 Tablero de Producción TMC</h1>
+            </div>
+            <button class="action-btn" onclick="location.reload()" title="Actualizar Todo"
+                style="background:none; border:none; font-size:1.4rem; cursor:pointer; padding:0;">
+                🔄
+            </button>
+        </div>
+
+        <!-- ROW 2: Tabs (Left Aligned) -->
+        <div class="tabs" style="width:100%; border-radius:0; background:transparent; padding:0; border:none; gap:5px;">
+            <button class="tab-btn" onclick="switchTab('planificador')"
+                style="border-radius: 6px 6px 0 0; border:1px solid transparent; border-bottom:none;">
+                📅 Planificador
+            </button>
+            <button class="tab-btn active" onclick="switchTab('pedidos')"
+                style="border-radius: 6px 6px 0 0; border:1px solid transparent; border-bottom:none;">
+                Pedidos Pendientes <span id="count-pedidos" style="font-size:0.8em; opacity:0.7">(0)</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('stock')"
+                style="border-radius: 6px 6px 0 0; border:1px solid transparent; border-bottom:none;">
+                Cuadros <span id="count-stock" style="font-size:0.8em; opacity:0.7">(0)</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONFIG MODAL -->
+    <div id="configModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Configurar Columnas</h3>
+            <div id="colList" class="col-list">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeConfig()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="container">
+        <!-- Loading Overlay -->
+        <div id="loading" class="loading-overlay" style="display:none;">
+            <div class="spinner"></div>
+            <div class="loading-text">Cargando datos...</div>
+        </div>
+
+        <div id="error" class="error-msg" style="display:none;"></div>
+
+        <!-- CONTEXT MENU CONTAINER -->
+        <div id="context-menu"
+            style="position: absolute; background: white; border: 1px solid #ccc; box-shadow: 2px 2px 10px rgba(0,0,0,0.2); border-radius: 4px; z-index: 10000; display: none; min-width: 150px;">
+        </div>
+
+        <!-- TAB 1: PEDIDOS -->
+        <div id="view-pedidos" class="table-view active">
+            <!-- Top Bar: Summary + Controls -->
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; flex-wrap:wrap; gap:10px;">
+                <!-- SUMMARY BOX + REFRESH (Left) -->
+                <div style="display:flex; align-items:center; gap:10px; flex-grow:1;">
+                    <div id="summary-pedidos" class="info-bar" style="display:none; margin:0;"></div>
+                    <div style="display:flex; align-items:center;">
+                        <button class="btn-icon" onclick="loadPedidos()" title="Actualizar Pedidos"
+                            style="cursor:pointer; font-size:1.4em; margin-right:5px;">
+                            🔄
+                        </button>
+                        <span id="pedidos-last-update" style="font-size:0.75em; color:#ccc; font-style:italic;"></span>
+                    </div>
+
+                </div>
+
+                <!-- CONTROLS (Right) -->
+                <div class="controls" style="display:flex; gap:15px; align-items:center;">
+                    <!-- STATUS FILTERS -->
+                    <div
+                        style="display:flex; gap:10px; font-size:0.9em; background:#fff; padding:5px 10px; border-radius:6px; border:1px solid #eee;">
+                        <label><input type="radio" name="filter-ped-status" value="all" checked
+                                onchange="applyFilters()"> Todos</label>
+                        <label><input type="radio" name="filter-ped-status" value="pending" onchange="applyFilters()">
+                            ⚠️ Sin Agendar</label>
+                        <label><input type="radio" name="filter-ped-status" value="scheduled" onchange="applyFilters()">
+                            📅 Agendados</label>
+                    </div>
+
+                    <input type="text" id="searchInput-pedidos" class="local-search" placeholder="🔍 Buscar pedidos..."
+                        onkeyup="applyFilters()" style="padding-left:10px;">
+                </div>
+            </div>
+
+            <table id="table-pedidos">
+                <thead id="head-pedidos">
+                    <!-- Dynamically populated headers -->
+                </thead>
+                <tbody id="body-pedidos"></tbody>
+            </table>
+        </div>
+
+        <!-- TAB 2: STOCK -->
+        <div id="view-stock" class="table-view">
+            <!-- Controls for Stock -->
+            <div class="controls" style="margin-bottom: 10px; display:flex; gap:10px; align-items:center;">
+                <input type="text" id="searchInput-stock" class="local-search" placeholder="Buscar stock..."
+                    onkeyup="applyFilters()">
+                <label id="lblHideZero"
+                    style="display:flex; align-items:center; gap:5px; font-size:0.85em; cursor:pointer;">
+                    <input type="checkbox" id="chkHideZero" onchange="applyFilters()"> Ocultar Mínimo 0
+                </label>
+            </div>
+            <div id="summary-stock" class="info-bar" style="display:none;"></div>
+            <table id="table-stock">
+                <thead>
+                    <tr>
+                        <th onclick="sortStock(0)">SKU</th>
+                        <th onclick="sortStock(1)">Descripción</th>
+                        <th onclick="sortStock(2)" style="text-align: center;">Stock Real</th>
+                        <th onclick="sortStock(3)" style="text-align: center;">Mínimo</th>
+                        <th onclick="sortStock(4)" style="text-align: center;">Faltante</th>
+                        <th onclick="sortStock(5)" style="text-align: center;">Factibilidad</th>
+                        <th style="text-align: center; width:140px;">Acción</th>
+                        <th onclick="sortStock(6)" style="text-align: center; background-color:#f0f0f0; color:#777;">En
+                            Prod.</th>
+                    </tr>
+                </thead>
+                <tbody id="body-stock"></tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+
+    <!-- CALENDAR TAB (Corrected ID) -->
+    <div id="view-planificador" class="table-view" style="padding:10px;">
+        <div class="card" style="margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;"
+                class="calendar-nav">
+                <div style="display:flex; align-items:center; gap:15px; width:100%;">
+                    <h2 style="margin:0; font-size:1.1rem; color:var(--primary-color); white-space:nowrap;">📅
+                        Planificador</h2>
+
+                    <!-- Search Bar Inline -->
+                    <div style="position:relative; flex-grow:1; max-width:400px;">
+                        <input type="text" id="planner-search" class="local-search"
+                            placeholder="🔍 Buscar SKU, Cliente, Pedido..." onkeyup="renderCalendar()"
+                            style="width:100%; padding: 6px 10px; font-size:0.9em;">
+                    </div>
+
+                    <div style="display:flex; gap:5px; align-items:center; margin-left:auto;">
+                        <label
+                            style="font-size:0.8em; margin-right:10px; display:flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" id="hide-finished" onchange="renderCalendar()" checked
+                                style="margin-right:4px;"> Ocultar Finalizados
+                        </label>
+                        <!-- GOOGLE STYLE NAV -->
+                        <div class="cal-nav-google" style="display:flex; align-items:center; gap:5px;">
+                            <button class="nav-btn-today" onclick="goToToday()"
+                                style="border-radius:20px; padding:6px 16px; border:1px solid #dadce0; background:#fff; cursor:pointer; font-weight:500; color:#3c4043; margin-right:10px;">Hoy</button>
+                            <div class="nav-arrows" style="display:flex; gap:2px;">
+                                <button onclick="changeMonth(-1)" class="btn-icon-nav"
+                                    style="border:none; background:transparent; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#5f6368;"
+                                    title="Mes Anterior">❮</button>
+                                <button onclick="changeMonth(1)" class="btn-icon-nav"
+                                    style="border:none; background:transparent; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#5f6368;"
+                                    title="Mes Siguiente">❯</button>
+                            </div>
+                            <span id="cal-month-year"
+                                style="font-size: 1.3rem; font-weight:400; color:#3c4043; margin-left:10px; min-width:160px; pointer-events:none;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="calendarContent"></div>
+            </div>
+        </div>
+
+
+        <!-- GLOBAL LOADER -->
+        <div id="global-loader">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Procesando...</div>
+        </div>
+
+        <!-- DEBUG FOOTER -->
+        <div id="debug-footer" class="debug-footer" style="display:none;"></div>
+
+        <script>
+            // --- CONFIGURACIÓN ---
+            const CONFIG = {
+                API_BASE: "https://api.yiqi.com.ar",
+                TOKEN_URLS: ["https://me.yiqi.com.ar/connect/token", "https://api.yiqi.com.ar/connect/token", "https://api.yiqi.com.ar/token"],
+                GETLIST_BASE: "https://api.yiqi.com.ar/api/instancesApi/GetList",
+
+                SMARTIE_PEDIDOS: 2672,   // UPDATED: All Priorities (Entity 1231)
+                SMARTIE_STOCK: 2668,     // RESTORED: "Como antes"
+                SMARTIE_BOM: 2669,       // CONFIRMED: "Cuadros" (Entity 771)
+                SCHEMA_ID: 1491,
+
+                // New Smarties for Production Logic
+                SMARTIE_ARTICULOS: 2671, // Matches user request for Articles data
+                SMARTIE_GRUPOS: 2594,    // Restored for name-based lookup fallback
+
+                ENTITY_ARTICULOS: 782,
+                ENTITY_GRUPOS: 763,
+                ENTITY_PEDIDOS: 1231,    // Ensuring this matches Smartie 2672
+                ENTITY_STOCK: 794,
+                ENTITY_BOM: 771,         // CONFIRMED per user screenshot
+
+                // Production Save Config
+                ALTA_PROD: {
+                    entityId: 1389,
+                    SAVE_URLS: ["https://me.yiqi.com.ar/api/instancesApi/Save", "https://api.yiqi.com.ar/api/instancesApi/Save"]
+                }
+            };
+
+            // --- CUSTOM MODAL SYSTEM ---
+            function showModal({ title, content, actions }) {
+                const overlay = document.getElementById('app-modal');
+                const mTitle = document.getElementById('modal-title');
+                const mContent = document.getElementById('modal-content');
+                const mActions = document.getElementById('modal-actions');
+
+                mTitle.innerHTML = title || 'Aviso';
+                mContent.innerHTML = content || '';
+                mActions.innerHTML = '';
+
+                actions.forEach(btn => {
+                    const b = document.createElement('button');
+                    b.className = `btn-modal ${btn.class || 'btn-secondary'}`;
+                    b.textContent = btn.text;
+                    b.onclick = () => {
+                        if (btn.onClick) btn.onClick();
+                        if (btn.close !== false) closeModal();
+                    };
+                    mActions.appendChild(b);
+                });
+
+                overlay.classList.add('open');
+            }
+
+            function closeModal() {
+                document.getElementById('app-modal').classList.remove('open');
+            }
+
+            function appAlert(msg) {
+                return new Promise(resolve => {
+                    showModal({
+                        title: '⚠️ Atención',
+                        content: msg,
+                        actions: [{ text: 'Aceptar', class: 'btn-produce', onClick: resolve }]
+                    });
+                });
+            }
+
+            function appConfirm(msg) {
+                return new Promise(resolve => {
+                    showModal({
+                        title: '❓ Confirmar',
+                        content: msg,
+                        actions: [
+                            { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(false) },
+                            { text: 'Eliminar', class: 'btn-danger', onClick: () => resolve(true) }
+                        ]
+                    });
+                });
+            }
+
+            function appPrompt(msg, defaultValue = '') {
+                return new Promise(resolve => {
+                    const inputHtml = `<div style="margin-bottom:5px">${msg}</div><input type="number" id="prompt-input" class="modal-input" value="${defaultValue}">`;
+                    showModal({
+                        title: '🔢 Ingresar Valor',
+                        content: inputHtml,
+                        actions: [
+                            { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(null) },
+                            {
+                                text: 'Aceptar', class: 'btn-produce', onClick: () => {
+                                    const val = document.getElementById('prompt-input').value;
+                                    resolve(val);
+                                }
+                            }
+                        ]
+                    });
+                    setTimeout(() => {
+                        const inp = document.getElementById('prompt-input');
+                        if (inp) inp.focus();
+                    }, 100);
+                });
+            }
+
+            /* ==================== GLOBAL STATE ==================== */
+            let token = localStorage.getItem("yiqi_token");
+            let dataPedidos = [];
+            let dataStock = [];
+            let dataBOM = [];
+            let dataArticulos = []; // New
+            let dataGrupos = [];    // Restored for name matching fallback
+            let calendarEvents = []; // Loaded from local storage or mockup
+
+            // NEW: Calendar Notes
+            // NEW: Calendar Notes
+            let calendarNotes = {}; // { 'YYYY-MM-DD': [{id: 1, text: 'Note 1'}, {id: 2, text: 'Note 2'}] }
+            try {
+                const savedNotes = localStorage.getItem('tmc_calendar_notes');
+                if (savedNotes) calendarNotes = JSON.parse(savedNotes);
+            } catch (e) { console.error("Error loading calendar notes", e); }
+
+            let currentTab = 'pedidos';
+            let currentMonth = new Date(); // Tracks calendar view month
+
+            // Columns Definition for Pedidos
+            // Keys match internal keys or special logic keys
+            const COLUMNS_PEDIDOS = [
+                { id: 'numero', label: 'Pedido N°', visible: true, sortCol: 1, key: 'NUMERO' },
+                { id: 'fecha', label: 'Fecha', visible: true, sortCol: 0, key: 'FECHA_PEDI' },
+                { id: 'cliente', label: 'Cliente', visible: true, sortCol: 2, key: 'CLIENTE' },
+                { id: 'sku_art', label: 'SKU Artículo', visible: true, sortCol: 3, key: 'SKU' },
+                { id: 'nombre_art', label: 'Nombre Artículo', visible: true, sortCol: 3, key: 'PRODUCTO' },
+                { id: 'cantidad', label: 'Cantidad', visible: true, sortCol: 4, key: 'CANT_A_ENTREGAR' },
+                { id: 'grupo', label: 'Grupo', visible: true, sortCol: 2, key: 'GRUPO_ART' }, // Added for new Smartie context
+                { id: 'bom', label: 'BOM (Requiere fabricar)', visible: true, sortCol: null }, // No sort for comp yet
+                { id: 'status', label: '', visible: true, sortCol: null } // Status Emoji Only
+            ];
+
+            let sortState = {
+                pedidos: { col: 1, asc: false }, // Default Number Desc
+                stock: { col: 4, asc: false }
+            };
+
+            // --- AUTH ---
+            async function checkAuth() { if (!token) await loginYiQi(); }
+            async function loginYiQi() {
+                const user = "mercadolibre@tmcrespo.com.ar";
+                const pass = "AdministracionMessi";
+                for (const url of CONFIG.TOKEN_URLS) {
+                    try {
+                        const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "password", username: user, password: pass }) });
+                        if (r.ok) { token = (await r.json()).access_token; localStorage.setItem("yiqi_token", token); return; }
+                    } catch (e) { }
+                }
+                showError("Error de Login - Revise credenciales");
+            }
+
+            // --- API GENERIC ---
+            async function apiFetchErrors(url, body) {
+                await checkAuth();
+                let r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(body || {}) });
+                if (r.status === 401) { await loginYiQi(); r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(body || {}) }); }
+                if (!r.ok) throw new Error(`API Error ${r.status}`);
+                return r.json();
+            }
+
+            async function fetchAll(entityId, smartieId) {
+                const url = `${CONFIG.GETLIST_BASE}?entityId=${entityId}&schemaId=${CONFIG.SCHEMA_ID}&smartieId=${smartieId}`;
+                // Use size 50 as hinted by user, server might page by 50 even if we ask 200.
+                let page = 1, all = [], keep = true, size = 50;
+                while (keep) {
+                    try {
+                        const res = await apiFetchErrors(url, { page, pageSize: size });
+                        // Handle various response structures
+                        let rows = [];
+                        if (res.data && Array.isArray(res.data)) rows = res.data;
+                        else if (res.rows && Array.isArray(res.rows)) rows = res.rows;
+                        else if (res.instances && Array.isArray(res.instances)) rows = res.instances;
+                        else if (res.items && Array.isArray(res.items)) rows = res.items;
+
+                        if (rows.length > 0) {
+                            all.push(...rows);
+                            page++;
+                            // If we got fewer rows than requested, verify if it's truly the end.
+                            // But if server enforces max page size (e.g. 50), then < 200 is always true. 
+                            // Safer to only stop if 0 rows returned in next call, OR if rows < size (iff size is small like 50).
+                            if (rows.length < size) keep = false;
+                        } else {
+                            keep = false;
+                        }
+                    } catch (e) {
+                        console.error("Error fetching page " + page + " for entity " + entityId + " smartie " + smartieId, e);
+                        keep = false;
+                    }
+                }
+                return all;
+            }
+
+            // --- MAIN DATA LOADING ---
+            async function refreshData() {
+                const loading = document.getElementById('loading');
+                const loadText = document.querySelector('.loader-text');
+                loading.style.display = 'flex';
+                loadText.innerText = "Iniciando carga de datos...";
+                document.getElementById('error').style.display = 'none';
+
+                try {
+                    // Initialize empty to show 0 in debug footer
+                    dataPedidos = []; dataStock = []; dataBOM = []; dataArticulos = []; dataGrupos = [];
+                    updateDebugFooter();
+
+                    // Helper to update progress
+                    const fetchWithProgress = async (promise, name) => {
+                        loadText.innerText = `Cargando ${name}...`;
+                        const res = await promise;
+                        // Update debug footer count immediately
+                        if (name === "Pedidos") dataPedidos = res;
+                        if (name === "Stock") dataStock = res;
+                        if (name === "BOM") dataBOM = res;
+                        if (name === "Artículos") dataArticulos = res;
+                        if (name === "Grupos") dataGrupos = res;
+
+                        updateDebugFooter();
+                        return res;
+                    };
+
+                    // Parallel Fetch with individual tracking
+                    const [pedidos, stock, bom, arts, grupos] = await Promise.all([
+                        fetchWithProgress(fetchAll(CONFIG.ENTITY_PEDIDOS, CONFIG.SMARTIE_PEDIDOS), "Pedidos"),
+                        fetchWithProgress(fetchAll(CONFIG.ENTITY_STOCK, CONFIG.SMARTIE_STOCK), "Stock"),
+                        fetchWithProgress(fetchAll(CONFIG.ENTITY_BOM, CONFIG.SMARTIE_BOM), "BOM"),
+                        fetchWithProgress(fetchAll(CONFIG.ENTITY_ARTICULOS, CONFIG.SMARTIE_ARTICULOS), "Artículos"),
+                        fetchWithProgress(fetchAll(CONFIG.ENTITY_GRUPOS, CONFIG.SMARTIE_GRUPOS), "Grupos") // Silent fetch
+                    ]);
+
+                    dataGrupos = grupos;
+                    loadText.innerText = "Procesando datos...";
+
+                    // Diagnostic Alert (Temporary)
+                    console.log("Stock Items Loaded:", dataStock.length);
+                    if (dataStock.length === 0) {
+                        // Keep quiet if reverted to old style, or maybe alert if requested.
+                        // alert("⚠️ Stock Vacio - Smartie 2668");
+                    }
+
+                    applyFilters();
+
+                    // UPDATE DEBUG FOOTER
+                    updateDebugFooter();
+
+                } catch (e) { showError("Error cargando datos: " + e.message); }
+                document.getElementById('loading').style.display = 'none';
+            }
+
+            function updateDebugFooter() {
+                const footer = document.getElementById('debug-footer');
+                const items = [
+                    { name: "Pedidos", sm: CONFIG.SMARTIE_PEDIDOS, ent: CONFIG.ENTITY_PEDIDOS, count: dataPedidos.length },
+                    { name: "BOM", sm: CONFIG.SMARTIE_BOM, ent: CONFIG.ENTITY_BOM, count: dataBOM.length },
+                    { name: "Stock", sm: CONFIG.SMARTIE_STOCK, ent: CONFIG.ENTITY_STOCK, count: dataStock.length },
+                    { name: "Artículos", sm: CONFIG.SMARTIE_ARTICULOS, ent: CONFIG.ENTITY_ARTICULOS, count: dataArticulos.length },
+                    { name: "Grupos", sm: CONFIG.SMARTIE_GRUPOS, ent: CONFIG.ENTITY_GRUPOS, count: dataGrupos.length }
+                ];
+
+                // Footer Layout: Actions LEFT, Debug RIGHT (Swapped)
+                footer.innerHTML = `
+                <div style="margin-right:auto; display:flex; gap:15px; align-items:center; padding-right:20px; border-right:1px solid #ddd;">
+                    <span style="font-weight:bold; color:var(--primary-color);">⚡ Acciones:</span>
+                    <span title="Fabricar Item">🔨 Fabricar</span>
+                    <span title="Eliminar Evento">🗑️ Eliminar</span>
+                    <span title="Marcar como Terminado">✅ Terminado</span>
+                </div>
+            `;
+
+                footer.innerHTML += items.map(i => `
+                <div class="debug-item">
+                    <span class="debug-label">${i.name}</span>
+                    <span>(S:${i.sm} / E:${i.ent}):</span>
+                    <strong>${i.count}</strong>
+                </div>
+            `).join('<span style="color:#ccc">|</span>');
+
+
+                footer.style.display = 'flex';
+            }
+
+            /* ==================== UI LOGIC ==================== */
+            function switchTab(tab) {
+                currentTab = tab;
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+                document.querySelectorAll('.table-view').forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${tab}`).classList.add('active');
+
+                // Auto-focus search input if exists
+                const searchInput = document.getElementById((tab === 'stock') ? 'searchInput-stock' : 'searchInput-pedidos');
+                if (searchInput) searchInput.focus();
+
+                // Load Calendar on Tab Switch
+                if (tab === 'planificador') {
+                    if (!currentMonth) currentMonth = new Date();
+                    // FIXED: Removed goToToday() to persist user navigation
+                    setTimeout(() => renderCalendar(), 50);
+                } else {
+                    // Ensure data is rendered for the active tab
+                    applyFilters();
+                }
+            }
+
+
+
+            // --- LOGIC: MATCH ORDER TO BOM ---
+            // --- LOGIC: MATCH ORDER TO BOM ---
+            // Returns ARRAY of components now, enabling multi-item BOMs
+            function getBOMComponents(productSKU) {
+                if (!productSKU) return [];
+                // Find ALL components for this MBOM_CODIGO (Case Insensitive)
+                const target = productSKU.trim().toUpperCase();
+                const components = dataBOM.filter(b => (b["MBOM_CODIGO"] || "").trim().toUpperCase() === target);
+
+                return components.map(c => ({
+                    sku: c["MATE_CODIGO"],
+                    nombre: c["MATE_NOMBRE"],
+                    cantidad: c["DEBO_CANTIDAD"] || 1
+                }));
+            }
+
+            // --- UI LOGIC ---
+            function formatDate(dateString) {
+                if (!dateString) return "-";
+                try {
+                    // Ensure dateString is in YYYY-MM-DD format for consistent parsing
+                    const date = new Date(dateString + 'T00:00:00'); // Add T00:00:00 to avoid timezone issues
+                    return date.toLocaleDateString();
+                } catch (e) {
+                    return dateString; // Return original if invalid
+                }
+            }
+
+            // --- CONFIG COLUMNS ---
+            function openConfig() {
+                const list = document.getElementById('colList');
+                list.innerHTML = '';
+                COLUMNS_PEDIDOS.forEach((col, idx) => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                <label>
+                    <input type="checkbox" ${col.visible ? 'checked' : ''} onchange="toggleColumn(${idx})">
+                    ${col.label}
+                </label>
+            `;
+                    list.appendChild(div);
+                });
+                document.getElementById('configModal').style.display = 'flex';
+            }
+
+            function closeConfig() { document.getElementById('configModal').style.display = 'none'; }
+
+            function toggleColumn(index) {
+                COLUMNS_PEDIDOS[index].visible = !COLUMNS_PEDIDOS[index].visible;
+                applyFilters(); // Re-render
+            }
+
+            /* ==================== FILTER & RENDER ==================== */
+            function applyFilters() {
+                // Determine input based on current tab
+                const inputId = (currentTab === 'stock') ? 'searchInput-stock' : 'searchInput-pedidos';
+                const inputEl = document.getElementById(inputId);
+                const search = inputEl ? inputEl.value.toLowerCase() : "";
+
+                if (currentTab === 'pedidos') {
+                    // Render Headers Dynamic
+                    const thead = document.getElementById('head-pedidos');
+                    let headerRow = '<tr>';
+                    COLUMNS_PEDIDOS.forEach((col) => {
+                        if (col.visible) {
+                            let clickAttr = '';
+                            // Special handling for Status (index 8 in array, but separate in logic)
+                            if (col.id === 'status') clickAttr = `onclick="sortPedidos(8)"`;
+                            else if (col.sortCol !== null) clickAttr = `onclick="sortPedidos(${col.sortCol})"`;
+
+                            headerRow += `<th ${clickAttr} style="cursor:pointer;">${col.label}</th>`;
+                        }
+                    });
+                    headerRow += '</tr>';
+                    thead.innerHTML = headerRow;
+
+                    let filtered = dataPedidos.filter(r => {
+                        const txt = (r["CLIENTE"] + " " + r["PRODUCTO"] + " " + r["SKU"] + " " + r["NUMERO"] + " " + (r["GRUPO_ART"] || "")).toLowerCase();
+                        return !search || txt.includes(search);
+                    });
+
+                    renderPedidos(filtered);
+                    document.getElementById('count-pedidos').innerText = `(${filtered.length})`;
+
+                } else if (currentTab === 'stock') {
+                    // Stock Logic...
+                    const chk = document.getElementById('chkHideZero');
+                    const hideMinZero = chk ? chk.checked : false; // Changed Logic
+                    let filtered = dataStock.filter(r => {
+                        // Normalize Keys
+                        const sku = r["STOC_SKU"] || r["MATE_CODIGO"] || r["SKU"] || r["Codigo"] || "";
+                        const nombre = r["MATE_NOMBRE"] || r["MATE_DESCRIPCION"] || r["Descripcion"] || r["Nombre"] || "";
+                        const txt = (sku + " " + nombre).toLowerCase();
+                        const min = Number(r["MATE_STOCK_SEGURIDAD"] || r["STOC_MINIMO"] || r["MINIMO"] || 0);
+
+                        if (search && !txt.includes(search)) return false;
+                        if (hideMinZero && min === 0) return false; // Filter by Min 0
+                        return true;
+                    });
+                    renderStock(filtered);
+                    document.getElementById('count-stock').innerText = `(${filtered.length})`;
+                } else if (currentTab === 'planificador') {
+                    renderCalendar();
+                }
+            }
+
+            function renderStock(data) {
+                const tbody = document.getElementById('body-stock');
+                tbody.innerHTML = '';
+
+                // Calculate En Produccion & Faltante for sorting
+                // We pre-calc to allow easy sorting
+                data.forEach(r => {
+                    const sku = strip(r["STOC_SKU"] || r["MATE_CODIGO"] || r["SKU"] || "");
+                    r._real = Number(r["STOC_CANTIDAD"] || r["CANTIDAD"] || r["Stock"] || 0);
+                    r._min = Number(r["MATE_STOCK_SEGURIDAD"] || r["STOC_MINIMO"] || r["MINIMO"] || 0);
+                    r._faltante = Math.max(0, r._min - r._real);
+
+                    // Calculate En Produccion (Sum of pending qty in Calendar)
+                    r._enProdDetails = [];
+                    r._enProd = calendarEvents.reduce((acc, ev) => {
+                        // Normalize event SKU and status
+                        if (ev.status !== 'done' && strip(ev.sku) === sku) {
+                            r._enProdDetails.push({ date: ev.date, qty: ev.qty });
+                            return acc + Number(ev.qty);
+                        }
+                        return acc;
+                    }, 0);
+                });
+
+                // Sort Logic
+                data.sort((a, b) => {
+                    let valA, valB;
+                    // Col Mapping: 0=SKU, 1=Desc, 2=Real, 3=Min, 4=Faltante, 5=EnProd, 6=Accion
+                    switch (sortState.stock.col) {
+                        case 0: valA = a["STOC_SKU"] || ""; valB = b["STOC_SKU"] || ""; break;
+                        case 1: valA = a["MATE_NOMBRE"] || ""; valB = b["MATE_NOMBRE"] || ""; break;
+                        case 2: valA = a._real; valB = b._real; break;
+                        case 3: valA = a._min; valB = b._min; break;
+                        case 4: valA = a._faltante; valB = b._faltante; break;
+                        case 5: valA = a._factibilidad; valB = b._factibilidad; break; // Fixed Index
+                        case 6: valA = a._enProd; valB = b._enProd; break;     // New Sort Index
+                    }
+
+                    if (valA < valB) return sortState.stock.asc ? -1 : 1;
+                    if (valA > valB) return sortState.stock.asc ? 1 : -1;
+                    return 0;
+                });
+
+                data.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.id = `row-stock-${strip(r["STOC_SKU"] || r["MATE_CODIGO"] || r["SKU"] || "")}`; // Add ID for goToTable
+                    const sku = r["STOC_SKU"] || r["MATE_CODIGO"] || r["SKU"] || "";
+                    const nombre = r["MATE_NOMBRE"] || r["MATE_DESCRIPCION"] || r["Descripcion"] || "";
+
+                    // Styling
+                    if (r._real <= r._min && r._min > 0) tr.classList.add('low-stock');
+
+                    // Group Lookup
+                    let grp = r["GRUPO_ART"] || r["MATE_GRUPO_IDEN"] || "";
+                    if (!grp) {
+                        const art = dataArticulos.find(a => strip(a["MATE_CODIGO"] || "") === strip(sku));
+                        if (art) grp = art["GRMA_DESCRIPCION"] || art["GRUPO_FAMILIA"] || "";
+                    }
+
+                    // Action ID
+                    const inputId = `stock-qty-${sku}`;
+
+                    // Factibilidad (Simplified for now, or based on logic)
+                    // If we don't have this logic yet, just show a placeholder or value.
+                    // Assuming it might come from data or calculation.
+                    let factText = r["FACTIBILIDAD"] || r["Factibilidad"] || "-";
+                    // Convert to checkmark if feasible? Or just show value.
+                    if (r["FACTIBILIDAD"] === 'OK') factText = "✅";
+
+                    tr.innerHTML = `
+                    <td><strong>${sku}</strong></td>
+                    <td>${nombre}</td>
+                    <td style="text-align:center;">${r._real}</td>
+                    <td style="text-align:center;">${r._min}</td>
+                    <td style="text-align:center;" class="low-stock-text">${r._faltante}</td>
+                    
+                    <!-- FACTIBILIDAD COLUMN -->
+                    <td style="text-align:center;">${factText}</td>
+
+                    <!-- ACCION COLUMN -->
+                    <td style="text-align:center;">
+                        <div class="action-group">
+                             <input type="number" id="${inputId}" class="qty-input-sm" value="${r._faltante > 0 ? r._faltante : 1}" min="1" style="width:50px; margin-right:5px;">
+                             <div class="action-btns-col" style="display:inline-flex; flex-direction:column; vertical-align:middle;">
+                                 <button class="btn-icon" onclick="fabricar('${sku}', '${nombre}', '${inputId}', 'STOCK')" title="Fabricar">🔨</button>
+                                 <button class="btn-icon" onclick="scheduleItem('${sku}', '${nombre}', '${inputId}', 'STOCK', '${grp}')" title="Agendar">📅</button>
+                             </div>
+                        </div>
+                    </td>
+
+                    <!-- EN PROD COLUMN (GREY) -->
+                    <td style="text-align:center; background-color:#f9f9f9; color:#666; font-weight:600;">
+                        ${r._enProd > 0
+                            ? `<span title="Ver desglose" style="color:#27ae60; font-weight:bold; cursor:pointer;" onclick="event.stopPropagation(); showEnProdMenuForSku(event, '${strip(sku).replace(/'/g, "\\'")}');">${r._enProd} 📅</span>`
+                            : '-'}
+                    </td>
+                `;
+                    tbody.appendChild(tr);
+                });
+
+                // Summary
+                let totalFaltante = data.reduce((acc, r) => acc + r._faltante, 0);
+                let totalEnProd = data.reduce((acc, r) => acc + r._enProd, 0);
+
+                document.getElementById('summary-stock').innerHTML = `
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <span>🔴 Faltante Total: <strong>${totalFaltante}</strong> u.</span>
+                    <span>🏭 En Producción: <strong>${totalEnProd}</strong> u.</span>
+                </div>`;
+                document.getElementById('summary-stock').style.display = 'block';
+            }
+
+
+            // --- GLOBAL LOADER LOGIC ---
+            function showLoader(msg = "Procesando...") {
+                const l = document.getElementById('global-loader');
+                if (l) {
+                    l.querySelector('.loader-text').innerText = msg;
+                    l.style.display = 'flex';
+                }
+            }
+
+            function hideLoader() {
+                const l = document.getElementById('global-loader');
+                if (l) l.style.display = 'none';
+            }
+
+            /* CALENDAR LOGIC */
+            // Load events
+            try {
+                const saved = localStorage.getItem('tmc_calendar_events');
+                if (saved) calendarEvents = JSON.parse(saved);
+            } catch (e) { console.error("Error loading calendar", e); }
+
+
+            // Global State for Filters
+            let calendarGroupFilters = {}; // { 'NAME': true/false }
+            let isFilterInit = false;
+
+            function toggleGroupFilter(name) {
+                if (name === 'ALL') {
+                    // Toggle All
+                    const allSelected = Object.values(calendarGroupFilters).every(v => v);
+                    for (let k in calendarGroupFilters) calendarGroupFilters[k] = !allSelected;
+                } else {
+                    if (calendarGroupFilters[name] === undefined) return;
+                    calendarGroupFilters[name] = !calendarGroupFilters[name];
+                }
+                renderCalendar();
+            }
+
+            function changeMonth(delta) {
+                currentMonth.setMonth(currentMonth.getMonth() + delta);
+                renderCalendar();
+            }
+
+            function jumpToDate() {
+                const m = document.getElementById('cal-select-month').value;
+                const y = document.getElementById('cal-select-year').value;
+                currentMonth.setMonth(parseInt(m));
+                currentMonth.setFullYear(parseInt(y));
+                renderCalendar();
+            }
+
+            // Bind explicitly to avoid HTMLEventHandler madness if needed, or stick to onchange property if cleaner.
+            // Actually, we removed onchange from HTML, so we must add listeners or check if attached.
+            // Better: Attach once. But renderCalendar might destroy/recreated selects? 
+            // No, selects are static in HTML row 1113. They are just populated.
+            // So we attach listener ONCE or check if attached.
+            document.addEventListener('DOMContentLoaded', () => {
+                const sm = document.getElementById('cal-select-month');
+                const sy = document.getElementById('cal-select-year');
+                if (sm) sm.addEventListener('change', jumpToDate);
+                if (sy) sy.addEventListener('change', jumpToDate);
+
+                // --- MOUSE WHEEL NAVIGATION ---
+                const calContent = document.getElementById('calendarContent');
+                if (calContent) {
+                    let lastWheel = 0;
+                    calContent.addEventListener('wheel', (e) => {
+                        // Only if planificador is active
+                        if (currentTab !== 'planificador') return;
+
+                        e.preventDefault();
+                        const now = Date.now();
+                        if (now - lastWheel < 300) return; // Throttle
+
+                        if (e.deltaY > 0) changeMonth(1);
+                        else changeMonth(-1);
+
+                        lastWheel = now;
+                    }, { passive: false });
+                }
+            });
+
+            function goToToday() {
+                currentMonth = new Date();
+                renderCalendar();
+            }
+
+            function renderCalendar() {
+                const container = document.getElementById('calendarContent');
+                const year = currentMonth.getFullYear();
+                const month = currentMonth.getMonth(); // 0-indexed
+                const today = new Date();
+                const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+                // --- 1. CENTERED NAVIGATION ---
+                // We'll rewrite the header part if it exists, or just ensure the container has it. 
+                // In this app, the header is inside 'view-planificador' but outside 'calendarContent' in the HTML logic? 
+                // Actually 'calendarContent' is just the grid. The nav is above it in HTML line ~940.
+                // Let's UPDATE the Nav HTML via JS to be safe and dynamic, OR we assume the CSS fixes it.
+                // User requested "Center Navigation".
+                const navContainer = document.querySelector('.calendar-nav');
+                if (navContainer) {
+                    navContainer.style.justifyContent = 'center';
+                    navContainer.style.gap = '20px';
+                }
+
+                // Header Update (Google Style Text)
+                const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                const monthName = monthNames[month];
+
+                const txt = document.getElementById('cal-month-year');
+                if (txt) txt.innerText = `${monthName} ${year}`;
+                // Removed legacy Select population
+
+                // --- 2. PREPARE COLORS & FILTERS ---
+                let colorMap = {};
+                const defaultColor = '#95a5a6';
+                const palette = ['#3498db', '#e67e22', '#27ae60', '#9b59b6', '#f1c40f', '#e74c3c', '#1abc9c', '#34495e'];
+
+                let availableGroups = [];
+
+                if (dataGrupos && dataGrupos.length > 0) {
+                    availableGroups = dataGrupos.map(g => (g["GRMA_DESCRIPCION"] || g["Name"] || "").toUpperCase()).filter(n => n);
+                } else {
+                    availableGroups = ['CARRO', 'BAGUETERO', 'BANDEJA', 'MOLDE'];
+                }
+
+                availableGroups.forEach((gName, idx) => {
+                    const color = palette[idx % palette.length];
+                    colorMap[gName] = color;
+                    const shortKey = gName.split(' ')[0];
+                    if (shortKey) colorMap[shortKey] = color;
+                });
+
+                if (!isFilterInit || Object.keys(calendarGroupFilters).length === 0) {
+                    availableGroups.forEach(g => {
+                        if (calendarGroupFilters[g] === undefined) calendarGroupFilters[g] = true;
+                    });
+                    isFilterInit = true;
+                }
+
+                // --- 3. RENDER TOP FILTERS ---
+                // "Show All" / "Ver Todos" Logic
+                const allActive = Object.values(calendarGroupFilters).every(v => v);
+
+                let filterHtml = `<div class="cal-filters-bar" style="max-width:100%; overflow-x:auto; white-space:nowrap; padding-bottom:5px;">`;
+
+                // Ver Todos Button
+                filterHtml += `
+                <div class="filter-chip" 
+                     style="background:${allActive ? '#2c3e50' : '#eee'}; color:${allActive ? 'white' : '#333'}; border:none;" 
+                     onclick="toggleGroupFilter('ALL')">
+                    ${allActive ? '👁️ Ver Todos' : '⭕ Seleccionar Todos'}
+                </div>
+            `;
+
+                availableGroups.forEach(gName => {
+                    const isActive = calendarGroupFilters[gName] !== false;
+                    const color = colorMap[gName] || defaultColor;
+                    // Solid Background Request
+                    const style = isActive
+                        ? `background:${color}; color:white; border:none; box-shadow:0 1px 3px rgba(0,0,0,0.2);`
+                        : `background:#eee; color:#aaa; border:1px solid #ddd; text-decoration:line-through; opacity:0.7;`;
+
+                    filterHtml += `
+                    <div class="filter-chip ${isActive ? 'active' : ''}" 
+                         style="${style}" 
+                         onclick="toggleGroupFilter('${gName}')">
+                        ${gName}
+                    </div>
+                `;
+                });
+                filterHtml += `</div>`;
+
+
+                // Calculate grid
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDayInfo = firstDay.getDay(); // 0=Sun
+
+                // Start Building HTML
+                let html = filterHtml + `<div class="calendar-grid">`;
+                const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                days.forEach(d => html += `<div class="cal-day-header">${d}</div>`);
+
+                // Empty cells before first day
+                for (let i = 0; i < startingDayInfo; i++) {
+                    html += `<div class="cal-day" style="background:#f9f9f9; border:none;"></div>`;
+                }
+
+                // FILTER EVENTS: By Month/Year AND Group AND Search
+                const searchTerm = document.getElementById('planner-search') ? document.getElementById('planner-search').value.toLowerCase().trim() : "";
+
+                const filteredEvents = calendarEvents.filter(e => {
+                    const [e_year, e_month_str] = e.date.split('-');
+                    const e_month = parseInt(e_month_str) - 1;
+
+                    // HIDE FINISHED FILTER
+                    const hideFinished = document.getElementById('hide-finished') ? document.getElementById('hide-finished').checked : true;
+                    if (hideFinished && e.status === 'done') return false;
+
+                    // SEARCH FILTER (Rich Search with Client)
+                    if (searchTerm) {
+                        let clientName = "";
+                        if (e.pedidoId) {
+                            // Linkage logic: ensure dataPedidos exists
+                            if (window.dataPedidos) {
+                                const p = window.dataPedidos.find(p => String(p.NUMERO) === String(e.pedidoId));
+                                if (p) clientName = p.CLIENTE || "";
+                            }
+                        }
+
+                        const searchStr = `${e.sku} ${e.name} ${e.pedidoId || ""} ${e.grupo || ""} ${clientName}`.toLowerCase();
+                        if (!searchStr.includes(searchTerm)) return false;
+                    }
+
+                    // Date Check
+                    if (parseInt(e_year) !== year || e_month !== month) return false;
+
+                    // Group Check
+                    let gName = (e.grupo || "").toUpperCase();
+                    // Find matching filter key
+                    let match = false;
+                    // Try direct match first
+                    if (calendarGroupFilters[gName] !== undefined && calendarGroupFilters[gName]) match = true;
+                    else {
+                        // Try partial match
+                        for (const k in calendarGroupFilters) {
+                            if (gName.includes(k) && calendarGroupFilters[k]) { match = true; break; }
+                        }
+                        // If group not found in filters at all, show it? Or hide? 
+                        // Usually if undefined, we show it, unless we are strict. 
+                        // For now, if no match found in keys, default SHOW to avoid hiding unknown stuff.
+                        // But if it IS in keys and false, hide.
+                        // Simplified: if keys exist, check.
+                    }
+
+                    // Check if the group name matches any ACTIVE key
+                    // Real Logic:
+                    // 1. Determine the canonical group key for this event
+                    let canonicalKey = null;
+                    for (const k of availableGroups) {
+                        if (gName.includes(k)) { canonicalKey = k; break; }
+                    }
+
+                    if (canonicalKey) {
+                        return calendarGroupFilters[canonicalKey] !== false;
+                    }
+                    return true; // Show uncategorized
+                });
+
+                // Days
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+
+                    // Today Check
+                    let todayClass = (isCurrentMonth && i === today.getDate()) ? "is-today" : "";
+                    let todayDot = (todayClass) ? `<div class="today-dot" title="Hoy"></div>` : "";
+
+                    // Filter events for this day
+                    const dayEvents = filteredEvents.filter(e => e.date === dateKey);
+
+                    let evHtml = '';
+                    dayEvents.forEach(ev => {
+                        let gName = (ev.grupo || "").toUpperCase();
+                        let bg = defaultColor;
+                        for (const k in colorMap) {
+                            if (gName.includes(k)) { bg = colorMap[k]; break; }
+                        }
+
+                        // --- STATUS LOGIC ---
+                        let doneStyle = "";
+                        let doneIcon = "";
+                        if (ev.status === 'done') {
+                            doneStyle = "opacity: 0.6; text-decoration: line-through; border: 2px solid #27ae60;";
+                            doneIcon = "✅ ";
+                        }
+
+                        let pedLabel = (ev.pedidoId && ev.pedidoId !== 'STOCK') ? `<span style="font-size:0.8em; color:#fff; background:rgba(0,0,0,0.2); padding:1px 3px; border-radius:3px; margin-left:3px;">#${ev.pedidoId}</span>` : "";
+
+                        // --- TOOLTIP DETAIL LOOKUP ---
+                        let tooltip = `${ev.name} | Grupo: ${ev.grupo}`;
+                        if (ev.pedidoId && ev.pedidoId !== 'STOCK') {
+                            // Find pedido details
+                            const pedInfo = dataPedidos.find(p => String(p["NUMERO"]) === String(ev.pedidoId));
+                            if (pedInfo) {
+                                const pedDate = pedInfo["FECHA_PEDI"] ? new Date(pedInfo["FECHA_PEDI"]).toLocaleDateString() : "?";
+                                tooltip += `\n📦 Pedido #${ev.pedidoId}\n👤 Cliente: ${pedInfo["CLIENTE"] || "N/A"}\n📅 Fecha Pedido: ${pedDate}`;
+                            } else {
+                                tooltip += `\n📦 Pedido #${ev.pedidoId} (Datos no cargados)`;
+                            }
+                        } else {
+                            tooltip += `\n💿 Origen: Stock / Manual`;
+                        }
+
+                        evHtml += `
+                    <div class="cal-event" draggable="true" ondragstart="drag(event)" id="${ev.id}" 
+                         onclick="openEventActions(event, '${ev.id}')"
+                         style="cursor:pointer; ${doneStyle}"
+                         title="${tooltip}">
+                        <span class="event-dot" style="background-color:${bg}"></span>
+                        ${doneIcon}<strong>${ev.sku}</strong> <span>(${ev.qty})</span> ${pedLabel}
+                    </div>`;
+                    });
+
+                    // Note Logic
+                    let noteHtml = "";
+                    if (calendarNotes && calendarNotes[dateKey]) {
+                        const notes = Array.isArray(calendarNotes[dateKey]) ? calendarNotes[dateKey] : [{ id: 0, text: calendarNotes[dateKey] }];
+
+                        if (notes.length > 0) {
+                            noteHtml = `<div style="display:flex; gap:2px; margin-left:5px;">`;
+                            notes.forEach(n => {
+                                noteHtml += `<span onclick="addNotePrompt('${dateKey}', ${n.id}); event.stopPropagation();" title="${n.text.replace(/"/g, '&quot;')}" style="cursor:pointer; font-size:1.2em;">📝</span>`;
+                            });
+                            noteHtml += `</div>`;
+                        }
+                    }
+
+                    html += `
+                <div class="cal-day ${todayClass}" ondrop="drop(event)" ondragover="allowDrop(event)" data-date="${dateKey}" style="min-height:80px; position:relative;">
+                    ${todayDot}
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <div style="display:flex; align-items:center;">
+                            <span style="font-weight:bold; color:var(--text-color);">${i}</span>
+                            ${noteHtml}
+                        </div>
+                        <button class="btn-icon cal-add-btn" title="Agendar Manualmente" style="font-size:0.8em; padding:2px 6px; background:#f1f5f9; border-radius:4px; border:1px solid #ddd; cursor:pointer;">➕</button>
+                    </div>
+                    <div class="cal-events">${evHtml}</div>
+                </div>`;
+                }
+                html += `</div>`;
+                container.innerHTML = html;
+            }
+
+            // --- NEW: PARTIAL PRODUCTION LOGIC ---
+            async function fabricarFromCalendar(id) {
+                const ev = calendarEvents.find(e => e.id == id);
+                if (!ev) return;
+
+                if (ev.status === 'done') {
+                    if (!await appConfirm("Este item ya figura como TERMINADO.\n¿Deseas fabricarlo nuevamente?")) return;
+                }
+
+                // Create temp input for fabricar() to read
+                const tmpId = 'tmp-qty-' + ev.id;
+                const tmpInput = document.createElement('input');
+                tmpInput.id = tmpId;
+                tmpInput.value = ev.qty;
+                tmpInput.type = 'hidden';
+                document.body.appendChild(tmpInput);
+
+                try {
+                    let source = ev.pedidoId && ev.pedidoId !== 'STOCK' ? ev.pedidoId : 'CALENDARIO';
+                    const resultQty = await fabricar(ev.sku, ev.name, tmpId, source);
+
+                    if (resultQty !== false && resultQty !== null) {
+                        const produced = Number(resultQty);
+                        const originalQty = Number(ev.qty);
+
+                        if (produced < originalQty && ev.status !== 'done') {
+                            // PARTIAL: Split event
+                            const doneEvent = { ...ev, id: Date.now(), qty: produced, status: 'done' };
+                            calendarEvents.push(doneEvent);
+                            ev.qty = originalQty - produced;
+                            await appAlert(`✅ Producción Parcial Registrada.\nSe creó un evento terminado por ${produced} u.\nQuedan ${ev.qty} u. pendientes.`);
+
+                        } else {
+                            // FULL or EXTRA
+                            if (produced > originalQty) ev.qty = produced;
+                            ev.status = 'done';
+                        }
+
+                        saveCalendar();
+                        renderCalendar();
+                    }
+                } finally {
+                    if (document.body.contains(tmpInput)) document.body.removeChild(tmpInput);
+                }
+            }
+
+            // --- Drag & Drop ---
+            function allowDrop(ev) { ev.preventDefault(); }
+            function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+            function drop(ev) {
+                ev.preventDefault();
+                const data = ev.dataTransfer.getData("text");
+                // Find drop target date
+                let target = ev.target;
+                while (!target.dataset.date && target.className !== 'cal-day') {
+                    target = target.parentNode;
+                }
+                const date = target.dataset.date;
+
+                if (date) {
+                    // Update Event Date
+                    const evIndex = calendarEvents.findIndex(e => e.id == data);
+                    if (evIndex >= 0) {
+                        calendarEvents[evIndex].date = date;
+                        saveCalendar();
+                        renderCalendar();
+                    }
+                }
+            }
+
+            function saveCalendar() {
+                localStorage.setItem('tmc_calendar_events', JSON.stringify(calendarEvents));
+            }
+
+            async function confirmScheduleModal(sku, nombre, qty, today) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                return new Promise(resolve => {
+                    const content = `
+                <div style="margin-bottom:10px;">
+                    <div style="font-weight:bold; color:var(--primary-color); font-size:1.1em;">${nombre}</div>
+                    <div style="color:#666; font-size:0.9em;">SKU: ${sku}</div>
+                </div>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px;">
+                    <div>
+                        <label>Fecha:</label>
+                        <input type="date" id="modal-sched-date" class="modal-input" value="${today}" min="${todayStr}">
+                    </div>
+                    <div>
+                        <label>Cant:</label>
+                        <input type="number" id="modal-sched-qty" class="modal-input" value="${qty}" min="1">
+                    </div>
+                </div>
+                `;
+
+                    showModal({
+                        title: '📅 Agendar Producción',
+                        content: content,
+                        actions: [
+                            { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(null) },
+                            {
+                                text: 'Agendar', class: 'btn-produce', style: 'background-color:#8e44ad', onClick: () => {
+                                    const dateVal = document.getElementById('modal-sched-date').value;
+                                    const qtyVal = document.getElementById('modal-sched-qty').value;
+                                    if (!dateVal || !qtyVal) return;
+
+                                    // Validation
+                                    if (new Date(dateVal) < new Date(todayStr)) {
+                                        alert("⚠️ No puedes programar para el pasado.");
+                                        return;
+                                    }
+
+                                    resolve({ date: dateVal, qty: Number(qtyVal) });
+                                }, close: true
+                            }
+                        ]
+                    });
+                });
+            }
+
+            async function scheduleItem(sku, nombre, inputId, pedidoId = null, grupo = "") {
+                const qtyInput = document.getElementById(inputId);
+                let qty = 1;
+                if (qtyInput) qty = Number(qtyInput.value) || 1;
+
+                const today = new Date().toISOString().split('T')[0];
+
+                // NEW: Block Double Scheduling
+                if (pedidoId && pedidoId !== 'STOCK') {
+                    const existing = calendarEvents.find(e => String(e.pedidoId) === String(pedidoId));
+                    if (existing) {
+                        appAlert(`⚠️ El pedido <b>#${pedidoId}</b> ya está agendado para el ${formatDate(existing.date)}.`);
+                        return;
+                    }
+                }
+
+                // New Custom Modal
+                const result = await confirmScheduleModal(sku, nombre, qty, today);
+
+                if (!result) return; // Cancelled
+
+                // Add Event
+                const newEvent = {
+                    id: Date.now(),
+                    sku: sku,
+                    name: nombre,
+                    qty: result.qty,
+                    date: result.date,
+                    pedidoId: pedidoId,
+                    grupo: grupo
+                };
+                calendarEvents.push(newEvent);
+                saveCalendar();
+
+                // Notify and Switch Tab
+                // Friendly Date Format & Custom Alert Title
+                const [y, m, d] = result.date.split('-');
+                const friendlyDate = `${d}-${m}-${y}`;
+
+                await new Promise(resolve => {
+                    showModal({
+                        title: "✅ Producción Agendada",
+                        content: `<div style='text-align:center; font-size:1.1em;'>El item <strong>${nombre}</strong> se agendó para el <strong>${friendlyDate}</strong>.<br><br><span style="font-size:1.2em; color:#27ae60;">Cantidad: <strong>${result.qty} u.</strong></span></div>`,
+                        actions: [{ text: "Aceptar", class: "btn-primary", style: "background:#27ae60; color:white;", onClick: resolve, close: true }]
+                    });
+                });
+
+                // Go there!
+                goToCalendarDate(result.date, newEvent.id);
+            }
+
+            // --- Event Action Menu Upgrade ---
+            function openEventActions(e, eventId) {
+                e.stopPropagation(); // Prevent propagation
+                const menu = document.getElementById('context-menu');
+                const ev = calendarEvents.find(ev => ev.id == eventId);
+
+                if (!ev) return;
+
+                menu.innerHTML = `
+                <div class="ctx-item" onclick="fabricarFromCalendar(${eventId})">🔨 Fabricar (Alta Prod)</div>
+                <div class="ctx-item" onclick="reprogramEvent('${eventId}'); closeDayMenu();">✏️ Reprogramar</div>
+                ${ev.pedidoId && ev.pedidoId !== 'STOCK' ? `<div class="ctx-item" onclick="goToTable('pedido', '${ev.pedidoId}'); closeDayMenu();">🔍 Ir a Tabla Pedidos</div>` : ''}
+                ${(!ev.pedidoId || ev.pedidoId === 'STOCK') ? `<div class="ctx-item" onclick="goToTable('stock', '${strip(ev.sku)}'); closeDayMenu();">🔍 Ir a Tabla Stock</div>` : ''}
+                <div class="ctx-item ctx-danger" onclick="deleteEvent(${eventId})">🗑️ Eliminar</div>
+            `;
+
+                menu.style.display = 'block';
+                menu.style.left = e.pageX + 'px';
+                menu.style.top = e.pageY + 'px';
+            }
+
+            document.addEventListener('click', () => {
+                const m = document.getElementById('context-menu');
+                if (m) m.style.display = 'none';
+            });
+
+            async function deleteEvent(id) {
+                // CUSTOM DELETE MODAL
+                return new Promise(resolve => {
+                    showModal({
+                        title: '🗑️ Confirmar Eliminación',
+                        content: `
+                        <div style="text-align:center; padding:10px;">
+                            <div style="font-size:3em; margin-bottom:10px;">🗑️</div>
+                            <div style="font-size:1.1em; color:#e74c3c; font-weight:bold;">¿Desea eliminar del calendario este evento?</div>
+                            <div style="color:#666; margin-top:5px; font-size:0.9em;">Esta acción no se puede deshacer.</div>
+                        </div>
+                    `,
+                        actions: [
+                            { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(false) },
+                            {
+                                text: 'Eliminar', class: 'btn-produce', style: 'background:#e74c3c;', onClick: () => {
+                                    // Action
+                                    calendarEvents = calendarEvents.filter(e => e.id != id);
+                                    saveCalendar();
+                                    renderCalendar();
+                                    resolve(true);
+                                }, close: true
+                            }
+                        ]
+                    });
+                });
+            }
+
+
+
+            // --- PEDIDOS RENDERING & LOGIC ---
+
+            // AUTO-REFRESH PEDIDOS (5 Minutes)
+            setInterval(() => {
+                loadPedidos(true);
+            }, 300000); // 300,000 ms = 5 mins
+
+            async function loadPedidos(silent = false) {
+                const btn = document.querySelector('button[onclick="loadPedidos()"]');
+                let originalText = "";
+                if (btn) {
+                    originalText = btn.innerHTML;
+                    btn.disabled = true;
+                    if (!silent) btn.innerHTML = "⏳ Cargando...";
+                }
+
+                try {
+                    const res = await fetchAll(CONFIG.ENTITY_PEDIDOS, CONFIG.SMARTIE_PEDIDOS);
+                    dataPedidos = res;
+
+                    // Update Timestamp
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const timeLabel = document.getElementById('pedidos-last-update');
+                    if (timeLabel) timeLabel.innerText = `Act: ${timeStr}`;
+
+                    applyFilters();
+                    updateDebugFooter();
+                    if (!silent && btn) appAlert("✅ Pedidos actualizados");
+                } catch (e) {
+                    console.error("Refrescar Pedidos Error", e);
+                } finally {
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                }
+            }
+
+            function renderPedidos(data) {
+                const tbody = document.getElementById('body-pedidos');
+                tbody.innerHTML = '';
+
+                // FILTERS: Check Radio Status
+                const radio = document.querySelector('input[name="filter-ped-status"]:checked');
+                const statusFilter = radio ? radio.value : 'all';
+
+                // Sort logic (Keep existing or simplified)
+                data.sort((a, b) => {
+                    let valA, valB;
+                    switch (sortState.pedidos.col) {
+                        case 0: valA = new Date(a["FECHA_PEDI"] || 0); valB = new Date(b["FECHA_PEDI"] || 0); break;
+                        case 1: valA = Number(a["NUMERO"] || 0); valB = Number(b["NUMERO"] || 0); break;
+                        case 2: valA = a["CLIENTE"]; valB = b["CLIENTE"]; break;
+                        case 3: valA = a["SKU"]; valB = b["SKU"]; break;
+                        case 4: valA = Number(a["CANT_A_ENTREGAR"] || 0); valB = Number(b["CANT_A_ENTREGAR"] || 0); break;
+                        case 8: // Status (Scheduled/Not)
+                            valA = calendarEvents.some(e => String(e.pedidoId) === String(b["NUMERO"] || "")) ? 1 : 0;
+                            valB = calendarEvents.some(e => String(e.pedidoId) === String(a["NUMERO"] || "")) ? 1 : 0;
+                            break;
+                    }
+                    if (valA < valB) return sortState.pedidos.asc ? -1 : 1;
+                    if (valA > valB) return sortState.pedidos.asc ? 1 : -1;
+                    return 0;
+                });
+
+                // 1. Group Duplicates (Same ID + SKU + Text)
+                const groupedData = [];
+                const map = new Map();
+
+                data.forEach(r => {
+                    const pedidoId = r["NUMERO"] || "";
+                    const sku = r["SKU"] || "";
+                    const texto = (r["TEXTO_ADICIONAL"] || "").trim(); // Use text as part of key if unique
+                    const key = `${pedidoId}|${sku}|${texto}`;
+
+                    if (map.has(key)) {
+                        const existing = map.get(key);
+                        // Sum Quantity
+                        existing["CANT_A_ENTREGAR"] = Number(existing["CANT_A_ENTREGAR"] || 0) + Number(r["CANT_A_ENTREGAR"] || 0);
+                    } else {
+                        // Clone to avoid mutating original for sort
+                        const clone = { ...r };
+                        clone["CANT_A_ENTREGAR"] = Number(r["CANT_A_ENTREGAR"] || 0);
+                        map.set(key, clone);
+                        groupedData.push(clone);
+                    }
+                });
+
+                // Count valid items after status filter
+                let visibleCount = 0;
+
+                groupedData.forEach(r => {
+                    const pedidoId = r["NUMERO"] || "";
+                    const skuCarro = r["SKU"] || "";
+
+                    // CHECK SCHEDULED STATUS
+                    // Match if calendarEvents has matched pedidoId
+                    const scheduledEvent = calendarEvents.find(e => String(e.pedidoId) === String(pedidoId));
+                    const isScheduled = !!scheduledEvent;
+
+                    // Apply Filter
+                    if (statusFilter === 'pending' && isScheduled) return;
+                    if (statusFilter === 'scheduled' && !isScheduled) return;
+
+                    visibleCount++;
+
+                    const tr = document.createElement('tr');
+                    tr.id = `row-pedido-${pedidoId}`; // Add ID for goToTable
+                    if (isScheduled) tr.style.background = "#e8f5e9"; // Light Green for scheduled
+
+                    let fecha = r["FECHA_PEDI"] ? new Date(r["FECHA_PEDI"]).toLocaleDateString() : "-";
+
+                    // Group Name Lookup
+                    let grupoName = r["GRUPO_ART"] || "";
+                    if (!grupoName) {
+                        const art = dataArticulos.find(a => strip(a["MATE_CODIGO"] || "") === strip(skuCarro));
+                        if (art) grupoName = art["GRMA_DESCRIPCION"] || "";
+                    }
+
+                    // BOM Logic (Simplified rendering for clarity)
+                    let components = getBOMComponents(skuCarro);
+                    let bomIndicator = "";
+                    let bomHtml = '';
+
+                    if (components.length > 0) {
+                        // BOM INDICATOR
+                        bomIndicator = `<span title="Tiene Componentes (BOM)" style="cursor:help; font-size:1.2em;">🧩</span>`; // Puzzle piece or similar
+
+                        bomHtml = '<ul class="bom-list">';
+                        components.forEach(comp => {
+                            let reqQty = Number(r["CANT_A_ENTREGAR"] || 0) * (comp.cantidad || 1);
+                            let inputId = `qty-${pedidoId}-${comp.sku}`;
+                            bomHtml += `
+                        <li class="bom-item">
+                            <div class="bom-details">
+                                <span class="bom-sku-tag">${comp.sku}</span>
+                                <span style="font-size:0.8em">x${reqQty}</span>
+                            </div>
+                            <div class="action-btns-col">
+                                <button class="btn-icon" onclick="fabricar('${comp.sku}', '${comp.nombre}', '${inputId}', '${pedidoId}')" title="Fabricar">🔨</button>
+                                <button class="btn-icon" onclick="scheduleItem('${comp.sku}', '${comp.nombre}', '${inputId}', '${pedidoId}', '${grupoName}')" title="Agendar">📅</button>
+                            </div>
+                            <input type="hidden" id="${inputId}" value="${reqQty}"> 
+                        </li>`;
+                        });
+                        bomHtml += '</ul>';
+                    } else {
+                        // Item itself
+                        let inputId = `qty-prod-${pedidoId}-${skuCarro}`;
+                        bomHtml = `
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="hidden" id="${inputId}" value="${r["CANT_A_ENTREGAR"] || 1}">
+                        <button class="btn-icon" onclick="fabricar('${skuCarro}', '${r["PRODUCTO"]}', '${inputId}', '${pedidoId}')" title="Fabricar">🔨</button>
+                        <button class="btn-icon" onclick="scheduleItem('${skuCarro}', '${r["PRODUCTO"]}', '${inputId}', '${pedidoId}', '${grupoName}')" title="Agendar">📅</button>
+                    </div>`;
+                    }
+
+                    // Scheduled Icon (Click to Navigate)
+                    // Scheduled Icon
+                    let statusIcon = '<span title="No Agendado">⚠️</span>';
+                    if (isScheduled && scheduledEvent) {
+                        if (isScheduled) {
+                            statusIcon = `<span style="cursor:pointer;" onclick="openStatusMenu(event, '${scheduledEvent.date}', '${scheduledEvent.id}')">📅</span>`;
+                            // ADDED: Date display next to icon
+                            statusIcon += `<span style="font-size:0.8em; color:#666; margin-left:4px; font-weight:bold;">${formatDate(scheduledEvent.date)}</span>`;
+                        }
+                    }
+
+                    let numDisplay = `<b>#${pedidoId}</b>`;
+                    // REMOVED REDUNDANT EMOJI HERE
+
+                    const map = {
+                        'numero': numDisplay,
+                        'fecha': fecha,
+                        'cliente': r["CLIENTE"] || "",
+                        'sku_art': `<span style="color:var(--primary-color); font-weight:600;">${skuCarro}</span>`,
+                        'nombre_art': `<div>${r["PRODUCTO"] || ""}</div><div style="font-size:0.85em; color:#999;">${r["TEXTO_ADICIONAL"] || ""}</div>`,
+                        'grupo': grupoName,
+                        'cantidad': `<b style="font-size:1.1em;">${r["CANT_A_ENTREGAR"] || 0}</b>`,
+                        'bom': `<div>${bomIndicator}</div>${bomHtml}`,
+                        'status': statusIcon
+                    };
+
+                    let rowHtml = '';
+                    COLUMNS_PEDIDOS.forEach(col => {
+                        if (col.visible) rowHtml += `<td>${map[col.id]}</td>`;
+                    });
+                    tr.innerHTML = rowHtml;
+                    tbody.appendChild(tr);
+                });
+
+                document.getElementById('count-pedidos').innerText = `(${visibleCount})`;
+                document.getElementById('summary-pedidos').innerHTML = `🔴 Solicitudes Visibles: <strong>${visibleCount}</strong>`;
+                document.getElementById('summary-pedidos').style.display = 'block';
+            }
+
+            // New Action Function
+            // --- PRODUCTION LOGIC ---
+
+            function strip(s) { return String(s ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim(); }
+
+            async function apiPost(url, body) {
+                await checkAuth();
+                let r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(body || {}) });
+                if (r.status === 401) { await loginYiQi(); r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(body || {}) }); }
+                if (!r.ok) throw new Error(`API Error ${r.status} `);
+                return r.json();
+            }
+
+            async function postAltaProduccion({ grupoId, mateId, qty, obsText }) {
+                if (!Number.isInteger(qty) || qty <= 0) throw new Error("Cantidad inválida");
+                if (!mateId) throw new Error("ID de Artículo no encontrado (MATE_ID)");
+                if (!grupoId) throw new Error("ID de Grupo no encontrado");
+
+                // Form IDs based on C- ALTAS... definition (12369=Group, 12370=Mate, 12371=Qty, 12372=Obs)
+                const formString = `12369 = ${grupoId}& 12370=${mateId}& 12371=${qty}& 12377=& 12372=${encodeURIComponent(obsText || "")} `;
+
+                const body = {
+                    schemaId: CONFIG.SCHEMA_ID,
+                    form: formString,
+                    uploads: "",
+                    parentId: null,
+                    childId: null,
+                    entityId: String(CONFIG.ALTA_PROD.entityId)
+                };
+
+                let lastErr = null;
+                for (const url of CONFIG.ALTA_PROD.SAVE_URLS) {
+                    try {
+                        const res = await apiPost(url, body);
+                        if (res?.ok || res?.newId) return res; // Accept if valid
+                        lastErr = new Error(res?.error || "Error al guardar");
+                    } catch (e) { lastErr = e; }
+                }
+                throw lastErr || new Error("Fallo al contactar API de Producción");
+            }
+
+            async function confirmProductionModal(sku, name, qty, group, pedidoId) {
+                return new Promise(resolve => {
+                    const content = `
+                <div style="text-align:left; margin-bottom:15px;">
+                    <div style="font-weight:bold; color:var(--primary-color); font-size:1.1em; margin-bottom:5px;">${name}</div>
+                    <div style="font-size:0.9em; color:#666; margin-bottom:10px;">SKU: ${sku}</div>
+                    <div style="background:#f1f5f9; padding:10px; border-radius:6px; font-size:0.95em; border:1px solid #e2e8f0;">
+                        <div style="margin-bottom:4px;">📂 Grupo: <strong>${group}</strong></div>
+                        <div>📄 Pedido: <strong>#${pedidoId || 'N/A'}</strong></div>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <label style="display:block; font-size:0.9em; margin-bottom:5px; font-weight:600;">Cantidad a Fabricar:</label>
+                        <input type="number" id="modal-prod-qty" class="modal-input" value="${qty}" min="1" style="font-size:1.4em; text-align:center; font-weight:bold; padding:12px;">
+                    </div>
+                </div>
+                        `;
+
+                    showModal({
+                        title: '🏭 Confirmar Alta Producción',
+                        content: content,
+                        actions: [
+                            { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(null) },
+                            {
+                                text: '✅ Confirmar Alta', class: 'btn-produce', onClick: () => {
+                                    const val = document.getElementById('modal-prod-qty').value;
+                                    resolve(Number(val));
+                                }, close: true
+                            }
+                        ]
+                    });
+
+                    // Focus and Select all text in input
+                    setTimeout(() => {
+                        const inp = document.getElementById('modal-prod-qty');
+                        if (inp) {
+                            inp.focus();
+                            inp.select();
+                        }
+                    }, 100);
+                });
+            }
+
+            async function fabricar(sku, nombre, inputId, pedidoId) {
+                let qty = 0;
+                // Handle both DOM ID and Direct Value (for Calendar)
+                if (typeof inputId === 'string' && document.getElementById(inputId)) {
+                    qty = Number(document.getElementById(inputId).value);
+                } else if (typeof inputId === 'number') {
+                    qty = inputId; // Direct number passed
+                    inputId = null; // No specific button to toggle
+                } else if (inputId && String(inputId).startsWith('tmp-qty-')) {
+                    // Is temp input
+                    qty = Number(document.getElementById(inputId).value);
+                }
+
+                if (qty <= 0) { await appAlert("La cantidad debe ser mayor a 0"); return; }
+
+                // 1. Find Data (Improved matching)
+                const art = dataArticulos.find(a => strip(a["MATE_CODIGO"] || "") === strip(sku));
+
+                if (!art) {
+                    console.warn("Articulo no encontrado para SKU:", sku);
+                    await appAlert(`❌ Error: No se encontró el artículo con SKU "${sku}" en la base maestra(Smartie 2670).\nNo se puede fabricar.`);
+                    return;
+                }
+
+                // Direct ID Usage per user request
+                // Try multiple possible keys for Group ID based on common YiQi patterns
+                const mateId = art["ID"] || art["MATE_ID"] || art["id"];
+                let grupoId = art["MATE_GRUPO_IDEN"] || art["GRMA_ID"] || art["GRUPO_ID"] || art["GRUPO_IDENTIFICADOR"] || null;
+                const groupName = art["GRMA_DESCRIPCION"] || art["GRUPO_FAMILIA"] || "";
+
+                // Fallback: If no direct ID, try to find by Name in dataGrupos
+                if (!grupoId && groupName) {
+                    const match = dataGrupos.find(g => {
+                        const gName = g["GRMA_DESCRIPCION"] || g["GRUPO"] || g["Name"] || "";
+                        return strip(gName) === strip(groupName);
+                    });
+                    if (match) grupoId = match["ID"] || match["GRMA_ID"] || match["id"];
+                }
+
+                if (!mateId) { await appAlert("❌ Error interno: Artículo sin ID (MATE_ID)."); return; }
+
+                // Validation: Group is mandatory for Production
+                if (!grupoId) {
+                    console.warn("Grupo no encontrado para:", groupName, "Keys disponibles:", Object.keys(art));
+                    await appAlert(`❌ Error Crítico: El artículo "${sku}" no tiene GRUPO asignado en YiQi.\nKeys encontrados: ${Object.keys(art).join(", ")} \nNombre Grupo: "${groupName}"\n\nEs obligatorio para el Alta de Producción.`);
+                    return;
+                }
+
+                // --- CUSTOM PRODUCTION CONFIRMATION ---
+                // Returns the QUANTITY confirmed by user, or null/false
+                const confirmedQty = await confirmProductionModal(sku, nombre, qty, groupName, pedidoId);
+                if (!confirmedQty || confirmedQty <= 0) return false;
+
+                // 2. Perform Action
+                showLoader("Confirmando alta en YiQi..."); // NEW: Show Loader
+
+                let btn = null;
+                let originalText = "";
+                if (inputId) {
+                    btn = document.querySelector(`button[onclick *= '${inputId}']`);
+                    if (btn) {
+                        originalText = btn.innerHTML;
+                        btn.innerHTML = "⏳";
+                        btn.disabled = true;
+                    }
+                }
+
+                try {
+                    const obs = `PED ${pedidoId} - Desde Tablero Stock`;
+                    // Use the CONFIRMED quantity
+                    const res = await postAltaProduccion({ grupoId: grupoId || 0, mateId, qty: confirmedQty, obsText: obs });
+
+                    await appAlert(`✅ Alta Exitosa!(ID: ${res.newId || "OK"}) \nSe descontaron insumos y sumó stock.`);
+
+                    return confirmedQty; // NEW: Return Quantity for Calendar Logic
+                } catch (e) {
+                    await appAlert("❌ Falló la carga: " + e.message);
+                    console.error(e);
+                    return false; // Failure
+                } finally {
+                    hideLoader(); // NEW: Hide Loader
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                }
+            }
+
+            // Duplicate renderStock removed. Using the one defined above.
+
+            function sortPedidos(n) { if (sortState.pedidos.col === n) sortState.pedidos.asc = !sortState.pedidos.asc; else { sortState.pedidos.col = n; sortState.pedidos.asc = true; } applyFilters(); }
+            function sortStock(n) { if (sortState.stock.col === n) sortState.stock.asc = !sortState.stock.asc; else { sortState.stock.col = n; sortState.stock.asc = true; } applyFilters(); }
+            function showError(msg) { document.getElementById('error').innerText = msg; document.getElementById('error').style.display = 'block'; }
+            document.addEventListener('DOMContentLoaded', () => { refreshData(); switchTab('pedidos'); });
+        </script>
+        <!-- MANUAL ADD MODAL -->
+        <!-- Context Menu -->
+        <div id="context-menu" class="context-menu">
+            <div class="context-menu-item" onclick="initiateManualAddFromMenu()">
+                <span>🏭</span> Programar Producción
+            </div>
+        </div>
+
+        <!-- Manual Add Modal -->
+        <div id="manualAddModal" class="modal-overlay" style="display:none;">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3>Programar Producción</h3>
+                    <span class="modal-close" onclick="closeManualAdd()">×</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="manual-date-target" disabled
+                            style="background:#f1f5f9; width: 100%; border: 1px solid #ddd; padding: 8px; border-radius: 4px; margin-bottom: 10px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Minimarket / Grupo (Escriba para buscar)</label>
+                        <input type="text" id="manual-group-input" list="group-list"
+                            placeholder="Escriba el nombre del grupo..." onchange="manualGroupChanged()"
+                            class="form-control"
+                            style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom: 10px;">
+                        <datalist id="group-list"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Artículo</label>
+                        <select id="manual-sku" disabled
+                            style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom: 10px;">
+                            <option value="">-- Primero seleccione Grupo --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad</label>
+                        <input type="number" id="manual-qty" value="1" min="1"
+                            style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom: 10px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones</label>
+                        <textarea id="manual-obs" rows="3" placeholder="Opcional..."
+                            style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom: 10px;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeManualAdd()">Cancelar</button>
+                    <button class="btn-produce" onclick="confirmManualAdd()">💾 Guardar Item</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // ... (Previous JS) ...
+
+
+
+            // --- NOTES LOGIC ---
+            // --- NOTES LOGIC ---
+            // (Defined in Global State)
+
+            // Load Notes
+            try {
+                const savedNotes = localStorage.getItem('tmc_calendar_notes');
+                if (savedNotes) {
+                    const parsed = JSON.parse(savedNotes);
+                    // Migration: If old format (string), convert to array
+                    for (let key in parsed) {
+                        if (typeof parsed[key] === 'string') {
+                            parsed[key] = [{ id: Date.now(), text: parsed[key] }];
+                        }
+                    }
+                    calendarNotes = parsed;
+                }
+            } catch (e) { console.error("Error loading notes", e); }
+
+            function saveNotes() {
+                localStorage.setItem('tmc_calendar_notes', JSON.stringify(calendarNotes));
+            }
+
+            async function addNotePrompt(date, noteId = null) {
+                // Get existing notes for this date
+                const notes = calendarNotes[date] || [];
+                let currentText = "";
+                let isEdit = false;
+
+                if (noteId) {
+                    const note = notes.find(n => n.id == noteId);
+                    if (note) {
+                        currentText = note.text;
+                        isEdit = true;
+                    }
+                }
+
+                return new Promise(resolve => {
+                    showModal({
+                        title: isEdit ? '✏️ Editar Nota' : '📝 Nueva Nota',
+                        content: `
+                        <div style="margin-bottom:10px;">Nota para el <strong>${formatDate(date)}</strong>:</div>
+                        <textarea id="note-input" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; resize:none;">${currentText}</textarea>
+                    `,
+                        actions: [
+                            {
+                                text: isEdit ? '🗑️ Borrar' : 'Cancelar',
+                                class: 'btn-secondary',
+                                style: isEdit ? 'color:red;' : '',
+                                onClick: () => {
+                                    if (isEdit) {
+                                        // Delete specific note
+                                        calendarNotes[date] = notes.filter(n => n.id != noteId);
+                                        if (calendarNotes[date].length === 0) delete calendarNotes[date];
+                                        saveNotes();
+                                        renderCalendar();
+                                    }
+                                    resolve();
+                                },
+                                close: true
+                            },
+                            {
+                                text: 'Guardar',
+                                class: 'btn-produce',
+                                onClick: () => {
+                                    const val = document.getElementById('note-input').value.trim();
+
+                                    if (val) {
+                                        // Save / Update
+                                        if (!calendarNotes[date]) calendarNotes[date] = [];
+
+                                        if (isEdit) {
+                                            const noteIdx = calendarNotes[date].findIndex(n => n.id == noteId);
+                                            if (noteIdx >= 0) calendarNotes[date][noteIdx].text = val;
+                                        } else {
+                                            calendarNotes[date].push({ id: Date.now(), text: val });
+                                        }
+                                        saveNotes();
+                                        renderCalendar();
+                                    } else if (isEdit) {
+                                        // Empty + Edit = Delete
+                                        calendarNotes[date] = notes.filter(n => n.id != noteId);
+                                        if (calendarNotes[date].length === 0) delete calendarNotes[date];
+                                        saveNotes();
+                                        renderCalendar();
+                                    }
+                                    resolve();
+                                },
+                                close: true
+                            }
+                        ]
+                    });
+
+                    // Focus text area
+                    setTimeout(() => document.getElementById('note-input').focus(), 100);
+                });
+            }
+
+            // --- CONTEXT MENU LOGIC ---
+            let activeDateKey = null;
+
+            function openDayMenu(e, dateKey) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                activeDateKey = dateKey;
+
+                const menu = document.getElementById('context-menu');
+
+                // Build Menu Content
+                menu.innerHTML = `
+                <div class="context-menu-item" onclick="initiateAddNoteFromMenu()">
+                    <span>📝</span> Nota / Observación
+                </div>
+            `;
+
+                menu.style.display = 'block';
+                menu.style.visibility = 'hidden';
+
+                // Smart Positioning
+                const menuWidth = menu.offsetWidth || 200;
+                const menuHeight = menu.offsetHeight || 100;
+                const screenW = window.innerWidth;
+                const screenH = window.innerHeight;
+
+                let left = e.pageX;
+                let top = e.pageY;
+
+                if (left + menuWidth > screenW - 10) left = left - menuWidth;
+                if (top + menuHeight > screenH - 10) top = top - menuHeight;
+
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+                menu.style.visibility = 'visible';
+            }
+
+            function closeDayMenu() {
+                document.getElementById('context-menu').style.display = 'none';
+            }
+
+            // --- MANUAL ADD DELETED ---
+            function initiateManualAddFromMenu() {
+                // Function removed per user request
+                console.log("Manual trigger disabled");
+            }
+
+            function initiateAddNoteFromMenu() {
+                closeDayMenu();
+                if (activeDateKey) {
+                    addNotePrompt(activeDateKey);
+                }
+            }
+
+            // Close menu on global click
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('#context-menu')) {
+                    closeDayMenu();
+                }
+            });
+
+
+            // --- MANUAL ADD DELETED (Functions Removed) ---
+
+            // --- UPDATE CALENDAR CLICK (RESTORED FOR NOTES) ---
+            document.getElementById('calendarContent').addEventListener('click', function (e) {
+                // Check if clicked specifically on the NEW ADD BUTTON
+                if (e.target.classList.contains('cal-add-btn') || e.target.closest('.cal-add-btn')) {
+                    // Find the parent day element to get the date
+                    const dayEl = e.target.closest('.cal-day');
+                    if (dayEl) {
+                        const dateKey = dayEl.dataset.date;
+                        if (dateKey) openDayMenu(e, dateKey); // Trigger Context Menu behavior
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+
+
+            // --- DRAG NAVIGATION LOGIC ---
+            let lastNavTime = 0;
+            document.addEventListener('dragover', function (e) {
+                e.preventDefault(); // Necessary for drop
+                // Check throttle
+                const now = Date.now();
+                if (now - lastNavTime < 1500) return; // 1.5s throttle
+
+                const edgeThreshold = 80; // px
+                if (e.clientX < edgeThreshold) {
+                    // Nav Prev
+                    changeMonth(-1);
+                    lastNavTime = now;
+                } else if (e.clientX > window.innerWidth - edgeThreshold) {
+                    // Nav Next
+                    changeMonth(1);
+                    lastNavTime = now;
+                }
+            });
+
+            // --- NAVIGATION LOGIC ---
+            function goToCalendarDate(dateStr, eventId = null) {
+                // Robust Date Parsing
+                if (!dateStr) return;
+
+                let y, m, d;
+                // Handle "D/M/YYYY" or "YYYY-MM-DD"
+                if (dateStr.includes('/')) {
+                    [d, m, y] = dateStr.split('/').map(Number);
+                } else {
+                    [y, m, d] = dateStr.split('-').map(Number);
+                }
+
+                // Validate
+                if (!y || !m || !d || y < 2000) {
+                    appAlert(`⚠️ Fecha inválida: ${dateStr}`);
+                    return;
+                }
+
+                // Switch Tab
+                switchTab('planificador');
+
+                // FORCE MONTH SWITCH LOGIC (Deep Fix)
+                const targetDate = new Date(y, m - 1, 1); // Month is 0-indexed
+
+                // Explicitly set global currentMonth
+                currentMonth = targetDate;
+
+                // Ensure selectors update (they listen to currentMonth in renderCalendar)
+                // But we must call renderCalendar to refresh the grid
+                renderCalendar();
+
+                // Scroll to event logic...
+                setTimeout(() => {
+                    if (eventId) {
+                        const el = document.getElementById(eventId);
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'auto', block: 'center' }); // Auto is faster than smooth sometimes
+                            el.classList.add('highlight-pulse');
+                            setTimeout(() => el.classList.remove('highlight-pulse'), 1500);
+                        }
+                    } else {
+                        // Fallback to day highlight
+                        const dayKey = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                        const dayEl = document.querySelector(`.cal-day[data-date="${dayKey}"]`);
+                        if (dayEl) {
+                            dayEl.scrollIntoView({ behavior: 'auto', block: 'center' });
+                            dayEl.classList.add('highlight-pulse');
+                            setTimeout(() => dayEl.classList.remove('highlight-pulse'), 1500);
+                        }
+                    }
+                }, 300); // Increased timeout significantly to allow render
+            }
+
+            // --- REVERSE NAVIGATION ---
+            function goToTable(type, id) {
+                // type: 'pedido' or 'stock'
+                // id: pedidoId or sku
+
+                if (type === 'pedido') {
+                    switchTab('pedidos');
+                    // Ensure filtered? Maybe clear filters?
+                    // For now, assume it's visible.
+                    setTimeout(() => {
+                        const row = document.getElementById(`row-pedido-${id}`);
+                        if (row) {
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            row.classList.add('highlight-pulse');
+                            setTimeout(() => row.classList.remove('highlight-pulse'), 2000);
+                        } else {
+                            appAlert("⚠️ El pedido no es visible en la tabla actual (revise filtros).");
+                        }
+                    }, 300);
+                } else if (type === 'stock') {
+                    switchTab('stock');
+                    setTimeout(() => {
+                        const row = document.getElementById(`row-stock-${id}`);
+                        if (row) {
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            row.classList.add('highlight-pulse');
+                            setTimeout(() => row.classList.remove('highlight-pulse'), 2000);
+                        } else {
+                            appAlert("⚠️ El item no es visible en la tabla de stock.");
+                        }
+                    }, 300);
+                }
+            }
+
+            // --- INTERACTIVE MENUS ---
+
+            async function showEnProdMenuForSku(e, sku) {
+                e.stopPropagation();
+                // Find all pending events for this SKU
+                const events = calendarEvents.filter(e => strip(e.sku) === strip(sku) && e.status !== 'done');
+
+                // Sort Chronologically
+                events.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                if (events.length === 0) {
+                    appAlert("No hay producción pendiente encontrada.");
+                    return;
+                }
+
+                const menu = document.getElementById('context-menu');
+                let html = `<div style="padding:4px; font-weight:bold; background:#eee; font-size:0.8em; text-align:center;">Producción: ${sku}</div>`;
+
+                events.forEach(ev => {
+                    const dateStr = ev.date ? formatDate(ev.date) : "Sin Fecha";
+                    html += `
+                <div class="ctx-item" onclick="goToCalendarDate('${ev.date}', '${ev.id}'); closeDayMenu();">
+                    📅 <strong>${dateStr}</strong> - ${ev.qty} u.
+                </div>`;
+                });
+
+                menu.innerHTML = html;
+                menu.style.display = 'block';
+
+                // Smart Positioning (Relative to click)
+                let left = e.pageX - 150;
+                if (left < 10) left = 10;
+                menu.style.left = left + 'px';
+                menu.style.top = e.pageY + 'px';
+
+                // Close on click outside (handled by global listener)
+            }
+
+            function openStatusMenu(e, date, eventId) {
+                e.stopPropagation();
+                const menu = document.getElementById('context-menu');
+
+                menu.innerHTML = `
+                <div class="ctx-item" onclick="goToCalendarDate('${date}', '${eventId}'); closeDayMenu();">🚀 Ir a Fecha</div>
+                <div class="ctx-item" onclick="reprogramEvent('${eventId}'); closeDayMenu();">✏️ Reprogramar</div>
+            `;
+
+                menu.style.display = 'block';
+                menu.style.left = (e.pageX - 100) + 'px'; // Adjusted to show left of cursor
+                menu.style.top = e.pageY + 'px';
+            }
+
+            async function reprogramEvent(eventId) {
+                const ev = calendarEvents.find(e => String(e.id) === String(eventId));
+                if (!ev) return;
+
+                const newDate = await promptDate(ev.date);
+                if (newDate) {
+                    ev.date = newDate;
+                    saveCalendar();
+                    // Redirect to new date WITHOUT ALERT
+                    goToCalendarDate(newDate, ev.id);
+                    // Notification via console/UI only? Or maybe distinct highlight is enough.
+                    // User explicitly said: "SACALO, PORQUE ME OBSTRUYE ... MOMENTO EN QUE TITILA"
+                }
+            }
+
+            function promptDate(currentDate) {
+                const today = new Date().toISOString().split('T')[0];
+                return new Promise(resolve => {
+                    const content = `
+                <label style="display:block; margin-bottom:10px;">Nueva Fecha:</label>
+                <input type="date" id="reprogram-date" class="modal-input" value="${currentDate}" min="${today}">
+                `;
+                    showModal({
+                        title: '✏️ Reprogramar',
+                        content: content,
+                        actions: [
+                            { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(null), close: true },
+                            {
+                                text: 'Guardar', class: 'btn-primary', onClick: () => {
+                                    const val = document.getElementById('reprogram-date').value;
+                                    // Validation
+                                    if (new Date(val) < new Date(today)) {
+                                        alert("⚠️ No puedes programar para el pasado.");
+                                        return;
+                                    }
+                                    resolve(val);
+                                }, close: true
+                            }
+                        ]
+                    });
+                });
+            }
+        </script>
+</body>
+
+</html>

@@ -1,0 +1,708 @@
+<!-- TMC Armado – v2025-09-08-b -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Armado de Pedidos - TMC</title>
+<style>
+  :root{
+    --bg1:#0e1730; --bg2:#0f1e3d;
+    --card:#121826; --muted:#9aa3af; --text:#f8fafc; --chip:#1f2937;
+    --info:#38bdf8; --ok:#22c55e; --danger:#ef4444; --outline:#2b3a55;
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1) 0,var(--bg2) 100%);color:var(--text)}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid #1f2937;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:16px}
+
+  .head{display:flex;gap:12px;align-items:flex-start;margin-bottom:6px}
+  h1{margin:0;font-size:28px;line-height:1.2}
+  .status{margin-left:auto;padding:6px 12px;border-radius:999px;background:#0b1222;border:1px solid #334155;font-size:12px}
+  .status.ok{background:#11331c;border-color:#14532d;color:#a7f3d0}
+
+  .fila{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .badge{padding:6px 12px;border-radius:999px;background:var(--chip);font-size:13px;border:1px solid transparent}
+  .warn{background:#3b1111;border:1px solid #7f1d1d;color:#fecaca}
+  .btn{border:none;border-radius:12px;color:#fff;padding:12px 16px;font-weight:600;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .btn-info{background:var(--info)} .btn-sec{background:#374151}
+  .btn-ok{background:var(--ok);color:#052e16}
+  .btn-danger{background:var(--danger)}
+  .s-right{margin-left:auto}
+  .inp{background:#0b1222;border:1px solid #1f2937;border-radius:10px;color:#e5e7eb;padding:10px 12px}
+  .inp::placeholder{color:#94a3b8}
+  .inp-search{width:280px}
+
+  .table-wrap{margin-top:12px;overflow-x:visible}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid #1f2937;font-size:14px;vertical-align:top}
+  th{text-align:left;color:#d1d5db;font-weight:600;user-select:none;white-space:nowrap}
+  tr:hover{background:#0e1525}
+  .radio{width:20px;height:20px}
+
+  .expBtn{
+    width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid #60a5fa;background:#0b1222;border-radius:8px;color:#bfe0ff;font-weight:900;
+    font-size:16px; line-height:1;
+  }
+  .expBtn.open{background:#173e87;color:#fff;border-color:#93c5fd}
+
+  .subrow td{background:#0e1525}
+  .subtable{width:100%;border-collapse:collapse;margin:6px 0 0 0}
+  .subtable th,.subtable td{border-bottom:1px dashed #1f2937;padding:6px 8px;font-size:13px}
+
+  .actionbar{position:fixed; left:0; right:0; bottom:0; background:#0f172a; border-top:1px solid #1f2937; padding:10px 0; display:none; z-index:70; box-shadow:0 -6px 22px rgba(0,0,0,.35);}
+  .bar-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;justify-content:center;padding:0 16px}
+  .selinfo{font-size:14px;color:#e5e7eb;margin-right:auto}
+  body.withBar{ padding-bottom:92px }
+
+  .sortable{cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .sort-ico{opacity:.7;font-size:12px}
+  .sort-ico.hidden{opacity:.25;visibility:hidden}
+
+  .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:12px;z-index:80}
+  .panel{width:min(720px,100%);background:#0f172a;border:1px solid #1f2937;border-radius:16px;padding:16px}
+  .panel h3{margin:0 0 8px;font-size:22px}
+
+  .big{font-size:22px;font-weight:900}
+  .bultoRow{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .muted{color:var(--muted);font-size:13px}
+
+  .mc-grid{width:100%;border-collapse:collapse;margin-top:10px}
+  .mc-grid th,.mc-grid td{border-bottom:1px solid #1f2937;padding:8px;font-size:13px}
+  .mc-grid input[type="number"]{width:90px}
+  .mc-hint{color:#fca5a5;font-size:12px;display:none;margin-top:6px}
+  .mc-extra{width:100%;min-height:80px;margin-top:10px}
+  .preview{background:#0b1222;border:1px dashed #334155;border-radius:10px;padding:10px;margin-top:10px;white-space:pre-wrap;color:#d1d5db}
+  /* NEW: invalid visual */
+  .inp.invalid{border-color:#ef4444;outline:1px solid #ef4444}
+
+  @media (max-width:820px){
+    h1{font-size:24px}
+    .inp-search{width:100%}
+    .selinfo{display:none}
+    .panel{width:96%}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="card">
+    <div class="head">
+      <h1>ARMADO DE PEDIDOS - TMC</h1>
+      <div class="status" id="estado">Desconectado</div>
+    </div>
+
+    <div class="fila">
+      <button id="btnRefrescar" class="btn btn-info">Refrescar</button>
+      <div class="s-right"></div>
+      <input id="inpBuscar" class="inp inp-search" autocomplete="off" spellcheck="false" placeholder="Buscar en todas las columnas…"/>
+      <span id="msg" class="badge" style="display:none"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead>
+          <tr id="theadRow">
+            <th style="width:36px"></th>
+            <th style="width:42px"></th>
+            <th><span class="sortable" data-key="pedido">Pedido - Nro <span id="ico-pedido" class="sort-ico hidden">▲</span></span></th>
+            <th><span class="sortable" data-key="cliente">Cliente <span id="ico-cliente" class="sort-ico hidden">▲</span></span></th>
+            <th><span class="sortable" data-key="obs">Observaciones <span id="ico-obs" class="sort-ico hidden">▲</span></span></th>
+            <th><span class="sortable" data-key="tipo">Tipo de logística <span id="ico-tipo" class="sort-ico hidden">▲</span></span></th>
+            <th><span class="sortable" data-key="metodo">Método de envío <span id="ico-metodo" class="sort-ico hidden">▲</span></span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Pie de acciones -->
+<div id="bar" class="actionbar">
+  <div class="bar-inner">
+    <div id="selInfo" class="selinfo">Pedido seleccionado: —</div>
+    <button id="btnQuiebre" class="btn btn-danger" disabled>No encuentro artículos</button>
+    <button id="btnPreparado" class="btn btn-ok" disabled>Rotular pedido</button>
+  </div>
+</div>
+
+<!-- Modal Bultos -->
+<div id="mb" class="modal" aria-hidden="true">
+  <div class="panel">
+    <h3>Pedido preparado</h3>
+    <div class="big" style="margin:6px 0 10px">Ingresá la cantidad de bultos a rotular</div>
+    <div id="bultosList"></div>
+    <div class="muted" style="margin-top:6px">Luego imprimiremos los rótulos.</div>
+    <div class="fila" style="justify-content:flex-end;margin-top:14px">
+      <button id="mbCancel" class="btn btn-sec" type="button">Cancelar</button>
+      <button id="mbOk" class="btn btn-info" type="button">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Quiebre 2 (estructurado por ítems) -->
+<div id="mc" class="modal" aria-hidden="true">
+  <div class="panel">
+    <h3 id="mcTitle">No encuentro artículos</h3>
+    <div id="mcMsg" class="muted"></div>
+
+    <table class="mc-grid" id="mcGrid">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Producto</th>
+          <th>Cant. a entregar</th>
+          <th style="width:120px">Faltan</th>
+        </tr>
+      </thead>
+      <tbody id="mcBody"></tbody>
+    </table>
+
+    <textarea id="mcExtra" class="inp mc-extra" placeholder="Nota adicional (opcional)…"></textarea>
+    <div id="mcHint" class="mc-hint">Indicá al menos una cantidad faltante &gt; 0 y verificá que ningún faltante supere la cantidad pedida.</div>
+
+    <div class="preview" id="mcPreview" style="display:none"></div>
+
+    <div class="fila" style="justify-content:flex-end;margin-top:12px">
+      <button id="mcCancel" class="btn btn-sec" type="button">Cancelar</button>
+      <button id="mcOk" class="btn btn-danger" type="button" disabled>Enviar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================== CONFIG ================== */
+const CONFIG = {
+  USERNAME: "mercadolibre@tmcrespo.com.ar",   // ← completar 
+  PASSWORD: "AdministracionMessi",   // ← completar 
+
+  API_BASE: "https://api.yiqi.com.ar",
+  APP_BASE: "https://me.yiqi.com.ar",
+
+  TOKEN_URLS: [
+    "https://api.yiqi.com.ar/token",
+    "https://api.yiqi.com.ar/connect/token"
+  ],
+  OAUTH: { client_id:"", client_secret:"", scope:"", grant_type:"password" },
+
+  GETLIST_BASE: "https://api.yiqi.com.ar/api/instancesApi/GetList",
+
+  // Smartie Pedidos a preparar
+  ENTITY_ID_PEDIDO: 1231,
+  SCHEMA_ID: 1491,
+  SMARTIE_PEDIDOS: 2584,
+
+  // Entidad de Pedido para comentarios (según tus capturas)
+  ENTITY_ID_PEDIDO_COMMENTS: 828,
+  ADD_COMMENT_URL: "https://api.yiqi.com.ar/api/instancesApi/AddComment",
+
+  // Remito de venta (TODOS los tipos)
+  ENTITY_ID_REMITO: 859,
+  SMARTIE_REMITOS_ALL: 2583,
+
+  SAVE_URL: "https://api.yiqi.com.ar/api/instancesApi/Save",
+
+  // Workflow: Staging Out
+  WORKFLOW_EXEC_URL: "https://api.yiqi.com.ar/api/workflowApi/ExecuteTransition",
+  TRANSITION_ID_PREPARAR: 118991,
+
+  // Quiebre 2 (No encuentro artículos)
+  TRANSITION_ID_QUIEBRE2: 118973,
+
+  // Reporte de Rótulos
+  REPORT_ROTULO_ID: 40,
+
+  // Claves posibles del campo BULTOS
+  BULTOS_FIELD_KEYS: ["6678","REDV_BULTOS","5090"],
+
+  PROXY_ORIGIN: ""
+};
+
+/* =========== Estado/UI helpers =========== */
+let token=null, tokenVenceMs=0;
+let rowsRaw=[];
+let sortBy="pedido", sortDir=1;
+let selectedId=null;
+let searchQuery="";
+let openSet=new Set();
+const pendingBultos=new Map();
+let pendingPedidoForModal=null;
+
+const $estado=document.getElementById("estado");
+const $tbody=document.getElementById("tbody");
+const $msg=document.getElementById("msg");
+const $bar=document.getElementById("bar");
+const $selInfo=document.getElementById("selInfo");
+const $btnPreparado=document.getElementById("btnPreparado");
+const $btnQuiebre=document.getElementById("btnQuiebre");
+const $btnRefrescar=document.getElementById("btnRefrescar");
+const $inpBuscar=document.getElementById("inpBuscar");
+
+/* ======= util keys / normalización ======= */
+function strip(s){return String(s??"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();}
+function normKey(s){ return strip(s).replace(/[-–—−_/.:(),;[\]{}|]/g," ").replace(/\s+/g," ").trim(); }
+function pickExact(row,candidates){ const keys=Object.keys(row||{}); const table=keys.map(k=>({k,n:normKey(k)})); for(const name of candidates){ const nn=normKey(name); const exact=table.find(o=>o.n===nn); if(exact) return row[exact.k]; } for(const name of candidates){ const nn=normKey(name); const end=table.find(o=>o.n.endsWith(" "+nn)); if(end) return row[end.k]; } return undefined; }
+function pick(row,candidates){ const keys=Object.keys(row||{}); for(const tryName of candidates){ const t=normKey(tryName); const hit=keys.find(k=>normKey(k).includes(t)); if(hit) return row[hit]; } return undefined; }
+
+/* Modal bultos */
+const $mb=document.getElementById("mb");
+const $bultosList=document.getElementById("bultosList");
+document.getElementById("mbCancel").onclick=()=>{ pendingPedidoForModal=null; $mb.style.display="none"; };
+document.getElementById("mbOk").onclick=async ()=>{
+  if(!pendingPedidoForModal){ $mb.style.display="none"; return; }
+  $bultosList.querySelectorAll("input[data-ped]").forEach(inp=>{
+    const id = inp.getAttribute("data-ped");
+    const val = Math.max(0, parseInt(inp.value||"0",10));
+    pendingBultos.set(id, val);
+  });
+  const pid = pendingPedidoForModal;
+  pendingPedidoForModal=null;
+  $mb.style.display="none";
+
+  try{
+    notify("Marcando como preparado…");
+    await ejecutarPreparado([pid]); // Staging Out
+    notify("Pedido en Staging Out. Actualizando bultos e imprimiendo…");
+    const cant = pendingBultos.get(String(pid)) ?? 0;
+    await actualizarBultosYRotular(pid, cant);
+    notify("Listo: rótulos abiertos para imprimir.");
+    selectedId=null; updateBar();
+    await cargar();
+  }catch(e){ console.error(e); notify("No se pudo completar el rotulado.","warn"); }
+};
+
+/* ===== Modal Quiebre 2 (estructurado) ===== */
+const $mc=document.getElementById("mc");
+const $mcTitle=document.getElementById("mcTitle");
+const $mcMsg=document.getElementById("mcMsg");
+const $mcGrid=document.getElementById("mcGrid");
+const $mcBody=document.getElementById("mcBody");
+const $mcExtra=document.getElementById("mcExtra");
+const $mcHint=document.getElementById("mcHint");
+const $mcPreview=document.getElementById("mcPreview");
+const $mcOk=document.getElementById("mcOk");
+const $mcCancel=document.getElementById("mcCancel");
+
+/* NEW: preview + validación estricta (no superar pedida) */
+function buildShortagePreview(){
+  const lines=[];
+  let anyInvalid=false;
+  $mcBody.querySelectorAll('tr').forEach(tr=>{
+    const sku=tr.getAttribute('data-sku')||"";
+    const prod=tr.getAttribute('data-prod')||"";
+    const cant=Number(tr.getAttribute('data-cant')||"0")||0;
+    const inp=tr.querySelector('input[type="number"]');
+    let falt=parseInt(inp.value||"0",10); if(isNaN(falt)) falt=0;
+    const invalid = falt<0 || falt>cant;
+    inp.classList.toggle('invalid', invalid);
+    if(falt>0 && !invalid){
+      lines.push(`${sku} - ${prod} — Ped: ${cant} — Falt: ${falt}`);
+    }
+    anyInvalid = anyInvalid || invalid;
+  });
+  const extra=($mcExtra.value||"").trim();
+  let txt="";
+  if(lines.length){ txt = "FALTANTES:\n"+lines.join("\n"); }
+  if(extra){ txt += (txt? "\n\n":"") + extra; }
+  $mcPreview.style.display = txt ? "block" : "none";
+  $mcPreview.textContent = txt;
+  const canSend = (lines.length>0) && !anyInvalid;
+  $mcOk.disabled = !canSend;
+  $mcHint.style.display = canSend ? "none" : "block";
+  return txt;
+}
+
+function openQuiebreStructuredModal(row){
+  return new Promise(res=>{
+    $mcTitle.textContent="No encuentro artículos";
+    $mcMsg.textContent=`Pedido ${row.pedido} – completá los faltantes (no puede superar la cantidad pedida).`;
+    $mcExtra.value="";
+    $mcBody.innerHTML="";
+    $mcPreview.style.display="none";
+    $mcHint.style.display="block";
+    $mcOk.disabled=true;
+
+    const items = row.items||[];
+    if(items.length===0){
+      const tr=document.createElement("tr");
+      const td=document.createElement("td"); td.colSpan=4; td.textContent="No hay ítems para mostrar en este pedido."; td.style.color="#cbd5e1";
+      tr.appendChild(td); $mcBody.appendChild(tr);
+    }else{
+      for(const it of items){
+        const cant = Number(it.cant||0) || 0;
+        const tr=document.createElement("tr");
+        tr.setAttribute("data-sku", it.sku||"-");
+        tr.setAttribute("data-prod", (it.prod||"-") + (it.extra?` — ${it.extra}`:"")); /* NEW: texto adicional al lado del producto */
+        tr.setAttribute("data-cant", String(cant));
+        tr.innerHTML = `
+          <td>${it.sku||"-"}</td>
+          <td>${it.prod||"-"}${it.extra?` <span class="muted">— ${it.extra}</span>`:""}</td>
+          <td>${cant}</td>
+          <td><input type="number" class="inp" min="0" max="${cant}" step="1" value="0"/></td>
+        `;
+        $mcBody.appendChild(tr);
+      }
+    }
+
+    const changeEvents=["input","change","keyup"];
+    const onChange=()=>buildShortagePreview();
+    changeEvents.forEach(ev=> $mcBody.addEventListener(ev, onChange));
+    changeEvents.forEach(ev=> $mcExtra.addEventListener(ev, onChange));
+
+    setTimeout(()=>{ const first=$mcBody.querySelector('input[type="number"]'); if(first) first.focus(); }, 50);
+
+    const onOk=()=>{ const finalText=buildShortagePreview(); cleanup(); res({ok:true, comment:finalText}); };
+    const onCancel=()=>{ cleanup(); res({ok:false, comment:""}); };
+    function cleanup(){
+      $mc.style.display="none";
+      $mcOk.removeEventListener("click",onOk);
+      $mcCancel.removeEventListener("click",onCancel);
+      changeEvents.forEach(ev=> $mcBody.removeEventListener(ev, onChange));
+      changeEvents.forEach(ev=> $mcExtra.removeEventListener(ev, onChange));
+    }
+    $mcOk.addEventListener("click",onOk);
+    $mcCancel.addEventListener("click",onCancel);
+    $mc.style.display="flex";
+  });
+}
+
+/* ======= mappings ======= */
+function objectifyColumnsData(resp){ if(Array.isArray(resp?.columns)&&Array.isArray(resp?.data)){ const cols=resp.columns.map(c=>c?.name??c); return resp.data.map(arr=>{const o={}; cols.forEach((cn,i)=>o[cn]=arr[i]); return o;}); } return null; }
+function getRows(resp){ if(!resp) return []; if(Array.isArray(resp.rows)) return resp.rows; if(Array.isArray(resp.data?.rows)) return resp.data.rows; if(Array.isArray(resp.data)) return resp.data; if(Array.isArray(resp.instances)) return resp.instances; if(Array.isArray(resp.items)) return resp.items; const o=objectifyColumnsData(resp); return Array.isArray(o)?o:[]; }
+
+function getPedidoId(row){
+  let v = row["ID_PEDIDO"] ?? row["ID"] ?? row["id"] ?? row["Identificador"] ?? row["PEDI_ID"];
+  if(v==null) v = pickExact(row,[
+    "PEDI_IDENTIFICADOR","PEDI_IDEN","PEDI_ID_PEDIDO","ID_PEDIDO",
+    "Pedido - Id","Id Pedido","Pedido Id","Identificador Pedido"
+  ]);
+  return (v==null?"":String(v).trim());
+}
+function getPedidoNro(row){ return (row["NUMERO"] ?? row["PEDI_NUMERO"] ?? pickExact(row,["Pedido - Nro","Nro Pedido"]) ?? "").toString().trim(); }
+function getCliente(row){ return (row["CLIENTE"] ?? row["CLIE_RAZON_SOCIAL"] ?? pickExact(row,["Cliente - Razón Social"]) ?? "").toString().trim(); }
+function getObs(row){ return (row["OBSERVACIONES"] ?? pickExact(row,["Pedido - Observaciones"]) ?? "").toString().trim(); }
+function getTipoLog(row){ return (row["TIPO_DE_LOGISTICA"] ?? pickExact(row,["Tipo de logística"]) ?? "").toString().trim(); }
+function getMetodo(row){ return (row["METODO_ENVIO"] ?? pick(row,["Método de envío","Metodo de envio"]) ?? "").toString().trim(); }
+
+/* Ítems */
+function getSKU(row){ return (row["SKU"] ?? "").toString().trim(); }
+function getCantEntregar(row){ return (row["CANT_A_ENTREGAR"] ?? "").toString().trim(); }
+function getProducto(row){ return (row["PRODUCTO"] ?? "").toString().trim(); }
+function getTextoAd(row){ return (row["TEXTO_ADICIONAL"] ?? "").toString().trim(); }
+
+/* Remito */
+function getRemitoId(row){ return (row["ID"] ?? row["id"] ?? row["Identificador"] ?? row["REMITO_ID_REMITO"] ?? "").toString().trim(); }
+function getRemitoPedidoNro(row){ return (row["PEDI_NUMERO"] ?? pickExact(row,["Pedido - Nro"]) ?? "").toString().trim(); }
+
+/* ============ Auth + fetch ============ */
+function prox(url){ return CONFIG.PROXY_ORIGIN ? `${CONFIG.PROXY_ORIGIN}/proxy?url=${encodeURIComponent(url)}` : url; }
+async function loginYiQi(){
+  const payload=new URLSearchParams({
+    username:CONFIG.USERNAME, password:CONFIG.PASSWORD,
+    grant_type: CONFIG.OAUTH?.grant_type || "password",
+    ...(CONFIG.OAUTH?.client_id?{client_id:CONFIG.OAUTH.client_id}:{}),
+    ...(CONFIG.OAUTH?.client_secret?{client_secret:CONFIG.OAUTH.client_secret}:{}),
+    ...(CONFIG.OAUTH?.scope?{scope:CONFIG.OAUTH.scope}:{})
+  });
+  let lastErr=null;
+  for(const url of CONFIG.TOKEN_URLS){
+    try{
+      const r=await fetch(prox(url),{method:"POST",headers:{ "Content-Type":"application/x-www-form-urlencoded" },body:payload});
+      if(!r.ok) throw new Error(`Login ${url} → ${r.status}`);
+      const j=await r.json();
+      token=j.access_token;
+      tokenVenceMs=Date.now()+((j.expires_in?j.expires_in-60:3000)*1000);
+      setEstado("Conectado",true);
+      return;
+    }catch(e){ console.error(e); lastErr=e; }
+  }
+  setEstado("Desconectado",false); notify("No se pudo conectar a YiQi.","warn"); throw lastErr||new Error("Login falló");
+}
+async function ensureToken(){ if(!token || Date.now()>tokenVenceMs) await loginYiQi(); }
+async function apiFetch(url, body){
+  await ensureToken();
+  let r=await fetch(prox(url),{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})});
+  if(r.status===401){ await loginYiQi(); r=await fetch(prox(url),{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})}); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+/* ============ Carga & render ============ */
+async function cargar(){
+  try{
+    notify("Cargando pedidos…"); $tbody.innerHTML="";
+    const prevSel = selectedId;
+
+    const url=`${CONFIG.GETLIST_BASE}?entityId=${CONFIG.ENTITY_ID_PEDIDO}&schemaId=${CONFIG.SCHEMA_ID}&smartieId=${CONFIG.SMARTIE_PEDIDOS}`;
+    const r=await apiFetch(url,{page:1,pageSize:1000});
+    const flat=getRows(r);
+
+    const map=new Map();
+    for(const row of flat){
+      const id=getPedidoId(row);
+      const nro=getPedidoNro(row);
+      if(!nro) continue;
+      if(!map.has(nro)){
+        map.set(nro,{ id, pedido:nro, cliente:getCliente(row), obs:getObs(row), tipo:getTipoLog(row), metodo:getMetodo(row), items:[] });
+      }
+      const it={ sku:getSKU(row), cant:getCantEntregar(row), prod:getProducto(row), extra:getTextoAd(row) };
+      if(it.sku || it.prod) map.get(nro).items.push(it);
+      if(!map.get(nro).id && id) map.get(nro).id=id;
+      if(!map.get(nro).tipo){ map.get(nro).tipo=getTipoLog(row); }
+    }
+    rowsRaw=[...map.values()];
+
+    selectedId = (prevSel && rowsRaw.some(r=>String(r.id)===String(prevSel))) ? prevSel : null;
+
+    render();
+    notify(`Encontramos ${rowsRaw.length} pedido(s).`);
+  }catch(e){ console.error(e); notify("Error consultando YiQi.","warn"); }
+}
+
+function cmpValues(a,b){ const na=Number(a), nb=Number(b); const aNum=!Number.isNaN(na), bNum=!Number.isNaN(nb); if(aNum&&bNum) return na-nb; const sa=strip(a); const sb=strip(b); return sa.localeCompare(sb,"es"); }
+function filtered(){
+  const fq = strip(searchQuery||"").trim();
+  let arr=rowsRaw.filter(r=>{
+    if(!fq) return true;
+    const blob = strip([
+      r.pedido,r.cliente,r.obs,r.tipo,r.metodo,
+      ...(r.items||[]).map(it=>`${it.sku} ${it.prod} ${it.extra}`)
+    ].join(" "));
+    return blob.includes(fq);
+  });
+  if(sortBy){ arr.sort((a,b)=> sortDir * cmpValues(a[sortBy], b[sortBy])); }
+  return arr;
+}
+
+function render(){
+  const arr=filtered();
+  document.querySelectorAll(".sort-ico").forEach(i=>i.classList.add("hidden"));
+  if(sortBy){ const ico=document.getElementById(`ico-${sortBy}`); if(ico){ ico.textContent=sortDir>0?"▲":"▼"; ico.classList.remove("hidden"); } }
+
+  const tb=document.createDocumentFragment();
+
+  for(const r of arr){
+    const tr=document.createElement("tr");
+
+    const tdSel=document.createElement("td");
+    const radio=document.createElement("input"); radio.type="radio"; radio.name="selPedido"; radio.className="radio";
+    radio.checked = (String(selectedId)===String(r.id));
+    radio.onchange=()=>{ selectedId = radio.checked ? r.id : null; updateBar(); };
+    tdSel.appendChild(radio); tr.appendChild(tdSel);
+
+    const tdExp=document.createElement("td");
+    const btn=document.createElement("button");
+    btn.className="expBtn"+(openSet.has(r.pedido)?" open":"");
+    btn.textContent = openSet.has(r.pedido) ? "−" : "+";
+    btn.onclick=(ev)=>{ ev.stopPropagation(); if(openSet.has(r.pedido)) openSet.delete(r.pedido); else openSet.add(r.pedido); render(); };
+    tdExp.appendChild(btn); tr.appendChild(tdExp);
+
+    const tdPed=document.createElement("td"); tdPed.textContent=r.pedido||"-"; tr.appendChild(tdPed);
+    const tdCli=document.createElement("td"); tdCli.textContent=r.cliente||"-"; tr.appendChild(tdCli);
+    const tdObs=document.createElement("td"); tdObs.textContent=r.obs||"-"; tr.appendChild(tdObs);
+    const tdTipo=document.createElement("td"); tdTipo.textContent=r.tipo||"-"; tr.appendChild(tdTipo);
+    const tdMet=document.createElement("td"); tdMet.textContent=r.metodo||"-"; tr.appendChild(tdMet);
+
+    tr.addEventListener("click",(ev)=>{ if(ev.target===btn) return; radio.checked=true; selectedId=r.id; updateBar(); });
+
+    tb.appendChild(tr);
+
+    if(openSet.has(r.pedido)){
+      const trSub=document.createElement("tr"); trSub.className="subrow";
+      const td=document.createElement("td"); td.colSpan=7;
+      const subt=document.createElement("table"); subt.className="subtable";
+      const thead=document.createElement("thead");
+      thead.innerHTML=`<tr>
+        <th style="width:140px">SKU</th>
+        <th style="width:140px">Cant. a entregar</th>
+        <th>Producto</th>
+        <th>Texto adicional</th>
+      </tr>`;
+      subt.appendChild(thead);
+      const tbdy=document.createElement("tbody");
+      const items = r.items && r.items.length ? r.items : [];
+      if(items.length===0){
+        const rr=document.createElement("tr");
+        const td0=document.createElement("td"); td0.colSpan=4; td0.textContent="(Sin ítems para mostrar)"; td0.style.color="#cbd5e1";
+        rr.appendChild(td0); tbdy.appendChild(rr);
+      }else{
+        for(const it of items){
+          const rr=document.createElement("tr");
+          rr.innerHTML = `<td>${it.sku||"-"}</td><td>${it.cant||"-"}</td><td>${it.prod||"-"}</td><td>${it.extra||"-"}</td>`;
+          tbdy.appendChild(rr);
+        }
+      }
+      subt.appendChild(tbdy);
+      td.appendChild(subt); trSub.appendChild(td); tb.appendChild(trSub);
+    }
+  }
+
+  $tbody.innerHTML=""; $tbody.appendChild(tb);
+  updateBar();
+}
+
+/* ============ Preparar (Staging Out) ============ */
+async function ejecutarPreparado(ids){
+  if(!ids.length) return;
+  const payload={ schemaId:Number(CONFIG.SCHEMA_ID), ids:ids.map(String), transitionId:Number(CONFIG.TRANSITION_ID_PREPARAR), form:"" };
+  return apiFetch(CONFIG.WORKFLOW_EXEC_URL, payload);
+}
+
+/* ======= Quiebre 2 ======= */
+async function ejecutarQuiebre2(ids){
+  if(!ids.length) return;
+  const payload={ schemaId:Number(CONFIG.SCHEMA_ID), ids:ids.map(String), transitionId:Number(CONFIG.TRANSITION_ID_QUIEBRE2), form:"" };
+  return apiFetch(CONFIG.WORKFLOW_EXEC_URL, payload);
+}
+
+/* ======= Comentarios en Pedido ======= */
+async function addCommentToPedido(instanceId, comment){
+  const body={
+    entityId:String(CONFIG.ENTITY_ID_PEDIDO_COMMENTS),
+    schemaId:String(CONFIG.SCHEMA_ID),
+    instanceId:String(instanceId),
+    comment:String(comment)
+  };
+  await apiFetch(CONFIG.ADD_COMMENT_URL, body);
+}
+
+/* ======= Remitos: buscar, guardar bultos y rotular ======= */
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+async function getRemitosAll(page=1, pageSize=300){
+  const url = `${CONFIG.GETLIST_BASE}?entityId=${CONFIG.ENTITY_ID_REMITO}&schemaId=${CONFIG.SCHEMA_ID}&smartieId=${CONFIG.SMARTIE_REMITOS_ALL}`;
+  const r = await apiFetch(url,{page, pageSize});
+  return getRows(r);
+}
+async function findRemitoByPedidoNro(pedidoNro, maxTries=12){
+  await sleep(1500);
+  for(let i=1;i<=maxTries;i++){
+    notify(`Esperando remito proyectado… (intento ${i}/${maxTries})`);
+    const all = await getRemitosAll(1, 300);
+    const match = all.find(r=> String((r["PEDI_NUMERO"]??"").toString().trim())===String(pedidoNro));
+    if(match){
+      const id = (match["ID"] ?? match["id"] ?? match["Identificador"] ?? match["REMITO_ID_REMITO"] ?? "").toString().trim();
+      if(id) return id;
+    }
+    await sleep(2000);
+  }
+  return null;
+}
+async function verifyBultos(remitoId, expected){
+  const all = await getRemitosAll(1, 300);
+  const row = all.find(r=> String((r["ID"]??r["id"]??"").toString().trim())===String(remitoId));
+  if(!row) return false;
+  const v = parseInt(((row["REDV_BULTOS"]??"")||"0").toString().trim() || "0", 10);
+  return v === (parseInt(expected,10)||0);
+}
+async function saveWithKey(remitoId, key, value){
+  const body={ entityId:Number(CONFIG.ENTITY_ID_REMITO), schemaId:Number(CONFIG.SCHEMA_ID), instanceId:String(remitoId), form:`${encodeURIComponent(key)}=${encodeURIComponent(value)}`, uploads:"", password:null, removedFiles:[] };
+  await apiFetch(CONFIG.SAVE_URL, body);
+}
+async function saveRemitoBultos(remitoId, bultos){
+  const keys = (CONFIG.BULTOS_FIELD_KEYS||[]).filter(Boolean);
+  for(const k of keys){
+    try{
+      await saveWithKey(remitoId, k, Number(bultos)||0);
+      await sleep(600);
+      if(await verifyBultos(remitoId, bultos)) return true;
+    }catch(_){}
+  }
+  if(keys.length>1){
+    const form = keys.map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(Number(bultos)||0)}`).join("&");
+    const body={ entityId:Number(CONFIG.ENTITY_ID_REMITO), schemaId:Number(CONFIG.SCHEA_ID), instanceId:String(remitoId), form, uploads:"", password:null, removedFiles:[] };
+  }
+  if(keys.includes("6678")){
+    await saveWithKey(remitoId,"6678",Number(bultos)||0);
+    await sleep(600);
+    if(await verifyBultos(remitoId, bultos)) return true;
+  }
+  throw new Error("No pude impactar los bultos (clave de campo desconocida).");
+}
+function openRotulos(remitoId){
+  const u = `${CONFIG.APP_BASE}/report/view?schemaId=${CONFIG.SCHEMA_ID}&reportId=${CONFIG.REPORT_ROTULO_ID}&instanceId=${encodeURIComponent(remitoId)}`;
+  window.open(u, "_blank");
+}
+async function actualizarBultosYRotular(pedidoId, cantBultos){
+  const row = rowsRaw.find(r=>String(r.id)===String(pedidoId));
+  if(!row) throw new Error("Pedido no encontrado en memoria.");
+  const pedNro = row.pedido;
+
+  const remitoId = await findRemitoByPedidoNro(pedNro, 12);
+  if(!remitoId) throw new Error("No encontré el remito proyectado para ese pedido.");
+
+  await saveRemitoBultos(remitoId, cantBultos);
+  openRotulos(remitoId);
+}
+
+/* ======= Acciones ======= */
+function abrirModalBultos(id){
+  $bultosList.innerHTML="";
+  const row = rowsRaw.find(r=>String(r.id)===String(id));
+  const wrap=document.createElement("div"); wrap.className="bultoRow";
+  const lab=document.createElement("div"); lab.style.flex="1"; lab.innerHTML=`<strong>Pedido ${row?.pedido||id}</strong>`;
+  const inp=document.createElement("input"); inp.type="number"; inp.min="0"; inp.step="1"; inp.value=pendingBultos.get(String(id)) ?? 0; inp.className="inp"; inp.style.width="120px"; inp.setAttribute("data-ped", String(id));
+  wrap.appendChild(lab); wrap.appendChild(inp); $bultosList.appendChild(wrap);
+  pendingPedidoForModal = id;
+  $mb.style.display="flex";
+}
+
+$btnPreparado.onclick = ()=>{
+  if(!selectedId){ notify("Seleccioná un pedido.","warn"); return; }
+  abrirModalBultos(selectedId);
+};
+
+$btnQuiebre.onclick = async ()=>{
+  if(!selectedId){ notify("Seleccioná un pedido.","warn"); return; }
+  const row = rowsRaw.find(r=>String(r.id)===String(selectedId));
+  const result = await openQuiebreStructuredModal(row);
+  if(!result.ok) return;
+  try{
+    await addCommentToPedido(selectedId, result.comment); // estructurado por ítems
+    notify("Enviando a Quiebre 2…");
+    await ejecutarQuiebre2([selectedId]);
+    notify("Pedido enviado a Quiebre 2.");
+    selectedId=null; updateBar();
+    await cargar();
+  }catch(e){ console.error(e); notify("No se pudo enviar a Quiebre 2.","warn"); }
+};
+
+/* ======= UI ======= */
+function setEstado(txt, ok){ $estado.textContent=txt; $estado.className="status"+(ok?" ok":""); }
+function notify(txt, kind=""){ if(!txt){ $msg.style.display="none"; $msg.textContent=""; return; } $msg.textContent=txt; $msg.style.display="inline-flex"; $msg.className="badge "+(kind==="warn"?"warn":""); }
+function showActionBar(show){ $bar.style.display=show?"block":"none"; document.body.classList.toggle("withBar", show); }
+function updateBar(){
+  const enab = !!selectedId;
+  $selInfo.textContent = enab ? `Pedido seleccionado: ${rowsRaw.find(r=>String(r.id)===String(selectedId))?.pedido||selectedId}` : "Pedido seleccionado: —";
+  $btnPreparado.disabled = !enab;
+  $btnQuiebre.disabled = !enab;
+  showActionBar(enab);
+}
+
+$btnRefrescar.onclick = ()=>cargar();
+
+function onSearchChange(){ searchQuery=$inpBuscar.value||""; render(); }
+["input","keyup","change"].forEach(evt=> $inpBuscar.addEventListener(evt,onSearchChange));
+
+document.querySelectorAll(".sortable").forEach(el=>{
+  el.addEventListener("click",()=>{
+    const key=el.dataset.key;
+    if(sortBy===key){ sortDir=-sortDir; } else { sortBy=key; sortDir=1; }
+    render();
+  });
+});
+
+/* ============ Init ============ */
+(async function init(){
+  try{
+    setEstado("Conectando…",false);
+    await loginYiQi();
+    await cargar();
+  }catch(_){}
+})();
+</script>
+</body>
+</html>

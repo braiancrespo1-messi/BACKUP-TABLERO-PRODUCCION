@@ -1,0 +1,1899 @@
+﻿// --- CONFIGURACIÓN ---
+const CONFIG = {
+    API_BASE: "https://api.yiqi.com.ar",
+    TOKEN_URLS: ["https://me.yiqi.com.ar/connect/token", "https://api.yiqi.com.ar/connect/token", "https://api.yiqi.com.ar/token"],
+    GETLIST_BASE: "https://api.yiqi.com.ar/api/instancesApi/GetList",
+
+    SMARTIE_PEDIDOS: 2672,   // UPDATED: All Priorities (Entity 1231)
+    SMARTIE_STOCK: 2668,     // RESTORED: "Como antes"
+    SMARTIE_BOM: 2669,       // CONFIRMED: "Cuadros" (Entity 771)
+    SCHEMA_ID: 1491,
+
+    // New Smarties for Production Logic
+    SMARTIE_ARTICULOS: 2671, // Matches user request for Articles data
+    SMARTIE_GRUPOS: 2594,    // Restored for name-based lookup fallback
+
+    ENTITY_ARTICULOS: 782,
+    ENTITY_GRUPOS: 763,
+    ENTITY_PEDIDOS: 1231,    // Ensuring this matches Smartie 2672
+    ENTITY_STOCK: 794,
+    ENTITY_BOM: 771,         // CONFIRMED per user screenshot
+
+    // Production Save Config
+    ALTA_PROD: {
+        entityId: 1389,
+        SAVE_URLS: ["https://me.yiqi.com.ar/api/instancesApi/Save", "https://api.yiqi.com.ar/api/instancesApi/Save"]
+    }
+};
+
+// --- CUSTOM MODAL SYSTEM ---
+function showModal({ title, content, actions }) {
+    const overlay = document.getElementById('app-modal');
+    const mTitle = document.getElementById('modal-title');
+    const mContent = document.getElementById('modal-content');
+    const mActions = document.getElementById('modal-actions');
+
+    mTitle.innerHTML = title || 'Aviso';
+    mContent.innerHTML = content || '';
+    mActions.innerHTML = '';
+
+    actions.forEach(btn => {
+        const b = document.createElement('button');
+        b.className = `btn-modal ${btn.class || 'btn-secondary'}`;
+        b.textContent = btn.text;
+        b.onclick = () => {
+            if (btn.onClick) btn.onClick();
+            if (btn.close !== false) closeModal();
+        };
+        mActions.appendChild(b);
+    });
+
+    overlay.classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('app-modal').classList.remove('open');
+}
+
+function appAlert(msg) {
+    return new Promise(resolve => {
+        showModal({
+            title: '⚠️ Atención',
+            content: msg,
+            actions: [{ text: 'Aceptar', class: 'btn-produce', onClick: resolve }]
+        });
+    });
+}
+
+function appConfirm(msg) {
+    return new Promise(resolve => {
+        showModal({
+            title: '❓ Confirmar',
+            content: msg,
+            actions: [
+                { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(false) },
+                { text: 'Eliminar', class: 'btn-danger', onClick: () => resolve(true) }
+            ]
+        });
+    });
+}
+
+function appPrompt(msg, defaultValue = '') {
+    return new Promise(resolve => {
+        const inputHtml = `<div style="margin-bottom:5px">${msg}</div><input type="number" id="prompt-input" class="modal-input" value="${defaultValue}">`;
+        showModal({
+            title: '🔢 Ingresar Valor',
+            content: inputHtml,
+            actions: [
+                { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(null) },
+                {
+                    text: 'Aceptar', class: 'btn-produce', onClick: () => {
+                        const val = document.getElementById('prompt-input').value;
+                        resolve(val);
+                    }
+                }
+            ]
+        });
+        setTimeout(() => {
+            const inp = document.getElementById('prompt-input');
+            if (inp) inp.focus();
+        }, 100);
+    });
+}
+
+/* ==================== GLOBAL STATE ==================== */
+let token = localStorage.getItem("yiqi_token");
+let dataPedidos = [];
+let dataStock = [];
+let dataBOM = [];
+let dataArticulos = []; // New
+let dataGrupos = [];    // Restored for name matching fallback
+let calendarEvents = []; // Loaded from local storage or mockup
+
+// NEW: Calendar Notes
+// NEW: Calendar Notes
+let calendarNotes = {}; // { 'YYYY-MM-DD': [{id: 1, text: 'Note 1'}, {id: 2, text: 'Note 2'}] }
+try {
+    const savedNotes = localStorage.getItem('tmc_calendar_notes');
+    if (savedNotes) calendarNotes = JSON.parse(savedNotes);
+} catch (e) { console.error("Error loading calendar notes", e); }
+
+let currentTab = 'pedidos';
+let currentMonth = new Date(); // Tracks calendar view month
+
+// Columns Definition for Pedidos
+// Keys match internal keys or special logic keys
+const COLUMNS_PEDIDOS = [
+    { id: 'numero', label: 'Pedido N°', visible: true, sortCol: 1, key: 'NUMERO' },
+    { id: 'fecha', label: 'Fecha', visible: true, sortCol: 0, key: 'FECHA_PEDI' },
+    { id: 'cliente', label: 'Cliente', visible: true, sortCol: 2, key: 'CLIENTE' },
+    { id: 'sku_art', label: 'SKU Articulo', visible: true, sortCol: 3, key: 'SKU' },
+    { id: 'nombre_art', label: 'Nombre Articulo', visible: true, sortCol: 5, key: 'PRODUCTO' }, // Changed to 5
+    { id: 'cantidad', label: 'Cantidad', visible: true, sortCol: 4, key: 'CANT_A_ENTREGAR' },
+    { id: 'grupo', label: 'Grupo', visible: true, sortCol: 6, key: 'GRUPO_ART' }, // Changed to 6
+    { id: 'bom', label: 'BOM (Requiere fabricar)', visible: true, sortCol: null }, // No sort for comp yet
+    { id: 'status', label: '', visible: true, sortCol: null } // Status Emoji Only
+];
+
+let sortState = {
+    pedidos: { col: 1, asc: false }, // Default Number Desc
+    stock: { col: 4, asc: false }
+};
+
+// --- AUTH ---
+async function checkAuth() { if (!token) await loginYiQi(); }
+async function loginYiQi() {
+    const user = "mercadolibre@tmcrespo.com.ar";
+    const pass = "AdministracionMessi";
+    for (const url of CONFIG.TOKEN_URLS) {
+        try {
+            const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "password", username: user, password: pass }) });
+            if (r.ok) { token = (await r.json()).access_token; localStorage.setItem("yiqi_token", token); return; }
+        } catch (e) { }
+    }
+    showError("Error de Login - Revise credenciales");
+}
+
+// --- API GENERIC ---
+async function apiFetchErrors(url, body) {
+    await checkAuth();
+    let r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(body || {}) });
+    if (r.status === 401) { await loginYiQi(); r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(body || {}) }); }
+    if (!r.ok) throw new Error(`API Error ${r.status}`);
+    return r.json();
+}
+
+async function fetchAll(entityId, smartieId) {
+    const url = `${CONFIG.GETLIST_BASE}?entityId=${entityId}&schemaId=${CONFIG.SCHEMA_ID}&smartieId=${smartieId}`;
+    // Use size 50 as hinted by user, server might page by 50 even if we ask 200.
+    let page = 1, all = [], keep = true, size = 50;
+    while (keep) {
+        try {
+            const res = await apiFetchErrors(url, { page, pageSize: size });
+            // Handle various response structures
+            let rows = [];
+            if (res.data && Array.isArray(res.data)) rows = res.data;
+            else if (res.rows && Array.isArray(res.rows)) rows = res.rows;
+            else if (res.instances && Array.isArray(res.instances)) rows = res.instances;
+            else if (res.items && Array.isArray(res.items)) rows = res.items;
+
+            if (rows.length > 0) {
+                all.push(...rows);
+                page++;
+                // If we got fewer rows than requested, verify if it's truly the end.
+                // But if server enforces max page size (e.g. 50), then < 200 is always true. 
+                // Safer to only stop if 0 rows returned in next call, OR if rows < size (iff size is small like 50).
+                if (rows.length < size) keep = false;
+            } else {
+                keep = false;
+            }
+        } catch (e) {
+            console.error("Error fetching page " + page + " for entity " + entityId + " smartie " + smartieId, e);
+            keep = false;
+        }
+    }
+    return all;
+}
+
+// --- MAIN DATA LOADING ---
+async function refreshData() {
+    const loading = document.getElementById('loading');
+    const loadText = document.querySelector('.loader-text');
+    loading.style.display = 'flex';
+    loadText.innerText = "Iniciando carga de datos...";
+    document.getElementById('error').style.display = 'none';
+
+    try {
+        // Initialize empty to show 0 in debug footer
+        dataPedidos = []; dataStock = []; dataBOM = []; dataArticulos = []; dataGrupos = [];
+        updateDebugFooter();
+
+        // Helper to update progress
+        const fetchWithProgress = async (promise, name) => {
+            loadText.innerText = `Cargando ${name}...`;
+            const res = await promise;
+            // Update debug footer count immediately
+            if (name === "Pedidos") dataPedidos = res;
+            if (name === "Stock") dataStock = res;
+            if (name === "BOM") dataBOM = res;
+            if (name === "Articulos") dataArticulos = res;
+            if (name === "Grupos") dataGrupos = res;
+
+            updateDebugFooter();
+            return res;
+        };
+
+        // Parallel Fetch with individual tracking
+        const [pedidos, stock, bom, arts, grupos] = await Promise.all([
+            fetchWithProgress(fetchAll(CONFIG.ENTITY_PEDIDOS, CONFIG.SMARTIE_PEDIDOS), "Pedidos"),
+            fetchWithProgress(fetchAll(CONFIG.ENTITY_STOCK, CONFIG.SMARTIE_STOCK), "Stock"),
+            fetchWithProgress(fetchAll(CONFIG.ENTITY_BOM, CONFIG.SMARTIE_BOM), "BOM"),
+            fetchWithProgress(fetchAll(CONFIG.ENTITY_ARTICULOS, CONFIG.SMARTIE_ARTICULOS), "Articulos"),
+            fetchWithProgress(fetchAll(CONFIG.ENTITY_GRUPOS, CONFIG.SMARTIE_GRUPOS), "Grupos") // Silent fetch
+        ]);
+
+        dataGrupos = grupos;
+        loadText.innerText = "Procesando datos...";
+
+        // Diagnostic Alert (Temporary)
+        console.log("Stock Items Loaded:", dataStock.length);
+        if (dataStock.length === 0) {
+            // Keep quiet if reverted to old style, or maybe alert if requested.
+            // alert("⚠️ Stock Vacio - Smartie 2668");
+        }
+
+        applyFilters();
+
+        // UPDATE DEBUG FOOTER
+        updateDebugFooter();
+
+    } catch (e) { showError("Error cargando datos: " + e.message); }
+    document.getElementById('loading').style.display = 'none';
+}
+
+function updateDebugFooter() {
+    const footer = document.getElementById('debug-footer');
+    const items = [
+        { name: "Pedidos", sm: CONFIG.SMARTIE_PEDIDOS, ent: CONFIG.ENTITY_PEDIDOS, count: dataPedidos.length },
+        { name: "BOM", sm: CONFIG.SMARTIE_BOM, ent: CONFIG.ENTITY_BOM, count: dataBOM.length },
+        { name: "Stock", sm: CONFIG.SMARTIE_STOCK, ent: CONFIG.ENTITY_STOCK, count: dataStock.length },
+        { name: "Articulos", sm: CONFIG.SMARTIE_ARTICULOS, ent: CONFIG.ENTITY_ARTICULOS, count: dataArticulos.length },
+        { name: "Grupos", sm: CONFIG.SMARTIE_GRUPOS, ent: CONFIG.ENTITY_GRUPOS, count: dataGrupos.length }
+    ];
+
+    // Footer Layout: Actions LEFT, Debug RIGHT (Swapped)
+    footer.innerHTML = `
+                <div style="margin-right:auto; display:flex; gap:15px; align-items:center; padding-right:20px; border-right:1px solid #ddd;">
+                    <span style="font-weight:bold; color:var(--primary-color);">⚡ Acciones:</span>
+                    <span title="Fabricar Item">🔨 Fabricar</span>
+                    <span title="Eliminar Evento">🗑️ Eliminar</span>
+                    <span title="Marcar como Terminado">✅ Terminado</span>
+                </div>
+            `;
+
+    footer.innerHTML += items.map(i => `
+                <div class="debug-item">
+                    <span class="debug-label">${i.name}</span>
+                    <span>(S:${i.sm} / E:${i.ent}):</span>
+                    <strong>${i.count}</strong>
+                </div>
+            `).join('<span style="color:#ccc">|</span>');
+
+
+    footer.style.display = 'flex';
+}
+
+/* ==================== UI LOGIC ==================== */
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+    document.querySelectorAll('.table-view').forEach(v => v.classList.remove('active'));
+    document.getElementById(`view-${tab}`).classList.add('active');
+
+    // Auto-focus search input if exists
+    const searchInput = document.getElementById((tab === 'stock') ? 'searchInput-stock' : 'searchInput-pedidos');
+    if (searchInput) searchInput.focus();
+
+    // Load Calendar on Tab Switch
+    if (tab === 'planificador') {
+        if (!currentMonth) currentMonth = new Date();
+        // FIXED: Removed goToToday() to persist user navigation
+        setTimeout(() => renderCalendar(), 50);
+    } else {
+        // Ensure data is rendered for the active tab
+        applyFilters();
+    }
+}
+
+
+
+// --- LOGIC: MATCH ORDER TO BOM ---
+// --- LOGIC: MATCH ORDER TO BOM ---
+// Returns ARRAY of components now, enabling multi-item BOMs
+function getBOMComponents(productSKU) {
+    if (!productSKU) return [];
+    // Find ALL components for this MBOM_CODIGO (Case Insensitive)
+    const target = productSKU.trim().toUpperCase();
+    const components = dataBOM.filter(b => (b["MBOM_CODIGO"] || "").trim().toUpperCase() === target);
+
+    return components.map(c => ({
+        sku: c["MATE_CODIGO"],
+        nombre: c["MATE_NOMBRE"],
+        cantidad: c["DEBO_CANTIDAD"] || 1
+    }));
+}
+
+// --- UI LOGIC ---
+function formatDate(dateString) {
+    if (!dateString) return "-";
+    try {
+        // Ensure dateString is in YYYY-MM-DD format for consistent parsing
+        const date = new Date(dateString + 'T00:00:00'); // Add T00:00:00 to avoid timezone issues
+        return date.toLocaleDateString();
+    } catch (e) {
+        return dateString; // Return original if invalid
+    }
+}
+
+// --- CONFIG COLUMNS ---
+function openConfig() {
+    const list = document.getElementById('colList');
+    list.innerHTML = '';
+    COLUMNS_PEDIDOS.forEach((col, idx) => {
+        const div = document.createElement('div');
+        div.innerHTML = `
+                <label>
+                    <input type="checkbox" ${col.visible ? 'checked' : ''} onchange="toggleColumn(${idx})">
+                    ${col.label}
+                </label>
+            `;
+        list.appendChild(div);
+    });
+    document.getElementById('configModal').style.display = 'flex';
+}
+
+function closeConfig() { document.getElementById('configModal').style.display = 'none'; }
+
+function toggleColumn(index) {
+    COLUMNS_PEDIDOS[index].visible = !COLUMNS_PEDIDOS[index].visible;
+    applyFilters(); // Re-render
+}
+
+/* ==================== FILTER & RENDER ==================== */
+function applyFilters() {
+    // Determine input based on current tab
+    const inputId = (currentTab === 'stock') ? 'searchInput-stock' : 'searchInput-pedidos';
+    const inputEl = document.getElementById(inputId);
+    const search = inputEl ? inputEl.value.toLowerCase() : "";
+
+    if (currentTab === 'pedidos') {
+        // Render Headers Dynamic
+        const thead = document.getElementById('head-pedidos');
+        let headerRow = '<tr>';
+        COLUMNS_PEDIDOS.forEach((col) => {
+            if (col.visible) {
+                let clickAttr = '';
+                // Special handling for Status (index 8 in array, but separate in logic)
+                if (col.id === 'status') clickAttr = `onclick="sortPedidos(8)"`;
+                else if (col.sortCol !== null) clickAttr = `onclick="sortPedidos(${col.sortCol})"`;
+
+                headerRow += `<th ${clickAttr} style="cursor:pointer;">${col.label}</th>`;
+            }
+        });
+        headerRow += '</tr>';
+        thead.innerHTML = headerRow;
+
+        let filtered = dataPedidos.filter(r => {
+            const txt = (r["CLIENTE"] + " " + r["PRODUCTO"] + " " + r["SKU"] + " " + r["NUMERO"] + " " + (r["GRUPO_ART"] || "")).toLowerCase();
+            return !search || txt.includes(search);
+        });
+
+        renderPedidos(filtered);
+        document.getElementById('count-pedidos').innerText = `(${filtered.length})`;
+
+    } else if (currentTab === 'stock') {
+        // Stock Logic...
+        const chk = document.getElementById('chkHideZero');
+        const hideMinZero = chk ? chk.checked : false; // Changed Logic
+        let filtered = dataStock.filter(r => {
+            // Normalize Keys
+            const sku = r["STOC_SKU"] || r["MATE_CODIGO"] || r["SKU"] || r["Codigo"] || "";
+            const nombre = r["MATE_NOMBRE"] || r["MATE_DESCRIPCION"] || r["Descripcion"] || r["Nombre"] || "";
+            const txt = (sku + " " + nombre).toLowerCase();
+            const min = Number(r["MATE_STOCK_SEGURIDAD"] || r["STOC_MINIMO"] || r["MINIMO"] || 0);
+
+            if (search && !txt.includes(search)) return false;
+            if (hideMinZero && min === 0) return false; // Filter by Min 0
+            return true;
+        });
+        renderStock(filtered);
+        document.getElementById('count-stock').innerText = `(${filtered.length})`; // Fixed interpolation
+
+        // Update Sort Indicators for Stock
+        updateSortIndicators('table-stock');
+
+    } else if (currentTab === 'planificador') {
+        renderCalendar();
+    }
+
+    // Update Sort Indicators for Pedidos (if active)
+    if (currentTab === 'pedidos') {
+        updateSortIndicators('table-pedidos');
+    }
+}
+
+function renderStock(data) {
+    const tbody = document.getElementById('body-stock');
+    tbody.innerHTML = '';
+
+    // Calculate En Produccion & Faltante for sorting
+    // We pre-calc to allow easy sorting
+    data.forEach(r => {
+        const sku = strip(r["STOC_SKU"] || r["MATE_CODIGO"] || r["SKU"] || "");
+        r._real = Number(r["STOC_CANTIDAD"] || r["CANTIDAD"] || r["Stock"] || 0);
+        r._min = Number(r["MATE_STOCK_SEGURIDAD"] || r["STOC_MINIMO"] || r["MINIMO"] || 0);
+        r._faltante = Math.max(0, r._min - r._real);
+
+        // Calculate En Produccion (Sum of pending qty in Calendar)
+        r._enProdDetails = [];
+        r._enProd = calendarEvents.reduce((acc, ev) => {
+            // Normalize event SKU and status
+            if (ev.status !== 'done' && strip(ev.sku) === sku) {
+                r._enProdDetails.push({ date: ev.date, qty: ev.qty });
+                return acc + Number(ev.qty);
+            }
+            return acc;
+        }, 0);
+    });
+
+    // Sort Logic
+    data.sort((a, b) => {
+        let valA, valB;
+        // Col Mapping: 0=SKU, 1=Desc, 2=Real, 3=Min, 4=Faltante, 5=EnProd, 6=Accion
+        switch (sortState.stock.col) {
+            case 0: valA = a["STOC_SKU"] || ""; valB = b["STOC_SKU"] || ""; break;
+            case 1: valA = a["MATE_NOMBRE"] || ""; valB = b["MATE_NOMBRE"] || ""; break;
+            case 2: valA = a._real; valB = b._real; break;
+            case 3: valA = a._min; valB = b._min; break;
+            case 4: valA = a._faltante; valB = b._faltante; break;
+            case 5: valA = a._factibilidad; valB = b._factibilidad; break; // Fixed Index
+            case 6: valA = a._enProd; valB = b._enProd; break;     // New Sort Index
+        }
+
+        if (valA < valB) return sortState.stock.asc ? -1 : 1;
+        if (valA > valB) return sortState.stock.asc ? 1 : -1;
+        return 0;
+    });
+
+    data.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.id = `row-stock-${strip(r["STOC_SKU"] || r["MATE_CODIGO"] || r["SKU"] || "")}`; // Add ID for goToTable
+        const sku = r["STOC_SKU"] || r["MATE_CODIGO"] || r["SKU"] || "";
+        const nombre = r["MATE_NOMBRE"] || r["MATE_DESCRIPCION"] || r["Descripcion"] || "";
+
+        // Styling
+        if (r._real <= r._min && r._min > 0) tr.classList.add('low-stock');
+
+        // Group Lookup
+        let grp = r["GRUPO_ART"] || r["MATE_GRUPO_IDEN"] || "";
+        if (!grp) {
+            const art = dataArticulos.find(a => strip(a["MATE_CODIGO"] || "") === strip(sku));
+            if (art) grp = art["GRMA_DESCRIPCION"] || art["GRUPO_FAMILIA"] || "";
+        }
+
+        // Action ID
+        const inputId = `stock-qty-${sku}`;
+
+        // Factibilidad (Simplified for now, or based on logic)
+        // If we don't have this logic yet, just show a placeholder or value.
+        // Assuming it might come from data or calculation.
+        let factText = r["FACTIBILIDAD"] || r["Factibilidad"] || "-";
+        // Convert to checkmark if feasible? Or just show value.
+        if (r["FACTIBILIDAD"] === 'OK') factText = "✅";
+
+        tr.innerHTML = `
+                    <td><strong>${sku}</strong></td>
+                    <td>${nombre}</td>
+                    <td style="text-align:center;">${r._real}</td>
+                    <td style="text-align:center;">${r._min}</td>
+                    <td style="text-align:center;" class="low-stock-text">${r._faltante}</td>
+                    
+                    <!-- FACTIBILIDAD COLUMN -->
+                    <td style="text-align:center;">${factText}</td>
+
+                    <!-- ACCION COLUMN -->
+                    <td style="text-align:center;">
+                        <div class="action-group">
+                             <input type="number" id="${inputId}" class="qty-input-sm" value="${r._faltante > 0 ? r._faltante : 1}" min="1" style="width:50px; margin-right:5px;">
+                             <div class="action-btns-col" style="display:inline-flex; flex-direction:column; vertical-align:middle;">
+                                 <button class="btn-icon" onclick="fabricar('${sku}', '${nombre}', '${inputId}', 'STOCK')" title="Fabricar">🔨</button>
+                                 <button class="btn-icon" onclick="scheduleItem('${sku}', '${nombre}', '${inputId}', 'STOCK', '${grp}')" title="Agendar">📅</button>
+                             </div>
+                        </div>
+                    </td>
+
+                    <!-- EN PROD COLUMN (GREY) -->
+                    <td style="text-align:center; background-color:#f9f9f9; color:#666; font-weight:600;">
+                        ${r._enProd > 0
+                ? `<span title="Ver desglose" style="color:#27ae60; font-weight:bold; cursor:pointer;" onclick="event.stopPropagation(); showEnProdMenuForSku(event, '${strip(sku).replace(/'/g, "\\'")}');">${r._enProd} 📅</span>`
+                : '-'}
+                    </td>
+                `;
+        tbody.appendChild(tr);
+    });
+
+    // Summary
+    let totalFaltante = data.reduce((acc, r) => acc + r._faltante, 0);
+    let totalEnProd = data.reduce((acc, r) => acc + r._enProd, 0);
+
+    document.getElementById('summary-stock').innerHTML = `
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <span>🔴 Faltante Total: <strong>${totalFaltante}</strong> u.</span>
+                    <span>🏭 En Producción: <strong>${totalEnProd}</strong> u.</span>
+                </div>`;
+    document.getElementById('summary-stock').style.display = 'block';
+}
+
+
+// --- GLOBAL LOADER LOGIC ---
+function showLoader(msg = "Procesando...") {
+    const l = document.getElementById('global-loader');
+    if (l) {
+        l.querySelector('.loader-text').innerText = msg;
+        l.style.display = 'flex';
+    }
+}
+
+function hideLoader() {
+    const l = document.getElementById('global-loader');
+    if (l) l.style.display = 'none';
+}
+
+/* CALENDAR LOGIC */
+// Load events
+try {
+    const saved = localStorage.getItem('tmc_calendar_events');
+    if (saved) calendarEvents = JSON.parse(saved);
+} catch (e) { console.error("Error loading calendar", e); }
+
+
+// Global State for Filters
+let calendarGroupFilters = {}; // { 'NAME': true/false }
+let isFilterInit = false;
+
+function toggleGroupFilter(name) {
+    if (name === 'ALL') {
+        // Toggle All
+        const allSelected = Object.values(calendarGroupFilters).every(v => v);
+        for (let k in calendarGroupFilters) calendarGroupFilters[k] = !allSelected;
+    } else {
+        if (calendarGroupFilters[name] === undefined) return;
+        calendarGroupFilters[name] = !calendarGroupFilters[name];
+    }
+    renderCalendar();
+}
+
+function changeMonth(delta) {
+    currentMonth.setMonth(currentMonth.getMonth() + delta);
+    renderCalendar();
+}
+
+function jumpToDate() {
+    const m = document.getElementById('cal-select-month').value;
+    const y = document.getElementById('cal-select-year').value;
+    currentMonth.setMonth(parseInt(m));
+    currentMonth.setFullYear(parseInt(y));
+    renderCalendar();
+}
+
+// Bind explicitly to avoid HTMLEventHandler madness if needed, or stick to onchange property if cleaner.
+// Actually, we removed onchange from HTML, so we must add listeners or check if attached.
+// Better: Attach once. But renderCalendar might destroy/recreated selects? 
+// No, selects are static in HTML row 1113. They are just populated.
+// So we attach listener ONCE or check if attached.
+document.addEventListener('DOMContentLoaded', () => {
+    const sm = document.getElementById('cal-select-month');
+    const sy = document.getElementById('cal-select-year');
+    if (sm) sm.addEventListener('change', jumpToDate);
+    if (sy) sy.addEventListener('change', jumpToDate);
+
+    // --- MOUSE WHEEL NAVIGATION ---
+    const calContent = document.getElementById('calendarContent');
+    if (calContent) {
+        let lastWheel = 0;
+        calContent.addEventListener('wheel', (e) => {
+            // Only if planificador is active
+            if (currentTab !== 'planificador') return;
+
+            e.preventDefault();
+            const now = Date.now();
+            if (now - lastWheel < 300) return; // Throttle
+
+            if (e.deltaY > 0) changeMonth(1);
+            else changeMonth(-1);
+
+            lastWheel = now;
+        }, { passive: false });
+    }
+});
+
+function goToToday() {
+    currentMonth = new Date();
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const container = document.getElementById('calendarContent');
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth(); // 0-indexed
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+    // --- 1. CENTERED NAVIGATION ---
+    const navContainer = document.querySelector('.calendar-nav');
+    if (navContainer) {
+        navContainer.style.justifyContent = 'center';
+        navContainer.style.gap = '20px';
+    }
+
+    // Header Update
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const monthName = monthNames[month];
+
+    const txt = document.getElementById('cal-month-year');
+    if (txt) txt.innerText = `${monthName} ${year}`;
+
+    // --- 2. PREPARE COLORS & FILTERS ---
+    let colorMap = {};
+    const defaultColor = '#95a5a6';
+    const palette = ['#3498db', '#e67e22', '#27ae60', '#9b59b6', '#f1c40f', '#e74c3c', '#1abc9c', '#34495e'];
+
+    let availableGroups = [];
+
+    if (dataGrupos && dataGrupos.length > 0) {
+        availableGroups = dataGrupos.map(g => (g["GRMA_DESCRIPCION"] || g["Name"] || "").toUpperCase()).filter(n => n);
+    } else {
+        availableGroups = ['CARRO', 'BAGUETERO', 'BANDEJA', 'MOLDE'];
+    }
+
+    availableGroups.forEach((gName, idx) => {
+        const color = palette[idx % palette.length];
+        colorMap[gName] = color;
+        const shortKey = gName.split(' ')[0];
+        if (shortKey) colorMap[shortKey] = color;
+    });
+
+    if (!isFilterInit || Object.keys(calendarGroupFilters).length === 0) {
+        availableGroups.forEach(g => {
+            if (calendarGroupFilters[g] === undefined) calendarGroupFilters[g] = true;
+        });
+        isFilterInit = true;
+    }
+
+    // --- 3. RENDER TOP FILTERS ---
+    const allActive = Object.values(calendarGroupFilters).every(v => v);
+
+    let filterHtml = `<div class="cal-filters-bar" style="max-width:100%; overflow-x:auto; white-space:nowrap; padding-bottom:5px;">`;
+
+    filterHtml += `
+                <div class="filter-chip" 
+                     style="background:${allActive ? '#2c3e50' : '#eee'}; color:${allActive ? 'white' : '#333'}; border:none;" 
+                     onclick="toggleGroupFilter('ALL')">
+                    ${allActive ? '👁️ Ver Todos' : '⭕ Seleccionar Todos'}
+                </div>
+            `;
+
+    availableGroups.forEach(gName => {
+        const isActive = calendarGroupFilters[gName] !== false;
+        const color = colorMap[gName] || defaultColor;
+        const style = isActive
+            ? `background:${color}; color:white; border:none; box-shadow:0 1px 3px rgba(0,0,0,0.2);`
+            : `background:#eee; color:#aaa; border:1px solid #ddd; text-decoration:line-through; opacity:0.7;`;
+
+        filterHtml += `
+                    <div class="filter-chip ${isActive ? 'active' : ''}" 
+                         style="${style}" 
+                         onclick="toggleGroupFilter('${gName}')">
+                        ${gName}
+                    </div>
+                `;
+    });
+    filterHtml += `</div>`;
+
+
+    // --- 4. CALCULATE 6-WEEK GRID ---
+    const firstDayOfMonth = new Date(year, month, 1);
+    const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 (Sun) to 6 (Sat)
+    let daysToSubtract = (startingDayOfWeek === 0) ? 6 : startingDayOfWeek - 1;
+
+    const startDate = new Date(year, month, 1 - daysToSubtract);
+    const totalDays = 42;
+
+    let html = filterHtml + `<div class="calendar-grid">`;
+    const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    days.forEach(d => html += `<div class="cal-day-header">${d}</div>`);
+    
+    // Month Names Short for Date Labels
+    const monthShort = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+    const searchTerm = document.getElementById('planner-search') ? document.getElementById('planner-search').value.toLowerCase().trim() : "";
+
+    for (let i = 0; i < totalDays; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+
+        const dYear = currentDate.getFullYear();
+        const dMonth = currentDate.getMonth();
+        const dDate = currentDate.getDate();
+        const dateStr = `${dYear}-${String(dMonth + 1).padStart(2, '0')}-${String(dDate).padStart(2, '0')}`;
+
+        const isToday = today.toDateString() === currentDate.toDateString();
+        const isOtherMonth = dMonth !== month;
+
+        // Custom Date Label (e.g. "1 abr")
+        let dateLabel = dDate;
+        if (dDate === 1) {
+            dateLabel = `${dDate} ${monthShort[dMonth]}`;
+        }
+
+        // Style Grid Cell
+        let cellStyle = isOtherMonth ? 'background:#f9fafb; color:#555;' : 'background:#fff; color:#333;';
+        if (isToday) cellStyle += 'border:2px solid var(--primary-color);';
+
+        let todayDot = isToday ? `<div class="today-dot" title="Hoy"></div>` : "";
+
+        let noteHtml = "";
+        if (calendarNotes && calendarNotes[dateStr]) {
+            const notes = Array.isArray(calendarNotes[dateStr]) ? calendarNotes[dateStr] : [{ id: 0, text: calendarNotes[dateStr] }];
+            if (notes.length > 0) {
+                noteHtml = `<div style="display:flex; gap:2px; margin-left:5px;">`;
+                notes.forEach(n => {
+                    noteHtml += `<span onclick="addNotePrompt('${dateStr}', ${n.id}); event.stopPropagation();" title="${n.text.replace(/"/g, '&quot;')}" style="cursor:pointer; font-size:1.2em;">📝</span>`;
+                });
+                noteHtml += `</div>`;
+            }
+        }
+
+        html += `<div class="cal-day" data-date="${dateStr}" ondrop="drop(event)" ondragover="allowDrop(event)" style="${cellStyle}; min-height:80px; position:relative;">
+                    ${todayDot}
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <div style="display:flex; align-items:center;">
+                             <div style="text-align:right; font-weight:bold; font-size:0.9em;">${dateLabel}</div>
+                             ${noteHtml}
+                        </div>
+                        <button class="btn-icon cal-add-btn" onclick="initiateManualAddFromDate('${dateStr}')" title="Agendar Manualmente" style="font-size:0.8em; padding:0 4px; background:none; border:none; cursor:pointer; opacity:0.5;">➕</button>
+                    </div>`;
+
+        // FILTER EVENTS
+        const dayEvents = calendarEvents.filter(ev => {
+            if (ev.date !== dateStr) return false;
+            const clientName = ev.cliente || "";
+            const searchTxt = `${ev.sku} ${ev.text} ${ev.pedidoId || ""} ${ev.grupo || ""} ${clientName}`.toLowerCase();
+            if (searchTerm && !searchTxt.includes(searchTerm)) return false;
+
+            let gName = (ev.grupo || "").toUpperCase();
+            if (calendarGroupFilters[gName] === false) return false;
+            let foundKey = availableGroups.find(k => gName.includes(k));
+            if (foundKey && calendarGroupFilters[foundKey] === false) return false;
+            return true;
+        });
+
+        // RENDER EVENTS
+        let evHtml = '<div class="cal-events">';
+        dayEvents.forEach(ev => {
+            const color = colorMap[ev.grupo] || colorMap[(ev.grupo || "").split(' ')[0]] || defaultColor;
+            let doneStyle = "";
+            let doneIcon = "";
+            if (ev.status === 'done') {
+                doneStyle = "opacity: 0.6; text-decoration: line-through; border: 2px solid #27ae60 !important;";
+                doneIcon = "✅ ";
+            }
+
+            // --- FINAL TOOLTIP LOGIC V4 ---
+            let artName = ev.name || ev.text || "Artículo Desconocido";
+            let clientName = ev.cliente || "Manual/Stock"; 
+            let orderDate = "N/A";
+
+            // 1. Enrich from Pedidos
+            if (ev.pedidoId && ev.pedidoId !== 'STOCK') {
+                 if (typeof dataPedidos !== 'undefined') {
+                     const p = dataPedidos.find(x => String(x.NUMERO) === String(ev.pedidoId));
+                     if (p) {
+                         clientName = p.CLIENTE || clientName;
+                         artName = p.PRODUCTO || artName;
+                         // EXACT SAME LOGIC AS RENDERPEDIDOS:
+                         // new Date(r["FECHA_PEDI"]).toLocaleDateString()
+                         if (p.FECHA_PEDI) {
+                             try {
+                                 let d = new Date(p.FECHA_PEDI);
+                                 // Basic validation
+                                 if (!isNaN(d.getTime())) orderDate = d.toLocaleDateString();
+                                 else orderDate = p.FECHA_PEDI; // Fallback
+                             } catch(e) { orderDate = p.FECHA_PEDI; }
+                         }
+                     }
+                 }
+            } else {
+                 // 2. Enrich from Articulos/Stock
+                 if (typeof dataArticulos !== 'undefined') {
+                     const a = dataArticulos.find(x => String(x.MATE_CODIGO).trim() === String(ev.sku).trim());
+                     if (a) {
+                         artName = a.MATE_DESCRIPCION || artName;
+                         clientName = "Stock / Manual";
+                     }
+                 }
+            }
+            
+            // Format: Emojis, No Qty, Real Order Date
+            // STRICT FORMAT REQUESTED:
+            let tooltip = `📄 ${artName}\n👤 ${clientName}\n📦 Pedido #${ev.pedidoId || 'N/A'}\n🗓️ ${orderDate}`;
+
+            evHtml += `
+                <div class="cal-event" id="${ev.id}" draggable="true" ondragstart="drag(event)" 
+                     onclick="openEventActions(event, '${ev.id}')"
+                     title="${tooltip}"
+                     style="border-left: 3px solid ${color}; ${doneStyle}">
+                    <div class="event-dot" style="background:${color}"></div>
+                    ${doneIcon}
+                    <strong>${ev.sku}</strong>
+                    <span>${ev.qty || 1}</span>
+                </div>
+             `;
+        });
+        evHtml += '</div>';
+        html += evHtml;
+        html += `</div>`;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+
+// --- NEW: PARTIAL PRODUCTION LOGIC ---
+async function fabricarFromCalendar(id) {
+    const ev = calendarEvents.find(e => e.id == id);
+    if (!ev) return;
+
+    if (ev.status === 'done') {
+        if (!await appConfirm("Este item ya figura como TERMINADO.\n¿Deseas fabricarlo nuevamente?")) return;
+    }
+
+    // Create temp input for fabricar() to read
+    const tmpId = 'tmp-qty-' + ev.id;
+    const tmpInput = document.createElement('input');
+    tmpInput.id = tmpId;
+    tmpInput.value = ev.qty;
+    tmpInput.type = 'hidden';
+    document.body.appendChild(tmpInput);
+
+    try {
+        let source = ev.pedidoId && ev.pedidoId !== 'STOCK' ? ev.pedidoId : 'CALENDARIO';
+        const resultQty = await fabricar(ev.sku, ev.name, tmpId, source);
+
+        if (resultQty !== false && resultQty !== null) {
+            const produced = Number(resultQty);
+            const originalQty = Number(ev.qty);
+
+            if (produced < originalQty && ev.status !== 'done') {
+                // PARTIAL: Split event
+                const doneEvent = { ...ev, id: Date.now(), qty: produced, status: 'done' };
+                calendarEvents.push(doneEvent);
+                ev.qty = originalQty - produced;
+                await appAlert(`✅ Producción Parcial Registrada.\nSe creó un evento terminado por ${produced} u.\nQuedan ${ev.qty} u. pendientes.`);
+
+            } else {
+                // FULL or EXTRA
+                if (produced > originalQty) ev.qty = produced;
+                ev.status = 'done';
+            }
+
+            saveCalendar();
+            renderCalendar();
+        }
+    } finally {
+        if (document.body.contains(tmpInput)) document.body.removeChild(tmpInput);
+    }
+}
+
+// --- Drag & Drop ---
+function allowDrop(ev) { ev.preventDefault(); }
+function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+function drop(ev) {
+    ev.preventDefault();
+    const data = ev.dataTransfer.getData("text");
+    let target = ev.target;
+    while (!target.dataset.date && target.className !== 'cal-day') {
+        target = target.parentNode;
+    }
+    const date = target.dataset.date;
+
+    if (date) {
+        // VALIDATION: BLOCK PAST DATES
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        if (date < todayStr) {
+            appAlert("⛔ <b>Acción Bloqueada</b><br>No se puede reprogramar a una fecha pasada.");
+            return;
+        }
+
+        // Update Event Date
+        const evIndex = calendarEvents.findIndex(e => e.id == data);
+        if (evIndex >= 0) {
+            calendarEvents[evIndex].date = date;
+            saveCalendar();
+            renderCalendar();
+        }
+    }
+}
+
+
+function saveCalendar() {
+    localStorage.setItem('tmc_calendar_events', JSON.stringify(calendarEvents));
+}
+
+async function confirmScheduleModal(sku, nombre, qty, today) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return new Promise(resolve => {
+        const content = `
+                <div style="margin-bottom:10px;">
+                    <div style="font-weight:bold; color:var(--primary-color); font-size:1.1em;">${nombre}</div>
+                    <div style="color:#666; font-size:0.9em;">SKU: ${sku}</div>
+                </div>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px;">
+                    <div>
+                        <label>Fecha:</label>
+                        <input type="date" id="modal-sched-date" class="modal-input" value="${today}" min="${todayStr}">
+                    </div>
+                    <div>
+                        <label>Cant:</label>
+                        <input type="number" id="modal-sched-qty" class="modal-input" value="${qty}" min="1">
+                    </div>
+                </div>
+                `;
+
+        showModal({
+            title: '📅 Agendar Producción',
+            content: content,
+            actions: [
+                { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(null) },
+                {
+                    text: 'Agendar', class: 'btn-produce', style: 'background-color:#8e44ad', onClick: () => {
+                        const dateVal = document.getElementById('modal-sched-date').value;
+                        const qtyVal = document.getElementById('modal-sched-qty').value;
+                        if (!dateVal || !qtyVal) return;
+
+                        // Validation
+                        if (new Date(dateVal) < new Date(todayStr)) {
+                            alert("⚠️ No puedes programar para el pasado.");
+                            return;
+                        }
+
+                        resolve({ date: dateVal, qty: Number(qtyVal) });
+                    }, close: true
+                }
+            ]
+        });
+    });
+}
+
+async function scheduleItem(sku, nombre, inputId, pedidoId = null, grupo = "") {
+    const qtyInput = document.getElementById(inputId);
+    let qty = 1;
+    if (qtyInput) qty = Number(qtyInput.value) || 1;
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // NEW: Block Double Scheduling
+    if (pedidoId && pedidoId !== 'STOCK') {
+        const existing = calendarEvents.find(e => String(e.pedidoId) === String(pedidoId));
+        if (existing) {
+            appAlert(`⚠️ El pedido <b>#${pedidoId}</b> ya está agendado para el ${formatDate(existing.date)}.`);
+            return;
+        }
+    }
+
+    // New Custom Modal
+    const result = await confirmScheduleModal(sku, nombre, qty, today);
+
+    if (!result) return; // Cancelled
+
+    // Add Event
+    const newEvent = {
+        id: Date.now(),
+        sku: sku,
+        name: nombre,
+        qty: result.qty,
+        date: result.date,
+        pedidoId: pedidoId,
+        grupo: grupo
+    };
+    calendarEvents.push(newEvent);
+    saveCalendar();
+
+    // Notify and Switch Tab
+    // Friendly Date Format & Custom Alert Title
+    const [y, m, d] = result.date.split('-');
+    const friendlyDate = `${d}-${m}-${y}`;
+
+    await new Promise(resolve => {
+        showModal({
+            title: "✅ Producción Agendada",
+            content: `<div style='text-align:center; font-size:1.1em;'>El item <strong>${nombre}</strong> se agendó para el <strong>${friendlyDate}</strong>.<br><br><span style="font-size:1.2em; color:#27ae60;">Cantidad: <strong>${result.qty} u.</strong></span></div>`,
+            actions: [{ text: "Aceptar", class: "btn-primary", style: "background:#27ae60; color:white;", onClick: resolve, close: true }]
+        });
+    });
+
+    // Go there!
+    goToCalendarDate(result.date, newEvent.id);
+}
+
+// --- Event Action Menu Upgrade ---
+function openEventActions(e, eventId) {
+    e.stopPropagation(); // Prevent propagation
+    const menu = document.getElementById('context-menu');
+    const ev = calendarEvents.find(ev => ev.id == eventId);
+
+    if (!ev) return;
+
+    menu.innerHTML = `
+                <div class="ctx-item" onclick="fabricarFromCalendar(${eventId})">🔨 Fabricar (Alta Prod)</div>
+                <div class="ctx-item" onclick="reprogramEvent('${eventId}'); closeDayMenu();">🗓️ Reprogramar</div>
+                ${ev.pedidoId && ev.pedidoId !== 'STOCK' ? `<div class="ctx-item" onclick="goToTable('pedido', '${ev.pedidoId}'); closeDayMenu();">🔍 Ir a Tabla Pedidos</div>` : ''}
+                ${(!ev.pedidoId || ev.pedidoId === 'STOCK') ? `<div class="ctx-item" onclick="goToTable('stock', '${strip(ev.sku)}'); closeDayMenu();">🔍 Ir a Tabla Stock</div>` : ''}
+                <div class="ctx-item ctx-danger" onclick="deleteEvent(${eventId})">🗑️ Eliminar</div>
+            `;
+
+    menu.style.display = 'block';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+}
+
+document.addEventListener('click', () => {
+    const m = document.getElementById('context-menu');
+    if (m) m.style.display = 'none';
+});
+
+async function deleteEvent(id) {
+    // CUSTOM DELETE MODAL
+    return new Promise(resolve => {
+        showModal({
+            title: '🗑️ Confirmar Eliminación',
+            content: `
+                        <div style="text-align:center; padding:10px;">
+                            <div style="font-size:3em; margin-bottom:10px;">🗑️</div>
+                            <div style="font-size:1.1em; color:#e74c3c; font-weight:bold;">¿Desea eliminar del calendario este evento?</div>
+                            <div style="color:#666; margin-top:5px; font-size:0.9em;">Esta acción no se puede deshacer.</div>
+                        </div>
+                    `,
+            actions: [
+                { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(false) },
+                {
+                    text: 'Eliminar', class: 'btn-produce', style: 'background:#e74c3c;', onClick: () => {
+                        // Action
+                        calendarEvents = calendarEvents.filter(e => e.id != id);
+                        saveCalendar();
+                        renderCalendar();
+                        resolve(true);
+                    }, close: true
+                }
+            ]
+        });
+    });
+}
+
+
+
+// --- PEDIDOS RENDERING & LOGIC ---
+
+// AUTO-REFRESH PEDIDOS (5 Minutes)
+setInterval(() => {
+    loadPedidos(true);
+}, 300000); // 300,000 ms = 5 mins
+
+async function loadPedidos(silent = false) {
+    const btn = document.querySelector('button[onclick="loadPedidos()"]');
+    let originalText = "";
+    if (btn) {
+        originalText = btn.innerHTML;
+        btn.disabled = true;
+        if (!silent) btn.innerHTML = "🔄 Cargando...";
+    }
+
+    try {
+        const res = await fetchAll(CONFIG.ENTITY_PEDIDOS, CONFIG.SMARTIE_PEDIDOS);
+        dataPedidos = res;
+
+        // Update Timestamp
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeLabel = document.getElementById('pedidos-last-update');
+        if (timeLabel) timeLabel.innerText = `Act: ${timeStr}`;
+
+        applyFilters();
+        updateDebugFooter();
+        if (!silent && btn) appAlert("✅ Pedidos actualizados");
+    } catch (e) {
+        console.error("Refrescar Pedidos Error", e);
+    } finally {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+}
+
+function renderPedidos(data) {
+    const tbody = document.getElementById('body-pedidos');
+    tbody.innerHTML = '';
+
+    // FILTERS: Check Radio Status
+    const radio = document.querySelector('input[name="filter-ped-status"]:checked');
+    const statusFilter = radio ? radio.value : 'all';
+
+    // Sort logic (Keep existing or simplified)
+    data.sort((a, b) => {
+        let valA, valB;
+        switch (sortState.pedidos.col) {
+            case 0: valA = new Date(a["FECHA_PEDI"] || 0); valB = new Date(b["FECHA_PEDI"] || 0); break;
+            case 1: valA = Number(a["NUMERO"] || 0); valB = Number(b["NUMERO"] || 0); break;
+            case 2: valA = a["CLIENTE"]; valB = b["CLIENTE"]; break;
+            case 3: valA = a["SKU"]; valB = b["SKU"]; break;
+            case 4: valA = Number(a["CANT_A_ENTREGAR"] || 0); valB = Number(b["CANT_A_ENTREGAR"] || 0); break;
+            case 5: valA = a["PRODUCTO"]; valB = b["PRODUCTO"]; break; // New Case for Name
+            case 6: valA = a["GRUPO_ART"]; valB = b["GRUPO_ART"]; break; // New Case for Group
+            case 8: // Status (Scheduled/Not)
+                valA = calendarEvents.some(e => String(e.pedidoId) === String(b["NUMERO"] || "")) ? 1 : 0;
+                valB = calendarEvents.some(e => String(e.pedidoId) === String(a["NUMERO"] || "")) ? 1 : 0;
+                break;
+        }
+        if (valA < valB) return sortState.pedidos.asc ? -1 : 1;
+        if (valA > valB) return sortState.pedidos.asc ? 1 : -1;
+        return 0;
+    });
+
+    // 1. Group Duplicates (Same ID + SKU + Text)
+    const groupedData = [];
+    const map = new Map();
+
+    data.forEach(r => {
+        const pedidoId = r["NUMERO"] || "";
+        const sku = r["SKU"] || "";
+        const texto = (r["TEXTO_ADICIONAL"] || "").trim(); // Use text as part of key if unique
+        const key = `${pedidoId}|${sku}|${texto}`;
+
+        if (map.has(key)) {
+            const existing = map.get(key);
+            // Sum Quantity
+            existing["CANT_A_ENTREGAR"] = Number(existing["CANT_A_ENTREGAR"] || 0) + Number(r["CANT_A_ENTREGAR"] || 0);
+        } else {
+            // Clone to avoid mutating original for sort
+            const clone = { ...r };
+            clone["CANT_A_ENTREGAR"] = Number(r["CANT_A_ENTREGAR"] || 0);
+            map.set(key, clone);
+            groupedData.push(clone);
+        }
+    });
+
+    // Count valid items after status filter
+    let visibleCount = 0;
+
+    groupedData.forEach(r => {
+        const pedidoId = r["NUMERO"] || "";
+        const skuCarro = r["SKU"] || "";
+
+        // CHECK SCHEDULED STATUS
+        // Match if calendarEvents has matched pedidoId
+        const scheduledEvent = calendarEvents.find(e => String(e.pedidoId) === String(pedidoId));
+        const isScheduled = !!scheduledEvent;
+
+        // Apply Filter
+        if (statusFilter === 'pending' && isScheduled) return;
+        if (statusFilter === 'scheduled' && !isScheduled) return;
+
+        visibleCount++;
+
+        const tr = document.createElement('tr');
+        tr.id = `row-pedido-${pedidoId}`; // Add ID for goToTable
+        if (isScheduled) tr.style.background = "#e8f5e9"; // Light Green for scheduled
+
+        let fecha = r["FECHA_PEDI"] ? new Date(r["FECHA_PEDI"]).toLocaleDateString() : "-";
+
+        // Group Name Lookup
+        let grupoName = r["GRUPO_ART"] || "";
+        if (!grupoName) {
+            const art = dataArticulos.find(a => strip(a["MATE_CODIGO"] || "") === strip(skuCarro));
+            if (art) grupoName = art["GRMA_DESCRIPCION"] || "";
+        }
+
+        // BOM Logic (Simplified rendering for clarity)
+        let components = getBOMComponents(skuCarro);
+        let bomIndicator = "";
+        let bomHtml = '';
+
+        if (components.length > 0) {
+            // BOM INDICATOR
+            bomIndicator = `<span title="Tiene Componentes (BOM)" style="cursor:help; font-size:1.2em;">🧩</span>`; // Puzzle piece or similar
+
+            bomHtml = '<ul class="bom-list">';
+            components.forEach(comp => {
+                let reqQty = Number(r["CANT_A_ENTREGAR"] || 0) * (comp.cantidad || 1);
+                let inputId = `qty-${pedidoId}-${comp.sku}`;
+                bomHtml += `
+                        <li class="bom-item">
+                            <div class="bom-details">
+                                <span class="bom-sku-tag">${comp.sku}</span>
+                                <span style="font-size:0.8em">x${reqQty}</span>
+                            </div>
+                            <div class="action-btns-col">
+                                <button class="btn-icon" onclick="fabricar('${comp.sku}', '${comp.nombre}', '${inputId}', '${pedidoId}')" title="Fabricar">🔨</button>
+                                <button class="btn-icon" onclick="scheduleItem('${comp.sku}', '${comp.nombre}', '${inputId}', '${pedidoId}', '${grupoName}')" title="Agendar">📅</button>
+                            </div>
+                            <input type="hidden" id="${inputId}" value="${reqQty}"> 
+                        </li>`;
+            });
+            bomHtml += '</ul>';
+        } else {
+            // Item itself
+            let inputId = `qty-prod-${pedidoId}-${skuCarro}`;
+            bomHtml = `
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="hidden" id="${inputId}" value="${r["CANT_A_ENTREGAR"] || 1}">
+                        <button class="btn-icon" onclick="fabricar('${skuCarro}', '${r["PRODUCTO"]}', '${inputId}', '${pedidoId}')" title="Fabricar">🔨</button>
+                        <button class="btn-icon" onclick="scheduleItem('${skuCarro}', '${r["PRODUCTO"]}', '${inputId}', '${pedidoId}', '${grupoName}')" title="Agendar">📅</button>
+                    </div>`;
+        }
+
+        // Scheduled Icon (Click to Navigate)
+        // Scheduled Icon
+        let statusIcon = '<span title="No Agendado">⚠️</span>';
+        if (isScheduled && scheduledEvent) {
+            if (isScheduled) {
+                statusIcon = `<span style="cursor:pointer;" onclick="openStatusMenu(event, '${scheduledEvent.date}', '${scheduledEvent.id}')">📅</span>`;
+                // ADDED: Date display next to icon
+                statusIcon += `<span style="font-size:0.8em; color:#666; margin-left:4px; font-weight:bold;">${formatDate(scheduledEvent.date)}</span>`;
+            }
+        }
+
+        let numDisplay = `<b>#${pedidoId}</b>`;
+        // REMOVED REDUNDANT EMOJI HERE
+
+        const map = {
+            'numero': numDisplay,
+            'fecha': fecha,
+            'cliente': r["CLIENTE"] || "",
+            'sku_art': `<span style="color:var(--primary-color); font-weight:600;">${skuCarro}</span>`,
+            'nombre_art': `<div>${r["PRODUCTO"] || ""}</div><div style="font-size:0.85em; color:#999;">${r["TEXTO_ADICIONAL"] || ""}</div>`,
+            'grupo': grupoName,
+            'cantidad': `<b style="font-size:1.1em;">${r["CANT_A_ENTREGAR"] || 0}</b>`,
+            'bom': `<div>${bomIndicator}</div>${bomHtml}`,
+            'status': statusIcon
+        };
+
+        let rowHtml = '';
+        COLUMNS_PEDIDOS.forEach(col => {
+            if (col.visible) rowHtml += `<td>${map[col.id]}</td>`;
+        });
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('count-pedidos').innerText = `(${visibleCount})`;
+    document.getElementById('summary-pedidos').innerHTML = `🔴 Solicitudes Visibles: <strong>${visibleCount}</strong>`;
+    document.getElementById('summary-pedidos').style.display = 'block';
+}
+
+// New Action Function
+// --- PRODUCTION LOGIC ---
+
+function strip(s) { return String(s ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim(); }
+
+async function apiPost(url, body) {
+    await checkAuth();
+    let r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(body || {}) });
+    if (r.status === 401) { await loginYiQi(); r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(body || {}) }); }
+    if (!r.ok) throw new Error(`API Error ${r.status} `);
+    return r.json();
+}
+
+async function postAltaProduccion({ grupoId, mateId, qty, obsText }) {
+    if (!Number.isInteger(qty) || qty <= 0) throw new Error("Cantidad inválida");
+    if (!mateId) throw new Error("ID de Articulo no encontrado (MATE_ID)");
+    if (!grupoId) throw new Error("ID de Grupo no encontrado");
+
+    // Form IDs based on C- ALTAS... definition (12369=Group, 12370=Mate, 12371=Qty, 12372=Obs)
+    const formString = `12369 = ${grupoId}& 12370=${mateId}& 12371=${qty}& 12377=& 12372=${encodeURIComponent(obsText || "")} `;
+
+    const body = {
+        schemaId: CONFIG.SCHEMA_ID,
+        form: formString,
+        uploads: "",
+        parentId: null,
+        childId: null,
+        entityId: String(CONFIG.ALTA_PROD.entityId)
+    };
+
+    let lastErr = null;
+    for (const url of CONFIG.ALTA_PROD.SAVE_URLS) {
+        try {
+            const res = await apiPost(url, body);
+            if (res?.ok || res?.newId) return res; // Accept if valid
+            lastErr = new Error(res?.error || "Error al guardar");
+        } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error("Fallo al contactar API de Producción");
+}
+
+async function confirmProductionModal(sku, name, qty, group, pedidoId) {
+    return new Promise(resolve => {
+        const content = `
+                <div style="text-align:left; margin-bottom:15px;">
+                    <div style="font-weight:bold; color:var(--primary-color); font-size:1.1em; margin-bottom:5px;">${name}</div>
+                    <div style="font-size:0.9em; color:#666; margin-bottom:10px;">SKU: ${sku}</div>
+                    <div style="background:#f1f5f9; padding:10px; border-radius:6px; font-size:0.95em; border:1px solid #e2e8f0;">
+                        <div style="margin-bottom:4px;">📂 Grupo: <strong>${group}</strong></div>
+                        <div>📄 Pedido: <strong>#${pedidoId || 'N/A'}</strong></div>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <label style="display:block; font-size:0.9em; margin-bottom:5px; font-weight:600;">Cantidad a Fabricar:</label>
+                        <input type="number" id="modal-prod-qty" class="modal-input" value="${qty}" min="1" style="font-size:1.4em; text-align:center; font-weight:bold; padding:12px;">
+                    </div>
+                </div>
+                        `;
+
+        showModal({
+            title: '🏭 Confirmar Alta Producción',
+            content: content,
+            actions: [
+                { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(null) },
+                {
+                    text: '✅ Confirmar Alta', class: 'btn-produce', onClick: () => {
+                        const val = document.getElementById('modal-prod-qty').value;
+                        resolve(Number(val));
+                    }, close: true
+                }
+            ]
+        });
+
+        // Focus and Select all text in input
+        setTimeout(() => {
+            const inp = document.getElementById('modal-prod-qty');
+            if (inp) {
+                inp.focus();
+                inp.select();
+            }
+        }, 100);
+    });
+}
+
+async function fabricar(sku, nombre, inputId, pedidoId) {
+    let qty = 0;
+    // Handle both DOM ID and Direct Value (for Calendar)
+    if (typeof inputId === 'string' && document.getElementById(inputId)) {
+        qty = Number(document.getElementById(inputId).value);
+    } else if (typeof inputId === 'number') {
+        qty = inputId; // Direct number passed
+        inputId = null; // No specific button to toggle
+    } else if (inputId && String(inputId).startsWith('tmp-qty-')) {
+        // Is temp input
+        qty = Number(document.getElementById(inputId).value);
+    }
+
+    if (qty <= 0) { await appAlert("La cantidad debe ser mayor a 0"); return; }
+
+    // 1. Find Data (Improved matching)
+    const art = dataArticulos.find(a => strip(a["MATE_CODIGO"] || "") === strip(sku));
+
+    if (!art) {
+        console.warn("Articulo no encontrado para SKU:", sku);
+        await appAlert(`❌ Error: No se encontró el artículo con SKU "${sku}" en la base maestra(Smartie 2670).\nNo se puede fabricar.`);
+        return;
+    }
+
+    // Direct ID Usage per user request
+    // Try multiple possible keys for Group ID based on common YiQi patterns
+    const mateId = art["ID"] || art["MATE_ID"] || art["id"];
+    let grupoId = art["MATE_GRUPO_IDEN"] || art["GRMA_ID"] || art["GRUPO_ID"] || art["GRUPO_IDENTIFICADOR"] || null;
+    const groupName = art["GRMA_DESCRIPCION"] || art["GRUPO_FAMILIA"] || "";
+
+    // Fallback: If no direct ID, try to find by Name in dataGrupos
+    if (!grupoId && groupName) {
+        const match = dataGrupos.find(g => {
+            const gName = g["GRMA_DESCRIPCION"] || g["GRUPO"] || g["Name"] || "";
+            return strip(gName) === strip(groupName);
+        });
+        if (match) grupoId = match["ID"] || match["GRMA_ID"] || match["id"];
+    }
+
+    if (!mateId) { await appAlert("❌ Error interno: Articulo sin ID (MATE_ID)."); return; }
+
+    // Validation: Group is mandatory for Production
+    if (!grupoId) {
+        console.warn("Grupo no encontrado para:", groupName, "Keys disponibles:", Object.keys(art));
+        await appAlert(`❌ Error Crítico: El artículo "${sku}" no tiene GRUPO asignado en YiQi.\nKeys encontrados: ${Object.keys(art).join(", ")} \nNombre Grupo: "${groupName}"\n\nEs obligatorio para el Alta de Producción.`);
+        return;
+    }
+
+    // --- CUSTOM PRODUCTION CONFIRMATION ---
+    // Returns the QUANTITY confirmed by user, or null/false
+    const confirmedQty = await confirmProductionModal(sku, nombre, qty, groupName, pedidoId);
+    if (!confirmedQty || confirmedQty <= 0) return false;
+
+    // 2. Perform Action
+    showLoader("Confirmando alta en YiQi..."); // NEW: Show Loader
+
+    let btn = null;
+    let originalText = "";
+    if (inputId) {
+        btn = document.querySelector(`button[onclick *= '${inputId}']`);
+        if (btn) {
+            originalText = btn.innerHTML;
+            btn.innerHTML = "🔄";
+            btn.disabled = true;
+        }
+    }
+
+    try {
+        const obs = `PED ${pedidoId} - Desde Tablero Stock`;
+        // Use the CONFIRMED quantity
+        const res = await postAltaProduccion({ grupoId: grupoId || 0, mateId, qty: confirmedQty, obsText: obs });
+
+        await appAlert(`✅ Alta Exitosa!(ID: ${res.newId || "OK"}) \nSe descontaron insumos y sumó stock.`);
+
+        return confirmedQty; // NEW: Return Quantity for Calendar Logic
+    } catch (e) {
+        await appAlert("❌ Falló la carga: " + e.message);
+        console.error(e);
+        return false; // Failure
+    } finally {
+        hideLoader(); // NEW: Hide Loader
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+}
+
+// Duplicate renderStock removed. Using the one defined above.
+
+function sortPedidos(n) { if (sortState.pedidos.col === n) sortState.pedidos.asc = !sortState.pedidos.asc; else { sortState.pedidos.col = n; sortState.pedidos.asc = true; } applyFilters(); }
+function sortStock(n) { if (sortState.stock.col === n) sortState.stock.asc = !sortState.stock.asc; else { sortState.stock.col = n; sortState.stock.asc = true; } applyFilters(); }
+function showError(msg) { document.getElementById('error').innerText = msg; document.getElementById('error').style.display = 'block'; }
+document.addEventListener('DOMContentLoaded', () => {
+    refreshData();
+    switchTab('pedidos');
+    refreshData();
+    switchTab('pedidos');
+});
+
+// --- MINIMALIST SORT LOGIC ---
+function updateSortIndicators(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    // 1. Clear all arrows
+    const headers = table.querySelectorAll('th');
+    headers.forEach(th => {
+        let html = th.innerHTML;
+        // Remove existing arrows (both old ↕️ and new 🔼/🔽)
+        html = html.replace(/ ↕️/g, '').replace(/ 🔼/g, '').replace(/ 🔽/g, '');
+        th.innerHTML = html;
+    });
+
+    // 2. Add arrow to active column
+    let sortObj = null;
+    let colIndex = -1;
+
+    if (tableId === 'table-pedidos') {
+        sortObj = sortState.pedidos;
+        colIndex = sortObj.col;
+    } else if (tableId === 'table-stock') {
+        sortObj = sortState.stock;
+        colIndex = sortObj.col;
+    }
+
+    if (sortObj && colIndex >= 0) {
+        // Find TH with matching onclick index or nth-child
+        // Note: onclick="sortStock(0)" logic matching
+        // We'll rely on index for now, assuming headers match sort index
+        // But headers might have non-sortable cols.
+        // Better: Find the TH that calls sortX(colIndex)
+
+        // Strategy: Look for onclick containing sort...(colIndex)
+        let targetTh = Array.from(headers).find(th => {
+            const onclick = th.getAttribute('onclick');
+            return onclick && onclick.includes(`(${colIndex})`);
+        });
+
+        if (targetTh) {
+            targetTh.innerHTML += sortObj.asc ? ' 🔼' : ' 🔽';
+        }
+    }
+}
+
+// ... (Previous JS) ...
+
+
+
+// --- NOTES LOGIC ---
+// --- NOTES LOGIC ---
+// (Defined in Global State)
+
+// Load Notes
+try {
+    const savedNotes = localStorage.getItem('tmc_calendar_notes');
+    if (savedNotes) {
+        const parsed = JSON.parse(savedNotes);
+        // Migration: If old format (string), convert to array
+        for (let key in parsed) {
+            if (typeof parsed[key] === 'string') {
+                parsed[key] = [{ id: Date.now(), text: parsed[key] }];
+            }
+        }
+        calendarNotes = parsed;
+    }
+} catch (e) { console.error("Error loading notes", e); }
+
+function saveNotes() {
+    localStorage.setItem('tmc_calendar_notes', JSON.stringify(calendarNotes));
+}
+
+async function addNotePrompt(date, noteId = null) {
+    // Get existing notes for this date
+    const notes = calendarNotes[date] || [];
+    let currentText = "";
+    let isEdit = false;
+
+    if (noteId) {
+        const note = notes.find(n => n.id == noteId);
+        if (note) {
+            currentText = note.text;
+            isEdit = true;
+        }
+    }
+
+    return new Promise(resolve => {
+        showModal({
+            title: isEdit ? '📝 Editar Nota' : '📝 Nueva Nota',
+            content: `
+                        <div style="margin-bottom:10px;">Nota para el <strong>${formatDate(date)}</strong>:</div>
+                        <textarea id="note-input" rows="4" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; resize:none;">${currentText}</textarea>
+                    `,
+            actions: [
+                {
+                    text: isEdit ? '🗑️ Borrar' : 'Cancelar',
+                    class: 'btn-secondary',
+                    style: isEdit ? 'color:red;' : '',
+                    onClick: () => {
+                        if (isEdit) {
+                            // Delete specific note
+                            calendarNotes[date] = notes.filter(n => n.id != noteId);
+                            if (calendarNotes[date].length === 0) delete calendarNotes[date];
+                            saveNotes();
+                            renderCalendar();
+                        }
+                        resolve();
+                    },
+                    close: true
+                },
+                {
+                    text: 'Guardar',
+                    class: 'btn-produce',
+                    onClick: () => {
+                        const val = document.getElementById('note-input').value.trim();
+
+                        if (val) {
+                            // Save / Update
+                            if (!calendarNotes[date]) calendarNotes[date] = [];
+
+                            if (isEdit) {
+                                const noteIdx = calendarNotes[date].findIndex(n => n.id == noteId);
+                                if (noteIdx >= 0) calendarNotes[date][noteIdx].text = val;
+                            } else {
+                                calendarNotes[date].push({ id: Date.now(), text: val });
+                            }
+                            saveNotes();
+                            renderCalendar();
+                        } else if (isEdit) {
+                            // Empty + Edit = Delete
+                            calendarNotes[date] = notes.filter(n => n.id != noteId);
+                            if (calendarNotes[date].length === 0) delete calendarNotes[date];
+                            saveNotes();
+                            renderCalendar();
+                        }
+                        resolve();
+                    },
+                    close: true
+                }
+            ]
+        });
+
+        // Focus text area
+        setTimeout(() => document.getElementById('note-input').focus(), 100);
+    });
+}
+
+// --- CONTEXT MENU LOGIC ---
+let activeDateKey = null;
+
+function openDayMenu(e, dateKey) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    activeDateKey = dateKey;
+
+    const menu = document.getElementById('context-menu');
+
+    // Build Menu Content
+    menu.innerHTML = `
+                <div class="context-menu-item" onclick="initiateAddNoteFromMenu()">
+                    <span>📝</span> Nota / Observación
+                </div>
+            `;
+
+    menu.style.display = 'block';
+    menu.style.visibility = 'hidden';
+
+    // Smart Positioning
+    const menuWidth = menu.offsetWidth || 200;
+    const menuHeight = menu.offsetHeight || 100;
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    let left = e.pageX;
+    let top = e.pageY;
+
+    if (left + menuWidth > screenW - 10) left = left - menuWidth;
+    if (top + menuHeight > screenH - 10) top = top - menuHeight;
+
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.visibility = 'visible';
+}
+
+function closeDayMenu() {
+    document.getElementById('context-menu').style.display = 'none';
+}
+
+// --- MANUAL ADD DELETED ---
+function initiateManualAddFromMenu() {
+    // Function removed per user request
+    console.log("Manual trigger disabled");
+}
+
+function initiateAddNoteFromMenu() {
+    closeDayMenu();
+    if (activeDateKey) {
+        addNotePrompt(activeDateKey);
+    }
+}
+
+// Close menu on global click
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('#context-menu')) {
+        closeDayMenu();
+    }
+});
+
+
+// --- MANUAL ADD DELETED (Functions Removed) ---
+
+// --- UPDATE CALENDAR CLICK (RESTORED FOR NOTES) ---
+document.getElementById('calendarContent').addEventListener('click', function (e) {
+    // Check if clicked specifically on the NEW ADD BUTTON
+    if (e.target.classList.contains('cal-add-btn') || e.target.closest('.cal-add-btn')) {
+        // Find the parent day element to get the date
+        const dayEl = e.target.closest('.cal-day');
+        if (dayEl) {
+            const dateKey = dayEl.dataset.date;
+            if (dateKey) openDayMenu(e, dateKey); // Trigger Context Menu behavior
+        }
+        e.preventDefault();
+        e.stopPropagation();
+    }
+});
+
+
+// --- DRAG NAVIGATION LOGIC ---
+let lastNavTime = 0;
+document.addEventListener('dragover', function (e) {
+    e.preventDefault(); // Necessary for drop
+    // Check throttle
+    const now = Date.now();
+    if (now - lastNavTime < 1500) return; // 1.5s throttle
+
+    const edgeThreshold = 80; // px
+    if (e.clientX < edgeThreshold) {
+        // Nav Prev
+        changeMonth(-1);
+        lastNavTime = now;
+    } else if (e.clientX > window.innerWidth - edgeThreshold) {
+        // Nav Next
+        changeMonth(1);
+        lastNavTime = now;
+    }
+});
+
+// --- NAVIGATION LOGIC ---
+function goToCalendarDate(dateStr, eventId = null) {
+    // Robust Date Parsing
+    if (!dateStr) return;
+
+    let y, m, d;
+    // Handle "D/M/YYYY" or "YYYY-MM-DD"
+    if (dateStr.includes('/')) {
+        [d, m, y] = dateStr.split('/').map(Number);
+    } else {
+        [y, m, d] = dateStr.split('-').map(Number);
+    }
+
+    // Validate
+    if (!y || !m || !d || y < 2000) {
+        appAlert(`⚠️ Fecha inválida: ${dateStr}`);
+        return;
+    }
+
+    // Switch Tab
+    switchTab('planificador');
+
+    // FORCE MONTH SWITCH LOGIC (Deep Fix)
+    const targetDate = new Date(y, m - 1, 1); // Month is 0-indexed
+
+    // Explicitly set global currentMonth
+    currentMonth = targetDate;
+
+    // Ensure selectors update (they listen to currentMonth in renderCalendar)
+    // But we must call renderCalendar to refresh the grid
+    renderCalendar();
+
+    // Scroll to event logic...
+    setTimeout(() => {
+        if (eventId) {
+            const el = document.getElementById(eventId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'auto', block: 'center' }); // Auto is faster than smooth sometimes
+                el.classList.add('highlight-pulse');
+                setTimeout(() => el.classList.remove('highlight-pulse'), 1500);
+            }
+        } else {
+            // Fallback to day highlight
+            const dayKey = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayEl = document.querySelector(`.cal-day[data-date="${dayKey}"]`);
+            if (dayEl) {
+                dayEl.scrollIntoView({ behavior: 'auto', block: 'center' });
+                dayEl.classList.add('highlight-pulse');
+                setTimeout(() => dayEl.classList.remove('highlight-pulse'), 1500);
+            }
+        }
+    }, 300); // Increased timeout significantly to allow render
+}
+
+// --- REVERSE NAVIGATION ---
+function goToTable(type, id) {
+    // type: 'pedido' or 'stock'
+    // id: pedidoId or sku
+
+    if (type === 'pedido') {
+        switchTab('pedidos');
+        // Ensure filtered? Maybe clear filters?
+        // For now, assume it's visible.
+        setTimeout(() => {
+            const row = document.getElementById(`row-pedido-${id}`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('highlight-pulse');
+                setTimeout(() => row.classList.remove('highlight-pulse'), 2000);
+            } else {
+                appAlert("⚠️ El pedido no es visible en la tabla actual (revise filtros).");
+            }
+        }, 300);
+    } else if (type === 'stock') {
+        switchTab('stock');
+        setTimeout(() => {
+            const row = document.getElementById(`row-stock-${id}`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('highlight-pulse');
+                setTimeout(() => row.classList.remove('highlight-pulse'), 2000);
+            } else {
+                appAlert("⚠️ El item no es visible en la tabla de stock.");
+            }
+        }, 300);
+    }
+}
+
+// --- INTERACTIVE MENUS ---
+
+async function showEnProdMenuForSku(e, sku) {
+    e.stopPropagation();
+    // Find all pending events for this SKU
+    const events = calendarEvents.filter(e => strip(e.sku) === strip(sku) && e.status !== 'done');
+
+    // Sort Chronologically
+    events.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (events.length === 0) {
+        appAlert("No hay producción pendiente encontrada.");
+        return;
+    }
+
+    const menu = document.getElementById('context-menu');
+    let html = `<div style="padding:4px; font-weight:bold; background:#eee; font-size:0.8em; text-align:center;">Producción: ${sku}</div>`;
+
+    events.forEach(ev => {
+        const dateStr = ev.date ? formatDate(ev.date) : "Sin Fecha";
+        html += `
+                <div class="ctx-item" onclick="goToCalendarDate('${ev.date}', '${ev.id}'); closeDayMenu();">
+                    📅 <strong>${dateStr}</strong> - ${ev.qty} u.
+                </div>`;
+    });
+
+    menu.innerHTML = html;
+    menu.style.display = 'block';
+
+    // Smart Positioning (Relative to click)
+    let left = e.pageX - 150;
+    if (left < 10) left = 10;
+    menu.style.left = left + 'px';
+    menu.style.top = e.pageY + 'px';
+
+    // Close on click outside (handled by global listener)
+}
+
+function openStatusMenu(e, date, eventId) {
+    e.stopPropagation();
+    const menu = document.getElementById('context-menu');
+
+    menu.innerHTML = `
+                <div class="ctx-item" onclick="goToCalendarDate('${date}', '${eventId}'); closeDayMenu();">🚀 Ir a Fecha</div>
+                <div class="ctx-item" onclick="reprogramEvent('${eventId}'); closeDayMenu();">🗓️ Reprogramar</div>
+            `;
+
+    menu.style.display = 'block';
+    menu.style.left = (e.pageX - 100) + 'px'; // Adjusted to show left of cursor
+    menu.style.top = e.pageY + 'px';
+}
+
+async function reprogramEvent(eventId) {
+    const ev = calendarEvents.find(e => String(e.id) === String(eventId));
+    if (!ev) return;
+
+    const newDate = await promptDate(ev.date);
+    if (newDate) {
+        ev.date = newDate;
+        saveCalendar();
+        // Redirect to new date WITHOUT ALERT
+        goToCalendarDate(newDate, ev.id);
+        // Notification via console/UI only? Or maybe distinct highlight is enough.
+        // User explicitly said: "SACALO, PORQUE ME OBSTRUYE ... MOMENTO EN QUE TITILA"
+    }
+}
+
+function promptDate(currentDate) {
+    const today = new Date().toISOString().split('T')[0];
+    return new Promise(resolve => {
+        const content = `
+                <label style="display:block; margin-bottom:10px;">Nueva Fecha:</label>
+                <input type="date" id="reprogram-date" class="modal-input" value="${currentDate}" min="${today}">
+                `;
+        showModal({
+            title: '🗓️ Reprogramar',
+            content: content,
+            actions: [
+                { text: 'Cancelar', class: 'btn-secondary', onClick: () => resolve(null), close: true },
+                {
+                    text: 'Guardar', class: 'btn-primary', onClick: () => {
+                        const val = document.getElementById('reprogram-date').value;
+                        // Validation
+                        if (new Date(val) < new Date(today)) {
+                            alert("⚠️ No puedes programar para el pasado.");
+                            return;
+                        }
+                        resolve(val);
+                    }, close: true
+                }
+            ]
+        });
+    });
+}

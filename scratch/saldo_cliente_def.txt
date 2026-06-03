@@ -1,0 +1,608 @@
+LINE 52188:
+  52183:                           "CLIE_SALDO_DE_AJUSTES": {
+  52184:                             "title": "Saldo no imputado de ajustes",
+  52185:                             "type": "number",
+  52186:                             "nullable": true
+  52187:                           },
+  52188:                           "CLIE_SALDO_CLIENTE": {
+  52189:                             "title": "Saldo no imputado  de Cliente",
+  52190:                             "type": "number",
+  52191:                             "nullable": true
+  52192:                           },
+  52193:                           "CLIE_SALDO_PROVEEDOR": {
+  52194:                             "title": "Saldo no imputado  de Proveedor",
+  52195:                             "type": "number",
+  52196:                             "nullable": true
+  52197:                           },
+  52198:                           "CLIE_DIFERENCIA_SALDOS": {
+  52199:                             "title": "Diferencia Saldos",
+  52200:                             "type": "number",
+  52201:                             "nullable": true
+  52202:                           },
+  52203:                           "CLIE_ACTIVO": {
+  52204:                             "title": "Activo (cliente)",
+  52205:                             "type": "boolean",
+  52206:                             "nullable": true
+  52207:                           },
+
+================================================================================
+
+LINE 59182:
+  59177:                         "title": "Cliente - Tipo",
+  59178:                         "maxLength": 100,
+  59179:                         "type": "string",
+  59180:                         "nullable": true
+  59181:                       },
+  59182:                       "CLIE_SALDO_CLIENTE": {
+  59183:                         "title": "CLIE_SALDO_CLIENTE",
+  59184:                         "type": "number",
+  59185:                         "nullable": true
+  59186:                       },
+  59187:                       "PENDIENTE_PAGO": {
+  59188:                         "title": "PENDIENTE_PAGO",
+  59189:                         "type": "number",
+  59190:                         "nullable": true
+  59191:                       }
+  59192:                     },
+  59193:                     "description": "Instance data"
+  59194:                   }
+  59195:                 }
+  59196:               }
+  59197:             }
+  59198:           },
+  59199:           "required": true
+  59200:         },
+  59201:         "responses": {
+
+================================================================================
+
+LINE 59183:
+  59178:                         "maxLength": 100,
+  59179:                         "type": "string",
+  59180:                         "nullable": true
+  59181:                       },
+  59182:                       "CLIE_SALDO_CLIENTE": {
+  59183:                         "title": "CLIE_SALDO_CLIENTE",
+  59184:                         "type": "number",
+  59185:                         "nullable": true
+  59186:                       },
+  59187:                       "PENDIENTE_PAGO": {
+  59188:                         "title": "PENDIENTE_PAGO",
+  59189:                         "type": "number",
+  59190:                         "nullable": true
+  59191:                       }
+  59192:                     },
+  59193:                     "description": "Instance data"
+  59194:                   }
+  59195:                 }
+  59196:               }
+  59197:             }
+  59198:           },
+  59199:           "required": true
+  59200:         },
+  59201:         "responses": {
+  59202:           "200": {
+
+================================================================================
+
+LINE 59441:
+  59436:                     "TIDC_NOMBRE": {
+  59437:                       "title": "Cliente - Tipo",
+  59438:                       "type": "string",
+  59439:                       "nullable": true
+  59440:                     },
+  59441:                     "CLIE_SALDO_CLIENTE": {
+  59442:                       "title": "CLIE_SALDO_CLIENTE",
+  59443:                       "type": "number",
+  59444:                       "nullable": true
+  59445:                     },
+  59446:                     "PENDIENTE_PAGO": {
+  59447:                       "title": "PENDIENTE_PAGO",
+  59448:                       "type": "number",
+  59449:                       "nullable": true
+  59450:                     }
+  59451:                   }
+  59452:                 }
+  59453:               }
+  59454:             }
+  59455:           },
+  59456:           "401": {
+  59457:             "description": "Missing or invalid token"
+  59458:           },
+  59459:           "403": {
+  59460:             "description": "User does not have permission to access this resource"
+
+================================================================================
+
+LINE 59442:
+  59437:                       "title": "Cliente - Tipo",
+  59438:                       "type": "string",
+  59439:                       "nullable": true
+  59440:                     },
+  59441:                     "CLIE_SALDO_CLIENTE": {
+  59442:                       "title": "CLIE_SALDO_CLIENTE",
+  59443:                       "type": "number",
+  59444:                       "nullable": true
+  59445:                     },
+  59446:                     "PENDIENTE_PAGO": {
+  59447:                       "title": "PENDIENTE_PAGO",
+  59448:                       "type": "number",
+  59449:                       "nullable": true
+  59450:                     }
+  59451:                   }
+  59452:                 }
+  59453:               }
+  59454:             }
+  59455:           },
+  59456:           "401": {
+  59457:             "description": "Missing or invalid token"
+  59458:           },
+  59459:           "403": {
+  59460:             "description": "User does not have permission to access this resource"
+  59461:           },
+
+================================================================================
+
+LINE 59652:
+  59647:                         "title": "Cliente - Tipo",
+  59648:                         "maxLength": 100,
+  59649:                         "type": "string",
+  59650:                         "nullable": true
+  59651:                       },
+  59652:                       "CLIE_SALDO_CLIENTE": {
+  59653:                         "title": "CLIE_SALDO_CLIENTE",
+  59654:                         "type": "number",
+  59655:                         "nullable": true
+  59656:                       },
+  59657:                       "PENDIENTE_PAGO": {
+  59658:                         "title": "PENDIENTE_PAGO",
+  59659:                         "type": "number",
+  59660:                         "nullable": true
+  59661:                       }
+  59662:                     }
+  59663:                   }
+  59664:                 }
+  59665:               }
+  59666:             }
+  59667:           },
+  59668:           "required": true
+  59669:         },
+  59670:         "responses": {
+  59671:           "200": {
+
+================================================================================
+
+LINE 59653:
+  59648:                         "maxLength": 100,
+  59649:                         "type": "string",
+  59650:                         "nullable": true
+  59651:                       },
+  59652:                       "CLIE_SALDO_CLIENTE": {
+  59653:                         "title": "CLIE_SALDO_CLIENTE",
+  59654:                         "type": "number",
+  59655:                         "nullable": true
+  59656:                       },
+  59657:                       "PENDIENTE_PAGO": {
+  59658:                         "title": "PENDIENTE_PAGO",
+  59659:                         "type": "number",
+  59660:                         "nullable": true
+  59661:                       }
+  59662:                     }
+  59663:                   }
+  59664:                 }
+  59665:               }
+  59666:             }
+  59667:           },
+  59668:           "required": true
+  59669:         },
+  59670:         "responses": {
+  59671:           "200": {
+  59672:             "description": "OK"
+
+================================================================================
+
+LINE 59884:
+  59879:                             "VENDEDOR",
+  59880:                             "LINK",
+  59881:                             "CLIE_ID_CLIE",
+  59882:                             "TIDC_DESCUENTO",
+  59883:                             "TIDC_NOMBRE",
+  59884:                             "CLIE_SALDO_CLIENTE",
+  59885:                             "PENDIENTE_PAGO",
+  59886:                             "id",
+  59887:                             "DESC_ESTADO",
+  59888:                             "AUDI_USUA_ALTA",
+  59889:                             "AUDI_USUA_MODIF",
+  59890:                             "AUDI_FECHA_ALTA",
+  59891:                             "AUDI_FECHA_MODIF"
+  59892:                           ],
+  59893:                           "type": "string",
+  59894:                           "description": "Physical column name (required). Available columns from entity view."
+  59895:                         },
+  59896:                         "title": {
+  59897:                           "type": "string",
+  59898:                           "description": "Custom column title (optional)",
+  59899:                           "nullable": true
+  59900:                         },
+  59901:                         "sortDirection": {
+  59902:                           "enum": [
+  59903:                             "ASC",
+
+================================================================================
+
+LINE 59977:
+  59972:                             "VENDEDOR",
+  59973:                             "LINK",
+  59974:                             "CLIE_ID_CLIE",
+  59975:                             "TIDC_DESCUENTO",
+  59976:                             "TIDC_NOMBRE",
+  59977:                             "CLIE_SALDO_CLIENTE",
+  59978:                             "PENDIENTE_PAGO",
+  59979:                             "id",
+  59980:                             "DESC_ESTADO",
+  59981:                             "AUDI_USUA_ALTA",
+  59982:                             "AUDI_USUA_MODIF",
+  59983:                             "AUDI_FECHA_ALTA",
+  59984:                             "AUDI_FECHA_MODIF"
+  59985:                           ],
+  59986:                           "type": "string",
+  59987:                           "description": "Column name to filter (required). Available columns from entity view."
+  59988:                         },
+  59989:                         "operator": {
+  59990:                           "enum": [
+  59991:                             "=",
+  59992:                             "!=",
+  59993:                             ">",
+  59994:                             "<",
+  59995:                             ">=",
+  59996:                             "<=",
+
+================================================================================
+
+LINE 60412:
+  60407:                         "title": "Vendedor",
+  60408:                         "maxLength": 100,
+  60409:                         "type": "string",
+  60410:                         "nullable": true
+  60411:                       },
+  60412:                       "SALDO_CLIENTE": {
+  60413:                         "title": "Saldo Cliente",
+  60414:                         "type": "number",
+  60415:                         "nullable": true
+  60416:                       },
+  60417:                       "TOTAL_PAYMENTS": {
+  60418:                         "title": "Total pagos",
+  60419:                         "type": "number",
+  60420:                         "nullable": true
+  60421:                       },
+  60422:                       "TOTAL_SHIPPINGS": {
+  60423:                         "title": "Total envíos",
+  60424:                         "type": "number",
+  60425:                         "nullable": true
+  60426:                       },
+  60427:                       "TOTAL_DESCONTADO": {
+  60428:                         "title": "Total descontado",
+  60429:                         "type": "number",
+  60430:                         "nullable": true
+  60431:                       },
+
+================================================================================
+
+LINE 60750:
+  60745:                     "VENDEDOR": {
+  60746:                       "title": "Vendedor",
+  60747:                       "type": "string",
+  60748:                       "nullable": true
+  60749:                     },
+  60750:                     "SALDO_CLIENTE": {
+  60751:                       "title": "Saldo Cliente",
+  60752:                       "type": "number",
+  60753:                       "nullable": true
+  60754:                     },
+  60755:                     "TOTAL_PAYMENTS": {
+  60756:                       "title": "Total pagos",
+  60757:                       "type": "number",
+  60758:                       "nullable": true
+  60759:                     },
+  60760:                     "TOTAL_SHIPPINGS": {
+  60761:                       "title": "Total envíos",
+  60762:                       "type": "number",
+  60763:                       "nullable": true
+  60764:                     },
+  60765:                     "TOTAL_DESCONTADO": {
+  60766:                       "title": "Total descontado",
+  60767:                       "type": "number",
+  60768:                       "nullable": true
+  60769:                     },
+
+================================================================================
+
+LINE 61022:
+  61017:                         "title": "Vendedor",
+  61018:                         "maxLength": 100,
+  61019:                         "type": "string",
+  61020:                         "nullable": true
+  61021:                       },
+  61022:                       "SALDO_CLIENTE": {
+  61023:                         "title": "Saldo Cliente",
+  61024:                         "type": "number",
+  61025:                         "nullable": true
+  61026:                       },
+  61027:                       "TOTAL_PAYMENTS": {
+  61028:                         "title": "Total pagos",
+  61029:                         "type": "number",
+  61030:                         "nullable": true
+  61031:                       },
+  61032:                       "TOTAL_SHIPPINGS": {
+  61033:                         "title": "Total envíos",
+  61034:                         "type": "number",
+  61035:                         "nullable": true
+  61036:                       },
+  61037:                       "TOTAL_DESCONTADO": {
+  61038:                         "title": "Total descontado",
+  61039:                         "type": "number",
+  61040:                         "nullable": true
+  61041:                       },
+
+================================================================================
+
+LINE 61341:
+  61336:             "schema": {
+  61337:               "type": "string"
+  61338:             }
+  61339:           },
+  61340:           {
+  61341:             "name": "SALDO_CLIENTE",
+  61342:             "in": "query",
+  61343:             "description": "Saldo Cliente",
+  61344:             "allowEmptyValue": true,
+  61345:             "schema": {
+  61346:               "type": "number"
+  61347:             }
+  61348:           }
+  61349:         ],
+  61350:         "responses": {
+  61351:           "200": {
+  61352:             "description": "OK"
+  61353:           },
+  61354:           "401": {
+  61355:             "description": "Missing or invalid token"
+  61356:           }
+  61357:         }
+  61358:       }
+  61359:     },
+  61360:     "/CONTROL_DE_PEDIDOS/smartie": {
+
+================================================================================
+
+LINE 61483:
+  61478:                             "CLIE_RAZON_SOCIAL",
+  61479:                             "ESTADO_RECIBOS",
+  61480:                             "ORIGEN_PEDIDO",
+  61481:                             "TOTAL_RECIBO",
+  61482:                             "VENDEDOR",
+  61483:                             "SALDO_CLIENTE",
+  61484:                             "TOTAL_PAYMENTS",
+  61485:                             "TOTAL_SHIPPINGS",
+  61486:                             "TOTAL_DESCONTADO",
+  61487:                             "PORC_BONIF_GENERAL",
+  61488:                             "DIFERENCIA_RECIBO",
+  61489:                             "FACTURA_SUBIDA",
+  61490:                             "PENDIENTE_DE_COBRO",
+  61491:                             "NUMERO",
+  61492:                             "TRACKING_CODE",
+  61493:                             "FECHA_DE_INGRESO_A",
+  61494:                             "CANT_ARTICULOS",
+  61495:                             "TIPO_DE_LOGISTICA",
+  61496:                             "DTO_GLOBAL",
+  61497:                             "DTO_POR_ITEM",
+  61498:                             "NUMERO_DE_GUIA",
+  61499:                             "TIPO_NOMBRE_FACT",
+  61500:                             "ESTADO_DEL_COBRO_DE",
+  61501:                             "FECHA_EMISION",
+  61502:                             "ESTADO_DE_GUIA",
+
+================================================================================
+
+LINE 61589:
+  61584:                             "CLIE_RAZON_SOCIAL",
+  61585:                             "ESTADO_RECIBOS",
+  61586:                             "ORIGEN_PEDIDO",
+  61587:                             "TOTAL_RECIBO",
+  61588:                             "VENDEDOR",
+  61589:                             "SALDO_CLIENTE",
+  61590:                             "TOTAL_PAYMENTS",
+  61591:                             "TOTAL_SHIPPINGS",
+  61592:                             "TOTAL_DESCONTADO",
+  61593:                             "PORC_BONIF_GENERAL",
+  61594:                             "DIFERENCIA_RECIBO",
+  61595:                             "FACTURA_SUBIDA",
+  61596:                             "PENDIENTE_DE_COBRO",
+  61597:                             "NUMERO",
+  61598:                             "TRACKING_CODE",
+  61599:                             "FECHA_DE_INGRESO_A",
+  61600:                             "CANT_ARTICULOS",
+  61601:                             "TIPO_DE_LOGISTICA",
+  61602:                             "DTO_GLOBAL",
+  61603:                             "DTO_POR_ITEM",
+  61604:                             "NUMERO_DE_GUIA",
+  61605:                             "TIPO_NOMBRE_FACT",
+  61606:                             "ESTADO_DEL_COBRO_DE",
+  61607:                             "FECHA_EMISION",
+  61608:                             "ESTADO_DE_GUIA",
+
+================================================================================
+
+LINE 66672:
+  66667:                         "title": "Cliente - Tipo",
+  66668:                         "maxLength": 100,
+  66669:                         "type": "string",
+  66670:                         "nullable": true
+  66671:                       },
+  66672:                       "CLIE_SALDO_CLIENTE": {
+  66673:                         "title": "Cliente - Saldo",
+  66674:                         "type": "number",
+  66675:                         "nullable": true
+  66676:                       },
+  66677:                       "PENDIENTE_PAGO": {
+  66678:                         "title": "Pendiente de Pago",
+  66679:                         "type": "number",
+  66680:                         "nullable": true
+  66681:                       },
+  66682:                       "DEBE": {
+  66683:                         "title": "Debe",
+  66684:                         "type": "number",
+  66685:                         "nullable": true
+  66686:                       },
+  66687:                       "HABER": {
+  66688:                         "title": "Haber",
+  66689:                         "type": "number",
+  66690:                         "nullable": true
+  66691:                       },
+
+================================================================================
+
+LINE 66923:
+  66918:                     "TIDC_NOMBRE": {
+  66919:                       "title": "Cliente - Tipo",
+  66920:                       "type": "string",
+  66921:                       "nullable": true
+  66922:                     },
+  66923:                     "CLIE_SALDO_CLIENTE": {
+  66924:                       "title": "Cliente - Saldo",
+  66925:                       "type": "number",
+  66926:                       "nullable": true
+  66927:                     },
+  66928:                     "PENDIENTE_PAGO": {
+  66929:                       "title": "Pendiente de Pago",
+  66930:                       "type": "number",
+  66931:                       "nullable": true
+  66932:                     },
+  66933:                     "DEBE": {
+  66934:                       "title": "Debe",
+  66935:                       "type": "number",
+  66936:                       "nullable": true
+  66937:                     },
+  66938:                     "HABER": {
+  66939:                       "title": "Haber",
+  66940:                       "type": "number",
+  66941:                       "nullable": true
+  66942:                     },
+
+================================================================================
+
+LINE 67124:
+  67119:                         "title": "Cliente - Tipo",
+  67120:                         "maxLength": 100,
+  67121:                         "type": "string",
+  67122:                         "nullable": true
+  67123:                       },
+  67124:                       "CLIE_SALDO_CLIENTE": {
+  67125:                         "title": "Cliente - Saldo",
+  67126:                         "type": "number",
+  67127:                         "nullable": true
+  67128:                       },
+  67129:                       "PENDIENTE_PAGO": {
+  67130:                         "title": "Pendiente de Pago",
+  67131:                         "type": "number",
+  67132:                         "nullable": true
+  67133:                       },
+  67134:                       "DEBE": {
+  67135:                         "title": "Debe",
+  67136:                         "type": "number",
+  67137:                         "nullable": true
+  67138:                       },
+  67139:                       "HABER": {
+  67140:                         "title": "Haber",
+  67141:                         "type": "number",
+  67142:                         "nullable": true
+  67143:                       },
+
+================================================================================
+
+LINE 67366:
+  67361:             "schema": {
+  67362:               "type": "integer"
+  67363:             }
+  67364:           },
+  67365:           {
+  67366:             "name": "CLIE_SALDO_CLIENTE",
+  67367:             "in": "query",
+  67368:             "description": "Cliente - Saldo",
+  67369:             "allowEmptyValue": true,
+  67370:             "schema": {
+  67371:               "type": "number"
+  67372:             }
+  67373:           },
+  67374:           {
+  67375:             "name": "PENDIENTE_PAGO",
+  67376:             "in": "query",
+  67377:             "description": "Pendiente de Pago",
+  67378:             "allowEmptyValue": true,
+  67379:             "schema": {
+  67380:               "type": "number"
+  67381:             }
+  67382:           },
+  67383:           {
+  67384:             "name": "DEBE",
+  67385:             "in": "query",
+
+================================================================================
+
+LINE 67560:
+  67555:                             "VENDEDOR",
+  67556:                             "LINK",
+  67557:                             "CLIE_ID_CLIE",
+  67558:                             "TIDC_DESCUENTO",
+  67559:                             "TIDC_NOMBRE",
+  67560:                             "CLIE_SALDO_CLIENTE",
+  67561:                             "PENDIENTE_PAGO",
+  67562:                             "DEBE",
+  67563:                             "HABER",
+  67564:                             "CONTABLE",
+  67565:                             "IMPORTE",
+  67566:                             "CUENTA_NOMBRE",
+  67567:                             "CONDICION_IMP_DESC",
+  67568:                             "id",
+  67569:                             "DESC_ESTADO",
+  67570:                             "AUDI_USUA_ALTA",
+  67571:                             "AUDI_USUA_MODIF",
+  67572:                             "AUDI_FECHA_ALTA",
+  67573:                             "AUDI_FECHA_MODIF"
+  67574:                           ],
+  67575:                           "type": "string",
+  67576:                           "description": "Physical column name (required). Available columns from entity view."
+  67577:                         },
+  67578:                         "title": {
+  67579:                           "type": "string",
+
+================================================================================
+
+LINE 67651:
+  67646:                             "VENDEDOR",
+  67647:                             "LINK",
+  67648:                             "CLIE_ID_CLIE",
+  67649:                             "TIDC_DESCUENTO",
+  67650:                             "TIDC_NOMBRE",
+  67651:                             "CLIE_SALDO_CLIENTE",
+  67652:                             "PENDIENTE_PAGO",
+  67653:                             "DEBE",
+  67654:                             "HABER",
+  67655:                             "CONTABLE",
+  67656:                             "IMPORTE",
+  67657:                             "CUENTA_NOMBRE",
+  67658:                             "CONDICION_IMP_DESC",
+  67659:                             "id",
+  67660:                             "DESC_ESTADO",
+  67661:                             "AUDI_USUA_ALTA",
+  67662:                             "AUDI_USUA_MODIF",
+  67663:                             "AUDI_FECHA_ALTA",
+  67664:                             "AUDI_FECHA_MODIF"
+  67665:                           ],
+  67666:                           "type": "string",
+  67667:                           "description": "Column name to filter (required). Available columns from entity view."
+  67668:                         },
+  67669:                         "operator": {
+  67670:                           "enum": [
+
+================================================================================

@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="es" class="dark-mode">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ENTREGAS DE PEDIDOS - TMC</title>
+<style>
+  /* ==================== ESTILOS MEJORADOS ==================== */
+  :root {
+    --bg: #0b0f1a; --card: #121826; --muted: #9aa3af; --accent: #ef4444;
+    --ok: #22c55e; --text: #f8fafc; --chip: #1f2937; --info: #3b82f6;
+    --outline: #2b3a55; --mode: #3b82f6; --shadow-color: rgba(0,0,0,.35);
+  }
+  html.light-mode {
+    --bg: #f1f5f9; --card: #ffffff; --muted: #475569; --accent: #dc2626;
+    --ok: #16a34a; --text: #0f172a; --chip: #e2e8f0; --info: #2563eb;
+    --outline: #cbd5e1; --shadow-color: rgba(0,0,0,.1);
+  }
+  * { box-sizing: border-box }
+  html, body { height: 100% }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    background: var(--bg); color: var(--text);
+    transition: background .3s ease, color .3s ease;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 16px }
+  .card {
+    background: var(--card); border: 1px solid var(--outline);
+    border-radius: 18px; box-shadow: 0 10px 30px var(--shadow-color);
+    padding: 16px;
+  }
+
+  /* Encabezado Fijo y Optimizado */
+  .sticky-controls {
+    position: sticky;
+    top: -1px;
+    z-index: 10;
+    background: var(--card);
+    padding: 0 16px;
+    margin: -16px -16px 8px;
+    border-bottom: 1px solid var(--outline);
+  }
+  .stickyHead {
+    padding: 12px 0 10px;
+  }
+  .head { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+  .head-title { flex-shrink: 1; min-width: 0; }
+  h1 { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .head .s-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .status { padding: 5px 10px; border-radius: 999px; font-size: 12px; border: 1px solid transparent; }
+  .status.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); border-color: var(--ok); color: var(--ok); }
+  .status.bad { background: color-mix(in srgb, var(--accent) 20%, transparent); border-color: var(--accent); color: var(--accent); }
+
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px }
+  .modeTab {
+    display: flex; flex-direction: column; align-items: center;
+    background: transparent; border: 1px solid var(--outline); color: var(--muted);
+    font-weight: 600; font-size: 15px; padding: 6px 14px;
+    border-radius: 12px; cursor: pointer; transition: all .2s ease;
+  }
+  .tab-count { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 2px; height: 14px; }
+  .modeTab.active { background: var(--mode); border-color: var(--mode); color: #fff; }
+  .modeTab.active .tab-count { color: #fff; }
+
+  .fila { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; padding-bottom: 12px; }
+  
+  .btn {
+    border: none; border-radius: 12px; color: #fff; padding: 12px 16px;
+    font-weight: 600; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; gap: 8px;
+    transition: transform .1s ease, opacity .2s ease, background-color .2s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; background: var(--muted) !important; }
+  .btn-sec { background: #374151 }
+  .btn-info { background: var(--info) }
+  .btn-ok { background: var(--ok); color: #fff; }
+  .btn-danger { background: var(--accent) }
+  .btn-ghost { background: transparent; color: var(--info); padding: 8px; }
+  .s-right-fila { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .btn .icon { font-size: 1.2em; }
+
+  .inp {
+    background: var(--bg); border: 1px solid var(--outline);
+    border-radius: 10px; color: var(--text); padding: 10px 12px; font-size: 16px;
+  }
+  .inp::placeholder { color: var(--muted) }
+  .search-wrapper { position: relative; width: 100%; max-width: 320px; }
+  .search-wrapper .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  .inp-search { width: 100%; padding-left: 38px; }
+
+  .table-wrap { margin-top: 14px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 12px; border-bottom: 1px solid var(--outline); font-size: 14px; vertical-align: middle; white-space: nowrap; }
+  th { text-align: left; color: var(--muted); font-weight: 600; user-select: none }
+  tr:hover { background: color-mix(in srgb, var(--info) 5%, transparent); }
+  td.td-displayAddress { white-space: normal; min-width: 250px; }
+  .chk { width: 22px; height: 22px; accent-color: var(--info); }
+  
+  .action-icons, .nav-icons { display: inline-flex; gap: 8px; margin-left: 10px; vertical-align: middle; }
+  .action-icons a, .nav-icons a { text-decoration: none; display: inline-block; transition: transform .2s ease; }
+  .action-icons a:hover, .nav-icons a:hover { transform: scale(1.15); }
+  .action-icons .icon, .nav-icons .icon { width: 18px; height: 18px; }
+  
+  .gmaps-icon { color: #EA4335; }
+  .waze-icon { color: #33ccff; }
+  .wa-icon { color: #25D366; }
+  .phone-icon { color: var(--muted); }
+  .phone-icon:hover { color: var(--info) !important; }
+  .type-badge {
+    padding: 3px 8px; font-size: 12px; font-weight: 600; border-radius: 7px;
+    border: 1px solid; text-transform: capitalize;
+  }
+  .type-badge.local { color: #60a5fa; background: color-mix(in srgb, #60a5fa 15%, transparent); border-color: color-mix(in srgb, #60a5fa 50%, transparent); }
+  .type-badge.transporte { color: #f472b6; background: color-mix(in srgb, #f472b6 15%, transparent); border-color: color-mix(in srgb, #f472b6 50%, transparent); }
+
+  /* TARJETAS MÓVILES */
+  .cards { display: none; margin-top: 8px; grid-template-columns: 1fr; gap: 12px; }
+  .card-container { position: relative; overflow: hidden; border-radius: 16px; }
+  .swipe-background { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; color: white; font-weight: bold; opacity: 0; transition: opacity 0.2s ease;}
+  .swipe-background.visible { opacity: 1; }
+  .swipe-right-bg { background-color: var(--info); }
+  .card-row { position: relative; z-index: 1; display: flex; gap: 12px; align-items: flex-start; background: var(--card); border: 1px solid var(--outline); padding: 14px; transition: transform 0.2s ease-out, box-shadow .2s ease; touch-action: pan-y; }
+  .card-row.selected { border-color: var(--info); box-shadow: 0 0 0 2px var(--info), 0 4px 12px rgba(0,0,0,.1); }
+  .card-main { flex: 1; min-width: 0; }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .card-title { font-weight: 700; font-size: 18px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-bultos { font-size: 14px; background: var(--chip); color: var(--text); padding: 4px 10px; border-radius: 99px; flex-shrink: 0; }
+  .card-address { font-size: 16px; color: var(--text); margin-bottom: 4px; font-weight: 500; }
+  .card-locality { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+  .card-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center; margin-top: 12px; }
+  .btn-card-action { color: white; height: 48px; border-radius: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+  .gmaps-btn { background-color: #EA4335; }
+  .waze-btn { background-color: #33ccff; }
+  .phone-btn { background-color: var(--muted); }
+  .wa-btn { background-color: #25D366; }
+  .btn-optimize { background: #9333ea; }
+  .card-meta { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+  .card-meta strong { color: var(--text); }
+  .swipe-indicator { position: absolute; right: 14px; top: 18px; color: var(--muted); opacity: 0.5; animation: pulse-horizontal 2s infinite; font-size: 18px;}
+  @keyframes pulse-horizontal { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
+  .card-type-badge {
+    position: absolute; top: 14px; right: 14px;
+    padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 7px;
+    text-transform: uppercase;
+  }
+
+  .actionbar {
+      position: fixed; left: 16px; right: 16px; bottom: 16px;
+      background: color-mix(in srgb, var(--card) 95%, transparent);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--outline); padding: 8px 12px;
+      display: flex; align-items: center; gap: 10px; z-index: 70;
+      box-shadow: 0 8px 30px rgba(0,0,0,.25);
+      border-radius: 16px;
+      transform: translateY(150%);
+      transition: transform .3s ease-in-out;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+  }
+  .actionbar.visible { transform: translateY(0); }
+  .selinfo { font-size: 14px; font-weight: 500; flex-shrink: 0; }
+  .actionbar-buttons { display: flex; gap: 8px; }
+  .actionbar .btn { padding: 10px 12px; font-size: 13px; }
+  body.withBar { padding-bottom: 120px }
+  .mobileSort{display:none !important}
+
+  /* VISTA MÓVIL */
+  @media (max-width:820px){
+    h1{font-size:22px}
+    .cards{display:grid}
+    table{display:none} 
+    .bulkControls, .desktop-only{display:none!important}
+    .mobile-only{display:flex!important}
+    .tabs { flex-wrap: nowrap; justify-content: space-between; }
+    .modeTab{font-size:13px; padding: 6px 8px; flex-shrink: 0;}
+    .search-wrapper { max-width: none; }
+    #delivFilters{justify-content:center}
+    #delivFilters .pill{white-space:nowrap}
+    #delivFilters{flex-wrap:nowrap; overflow:auto}
+  }
+  @media (max-width:768px){
+    .inp-search{width:100%}
+    .btn{padding:10px 14px}
+    canvas{height:220px}
+  }
+  @media (max-width:480px){
+    .wrap{padding:10px}
+    .card{padding:12px}
+    .fila{gap:8px}
+    canvas{height:200px}
+  }
+
+  /* Estilos del Modal */
+  .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:12px;z-index:50}
+  .modal .panel{width:min(940px,100%);background:var(--card);border:1px solid var(--outline);border-radius:16px;padding:14px;max-height:90vh;overflow:auto;position:relative}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .canvas-wrap{background:var(--bg);border:2px dashed var(--outline);border-radius:12px;padding:10px}
+  canvas{display:block;width:100%;height:240px;touch-action:none;transition:height .2s ease}
+  .link{color:var(--info);cursor:pointer}
+  .photoBox{border:1px solid var(--outline);border-radius:10px;padding:10px;background:var(--bg)}
+  .dniPrev{max-width:260px;border-radius:8px;background:#000;display:none}
+  .graciasOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:60}
+  .graciasCard{background:#0d1b2a;border:1px solid #114b5f;color:#d1fae5;padding:28px 34px;border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.45);max-width:640px;text-align:center}
+  .graciasCard strong{display:block;font-size:36px;color:#34d399;margin-bottom:10px}
+  .graciasCard span{font-size:18px;color:#d1fae5}
+  .stickyTop{position:sticky; top:0; z-index:2;background:var(--card); padding:10px 10px 0 10px; margin: -14px -14px 8px -14px; border-bottom:1px solid var(--outline); border-top-left-radius:16px; border-top-right-radius:16px;}
+  .infoBox{background:var(--bg);border:1px solid var(--outline);border-radius:12px;padding:12px}
+  .infoBig{font-size:22px;font-weight:900;letter-spacing:.2px;margin-bottom:6px}
+  .infoMid{font-size:16px;color:var(--text);margin-bottom:6px}
+  .infoSmall{font-size:13px;color:var(--muted)}
+  .stickyFoot{position:sticky; bottom:0; z-index:2;background:var(--card); padding:10px; margin:8px -14px -14px -14px; border-top:1px solid var(--outline); border-bottom-left-radius:16px; border-bottom-right-radius:16px; display:flex; gap:8px; justify-content:space-between; flex-wrap:wrap;}
+  .filters-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .pill{border:1px solid var(--outline);background:var(--chip);color:var(--text);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px}
+  .pill.active{background:var(--info);border-color:var(--info)}
+  .muted{color:var(--muted);font-size:13px}
+  .badge{padding:6px 12px;border-radius:999px;background:var(--chip);font-size:13px;border:1px solid transparent}
+  .ok{background:#11331c;border:1px solid #14532d;color:#a7f3d0}
+  .warn{background:#3b1111;border:1px solid #7f1d1d;color:#fecaca}
+  
+  /* ASISTENTE DE ENTREGA */
+  .wizard-step { display: none; }
+  .wizard-step.active { display: block; }
+  #modalPanel .row { margin: 20px 0; }
+  
+  /* Modal de Confirmación */
+  #confirmModal .panel { max-width: 400px; padding: 24px; text-align: center; }
+  #confirmTitle { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  #confirmMessage { font-size: 16px; color: var(--muted); margin-bottom: 24px; }
+  #confirmButtons { display: flex; gap: 10px; justify-content: center; }
+  
+  /* INDICADOR DE CARGA */
+  .loader-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
+  .loader-content { background: var(--card); padding: 20px 30px; border-radius: 12px; text-align: center; border: 1px solid var(--outline); }
+  .loader-spinner { border: 4px solid var(--chip); border-top: 4px solid var(--info); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+  #loaderText { font-weight: 500; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+</style>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="icon-route" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v10l6 3"/><path d="M12 22v-8l-6-3"/></symbol>
+  
+  <symbol id="icon-gmaps" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></symbol>
+  <symbol id="icon-waze" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C7.31 2 3.5 5.81 3.5 10.5c0 3.12 1.63 6.24 4.25 8.37L12 22l4.25-3.13C18.87 16.74 20.5 13.62 20.5 10.5C20.5 5.81 16.69 2 12 2zm-1.5 12.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm3 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></symbol>
+  <symbol id="icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="icon-whatsapp" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.79.46 3.53 1.34 5.09l-1.41 5.15 5.27-1.39a9.83 9.83 0 0 0 4.71 1.21h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2m4.84 12.11c-.28.48-.98.78-1.68.92-.56.12-1.32.14-1.94-.04-.5-.15-1.12-.34-2.14-1.12-1.2-.93-2.1-2.02-2.3-2.32-.2-.3-.4-.68-.4-.98s-.01-1.02.48-1.32c.15-.1.32-.14.48-.14.18 0 .36-.01.51.01.21.03.36.04.51.34.18.35.61 1.48.66 1.58.05.1.08.18.01.28-.07.1-.15.18-.26.28l-.43.37c-.1.08-.18.17-.07.34.13.21.58.93 1.21 1.5.8.7 1.55 1.01 1.75 1.11.2.1.32.08.44-.04.12-.12.51-.59.66-.78.15-.18.3-.3.46-.3.18 0 .34 0 .46.04.14.05.66.31.78.37.1.05.2.08.23.12.03.04.03.27-.04.55z"/></symbol>
+</svg>
+
+</head>
+<body>
+
+<div class="wrap">
+  <div id="screenMain" class="card">
+    <div class="sticky-controls">
+      <div class="stickyHead">
+        <div class="head">
+          <div class="head-title">
+            <h1 id="mainTitle">Entregas TMC</h1>
+          </div>
+          <div class="s-right">
+            <button id="btnRefrescar" class="btn btn-ghost" title="Refrescar datos">
+              <svg class="icon" width="22" height="22"><use href="#icon-refresh"></use></svg>
+            </button>
+            <span id="estado" class="status bad">Desconectado</span>
+          </div>
+        </div>
+        <div class="tabs" id="tabsRow">
+          <button id="tabAEntregar" class="modeTab active"><span>A Entregar</span><span class="tab-count"></span></button>
+          <button id="tabEnReparto" class="modeTab"><span>En Reparto</span><span class="tab-count"></span></button>
+          <button id="tabEntregados" class="modeTab"><span>Entregados</span></button>
+        </div>
+      </div>
+      <div class="fila">
+          <div class="search-wrapper">
+              <svg class="icon" width="20" height="20"><use href="#icon-search"></use></svg>
+              <input id="inpBuscar" class="inp inp-search" placeholder="Buscar por cliente, pedido, dirección..."/>
+          </div>
+          <div class="s-right-fila desktop-only">
+              <label class="switch" title="Mostrar sólo seleccionados">
+                  <input type="checkbox" id="swSolo"/>
+                  <span>Solo seleccionados</span>
+              </label>
+              <button id="btnToggleAll" class="btn btn-sec">Seleccionar todos</button>
+          </div>
+      </div>
+    </div>
+
+    <div id="delivFilters" class="filters-line" style="display:none">
+        <span class="muted">Filtro:</span>
+        <button class="pill active" data-deliv="all">Todos</button>
+        <button class="pill" data-deliv="local">Locales</button>
+        <button class="pill" data-deliv="transporte">Transportes</button>
+    </div>
+    
+    <div class="fila" id="optimize-row" style="display:none; justify-content: center;">
+        <button id="btnOptimizeRoute" class="btn btn-optimize">
+            <svg class="icon" width="22" height="22"><use href="#icon-route"></use></svg>
+            Optimizar Ruta Seleccionada
+        </button>
+    </div>
+
+     <div class="fila mobileSort">
+        <label class="switch" style="padding:8px 10px">
+            <span style="margin-right:8px">Ordenar por</span>
+            <select id="selSortField" class="inp" style="width:auto;min-width:180px"></select>
+        </label>
+        <button id="btnSortDir" class="btn btn-sec" type="button">Ascendente</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="theadRow"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="cards" class="cards"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="actionBar" class="actionbar">
+  <div id="abInfo" class="selinfo">Seleccionados: 0</div>
+  <div class="actionbar-buttons">
+    <button id="abExport" class="btn btn-sec" disabled>
+        <span class="btn-text">Exportar</span>
+    </button>
+    <button id="abEntregar" class="btn btn-ok" disabled>
+        <span class="btn-text"></span>
+    </button>
+  </div>
+</div>
+
+<div id="loader" class="loader-overlay">
+  <div class="loader-content">
+    <div class="loader-spinner"></div>
+    <div id="loaderText">Procesando...</div>
+  </div>
+</div>
+
+<div id="gracias" class="graciasOverlay" aria-hidden="true">
+  <div class="graciasCard">
+    <strong id="graciasTitle">¡Pedido entregado!</strong>
+    <span id="graciasMsg">Revisá tu correo: te enviamos la factura. ¡Gracias por elegirnos!</span>
+  </div>
+</div>
+
+<div id="modal" class="modal" aria-hidden="true">
+  <div class="panel" id="modalPanel">
+    <div id="stickyTop" class="stickyTop">
+      <div id="topInfo" class="infoBox"></div>
+    </div>
+
+    <div id="wizardStep1" class="wizard-step active">
+      <div class="row">
+        <label style="width:100%">
+          <div class="muted" style="margin-bottom:4px">Nombre de quien recibe</div>
+          <input id="inpNombre" class="inp" placeholder="Nombre completo" style="width:100%"/>
+        </label>
+      </div>
+      <div class="row">
+        <label style="width:100%">
+          <div class="muted" style="margin-bottom:4px">DNI/CUIT</div>
+          <input id="inpDni" class="inp" inputmode="numeric" pattern="[0-9]*" placeholder="##.###.###" style="width:100%"/>
+        </label>
+      </div>
+    </div>
+
+    <div id="wizardStep2" class="wizard-step">
+      <div class="row">
+        <label style="width:100%">
+          <div class="muted" style="margin-bottom:4px">Comentarios (opcional)</div>
+          <textarea id="inpComentarios" class="inp" rows="4" placeholder="Ej.: embalaje con golpe, caja húmeda, etc." style="width:100%"></textarea>
+        </label>
+      </div>
+    </div>
+
+    <div id="wizardStep3" class="wizard-step">
+      <div class="row" style="justify-content:center; flex-direction: column;">
+        <input id="filePhoto" type="file" accept="image/*" capture="environment" style="display:none"/>
+        <button id="btnUploadPhoto" class="btn btn-sec" type="button">Cargar foto (opcional)</button>
+        <div id="photoArea" class="photoBox" style="display:none;margin-top:12px">
+            <img id="dniPrev" class="dniPrev" alt="Previsualización"/>
+        </div>
+      </div>
+    </div>
+
+    <div id="wizardStep4" class="wizard-step">
+        <div class="row" style="margin-bottom:12px;">
+          <label class="row" style="gap:8px"><input id="chkAcepto" type="checkbox" checked/> Declaro haber revisado la mercadería y acepto su estado.</label>
+        </div>
+        <div class="canvas-wrap">
+          <div class="row" style="justify-content:space-between;margin-bottom:6px">
+            <div class="muted">Firma</div>
+            <span class="link" id="lnkLimpiar">Limpiar</span>
+          </div>
+          <canvas id="cv"></canvas>
+        </div>
+    </div>
+
+    <div class="stickyFoot">
+      <button id="btnPrev" class="btn btn-sec" type="button" style="display: none;">Anterior</button>
+      <button id="btnNext" class="btn btn-info" type="button">Siguiente</button>
+      <button id="btnConfirmar" class="btn btn-ok" type="button" style="display: none;">Confirmar y despachar</button>
+      <button id="btnCancelar" class="btn btn-danger" type="button">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal" aria-hidden="true">
+  <div class="panel">
+    <div id="confirmTitle">Confirmar Acción</div>
+    <div id="confirmMessage">¿Estás seguro de que quieres continuar?</div>
+    <div id="confirmButtons">
+      <button id="confirmCancel" class="btn btn-sec" type="button">Cancelar</button>
+      <button id="confirmOk" class="btn btn-ok" type="button">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== CONFIG ===================== */
+const CONFIG = {
+  USERNAME: "XXXXXXXX",
+  PASSWORD: "XXXXXXXXXXXX",
+  API_BASE: "https://api.yiqi.com.ar",
+  APP_BASE: "https://me.yiqi.com.ar",
+  TOKEN_URLS: ["https://api.yiqi.com.ar/token","https://api.yiqi.com.ar/connect/token"],
+  OAUTH: { client_id:"", client_secret:"", scope:"", grant_type:"password" },
+  GETLIST_BASE: "https://api.yiqi.com.ar/api/instancesApi/GetList",
+  ENTITY_ID_REMITO: 859,
+  SCHEMA_ID_REMITO: 1491,
+  ATT_FIELD_ID: 11089,
+  SAVEFILE_URL: "https://api.yiqi.com.ar/api/instancesApi/SaveFile",
+  SAVE_URL:         "https://api.yiqi.com.ar/api/instancesApi/Save",
+  REPORT_ID_REMITO: 28,
+  REPORT_VIEW_PATH: "/report/view",
+  REMITO_VIEW_PATH: "/view/REMITO_DE_VENTA",
+  WORKFLOW_EXEC_URL: "https://api.yiqi.com.ar/api/workflowApi/ExecuteTransition",
+  TRANSITION_ID_DESPACHAR: 118439,
+  TRANSITION_ID_ENTREGAR: 119679,
+  PROXY_ORIGIN: ""
+};
+
+/* ===================== Estado/helpers ===================== */
+let MODE=null;
+const SMARTIES = {
+  local:       { entityId: 859, schemaId: 1491, smartieId: 2579 },
+  transporte:  { entityId: 859, schemaId: 1491, smartieId: 2580 },
+  aEntregar:   {}, // Contenedor para la vista unificada
+  enReparto:   { entityId: 859, schemaId: 1491, smartieId: 2598 },
+  entregados:  { entityId: 859, schemaId: 1491, smartieId: 2586 }
+};
+const COLS = {
+  aEntregar: [
+    {key:"tipo", label:"Tipo"}, {key:"pedido", label:"Pedido"}, {key:"displayName", label:"Destino"}, {key:"displayAddress", label:"Dirección"},
+    {key:"displayLocality", label:"Localidad"}, {key:"bultos", label:"Bultos"}, {key:"obs", label:"Observaciones"}, {key:"cond", label:"Cond. Venta"}
+  ],
+  enReparto: [
+    {key:"tipo", label:"Tipo"}, {key:"pedido", label:"Pedido"}, {key:"displayName", label:"Destino"}, {key:"displayAddress", label:"Dirección"},
+    {key:"displayLocality", label:"Localidad"}, {key:"bultos", label:"Bultos"}, {key:"obs", label:"Observaciones"}
+  ],
+  entregados: [
+    {key:"pedido", label:"Pedido - Nro"}, {key:"cliente", label:"Cliente"}, {key:"fechaEntrega", label:"Fecha Entrega"},
+    {key:"remitoNro", label:"Remito - Nro"}, {key:"bultos", label:"Bultos"}, {key:"transportName", label:"Transporte"}, {key:"metodo", label:"Método"}
+  ]
+};
+let token=null, tokenVenceMs=0;
+let rowsRaw=[]; let sortBy=null, sortDir=1; let selectedMap={}; let searchQuery=""; let onlySelected=false; let delivFilter="all";
+
+const $theadRow=document.getElementById("theadRow");
+const $estado=document.getElementById("estado");
+const $msg=document.getElementById("msg");
+const $tbody=document.getElementById("tbody");
+const $cards=document.getElementById("cards");
+const $gracias=document.getElementById("gracias");
+const $mainTitle=document.getElementById("mainTitle");
+const $inpBuscar=document.getElementById("inpBuscar");
+const $btnRefrescar=document.getElementById("btnRefrescar");
+const $btnToggleAll=document.getElementById("btnToggleAll");
+const $swSolo=document.getElementById("swSolo");
+const $tabAEntregar=document.getElementById("tabAEntregar");
+const $tabEnReparto=document.getElementById("tabEnReparto");
+const $tabEntregados=document.getElementById("tabEntregados");
+const $ab=document.getElementById("actionBar");
+const $abInfo=document.getElementById("abInfo");
+const $abExport=document.getElementById("abExport");
+const $abEntregar=document.getElementById("abEntregar");
+const $delivFilters=document.getElementById("delivFilters");
+const $selSortField=document.getElementById("selSortField");
+const $btnSortDir=document.getElementById("btnSortDir");
+
+/* OPTIMIZACIÓN DE RUTA */
+function optimizeRoute() {
+    const selectedIds = getSelectedIds();
+    if (selectedIds.length < 2) {
+        setMsg("Selecciona al menos 2 pedidos para optimizar la ruta.", "warn");
+        return;
+    }
+    const selectedItems = rowsRaw.filter(r => selectedIds.includes(String(r.id)));
+    const waypoints = selectedItems.map(item => {
+        if (item.lat && item.lng) return `${item.lat},${item.lng}`;
+        // Usa la dirección de display unificada
+        return [item.displayAddress, item.displayLocality, item.provEnvio].filter(Boolean).join(', ');
+    });
+    const origin = waypoints.shift() || '';
+    const destination = waypoints.pop() || origin;
+    let mapsUrl = `https://maps.google.com/maps/dir/`;
+    mapsUrl += `${encodeURIComponent(origin)}/`;
+    if (waypoints.length > 0) {
+        mapsUrl += waypoints.map(wp => encodeURIComponent(wp)).join('/') + '/';
+    }
+    mapsUrl += `${encodeURIComponent(destination || origin)}`;
+    setMsg(`Ruta generada para ${selectedItems.length} paradas. Abriendo Google Maps...`, "ok");
+    window.open(mapsUrl, '_blank', 'noopener');
+}
+document.getElementById("btnOptimizeRoute").onclick = optimizeRoute;
+
+
+/* Móvil: título corto y tabs abreviadas */
+function applyMobileHeader(){
+  const mobile = window.innerWidth <= 820;
+  $mainTitle.textContent = mobile ? "Entregas" : "Entregas TMC";
+  if(mobile){
+    $tabAEntregar.querySelector('span').textContent="A Entregar"; 
+    $tabEnReparto.querySelector('span').textContent="Reparto"; 
+    $tabEntregados.querySelector('span').textContent="Entregados";
+  } else {
+    $tabAEntregar.querySelector('span').textContent="Pedidos a Entregar"; 
+    $tabEnReparto.querySelector('span').textContent="Pedidos En Reparto"; 
+    $tabEntregados.querySelector('span').textContent="Pedidos Entregados";
+  }
+}
+window.addEventListener('resize', applyMobileHeader);
+
+/* Estado/Mensajes */
+function setEstado(txt, ok){ $estado.textContent=txt; $estado.className="status " + (ok ? "ok" : (txt.toLowerCase().includes("conectado")?"ok":"bad")); }
+function setMsg(txt, kind=""){ if(!txt){ $msg.style.display="none"; $msg.textContent=""; return; } $msg.textContent=txt; $msg.style.display="inline-flex"; $msg.className="badge "+(kind==="warn"?"warn":(kind==="ok"?"ok":"")); }
+function showGracias(title, message, ms=7000){
+    document.getElementById('graciasTitle').textContent = title || "¡Pedido entregado!";
+    document.getElementById('graciasMsg').textContent = message || "Revisá tu correo: te enviamos la factura.";
+    $gracias.style.display="flex"; 
+    clearTimeout(showGracias._t); 
+    showGracias._t=setTimeout(()=>{ $gracias.style.display="none"; }, ms); 
+}
+function disableActions(dis){ [$btnToggleAll,$btnRefrescar,$abExport,$abEntregar].forEach(b=>b&&(b.disabled=!!dis)); }
+function limpiarTabla(){ $tbody.innerHTML=""; $cards.innerHTML=""; $theadRow.innerHTML=""; sortBy=null; sortDir=1; selectedMap={}; updateActionBar(); }
+function prox(url){ return CONFIG.PROXY_ORIGIN ? `${CONFIG.PROXY_ORIGIN}/proxy?url=${encodeURIComponent(url)}` : url; }
+function getSelectedIds(){ return Object.keys(selectedMap).filter(k=>selectedMap[k]).map(String); }
+function parseBultos(v){ const n=parseFloat(String(v??"").replace(",",".").replace(/[^\d.]/g,"")); return isNaN(n)?0:n; }
+function totalBultosSel(){ const ids=getSelectedIds(); const sel=rowsRaw.filter(r=>ids.includes(String(r.id))); return sel.reduce((a,r)=>a+parseBultos(r.bultos),0); }
+
+function updateActionBar() {
+    const n = getSelectedIds().length;
+    if (n > 0) {
+        $ab.classList.add('visible');
+        document.body.classList.add('withBar');
+    } else {
+        $ab.classList.remove('visible');
+        document.body.classList.remove('withBar');
+    }
+
+    $abInfo.textContent = (MODE === "aEntregar" && n > 0)
+        ? `Seleccionados: ${n} · Bultos: ${totalBultosSel()}`
+        : `Seleccionados: ${n}`;
+    
+    $abExport.disabled = n === 0;
+
+    const $abEntregarBtn = document.getElementById('abEntregar');
+    const $abEntregarText = $abEntregarBtn.querySelector('.btn-text');
+    
+    if (MODE === 'aEntregar') {
+        $abEntregarText.textContent = 'A Reparto';
+        $abEntregarBtn.classList.remove('btn-ok');
+        $abEntregarBtn.classList.add('btn-info');
+        $abEntregarBtn.style.display = "";
+        $abEntregarBtn.disabled = n === 0;
+    } else if (MODE === 'enReparto') {
+        $abEntregarText.textContent = 'Entregar';
+        $abEntregarBtn.classList.remove('btn-info');
+        $abEntregarBtn.classList.add('btn-ok');
+        $abEntregarBtn.style.display = "";
+        $abEntregarBtn.disabled = n === 0;
+    } else { 
+        $abEntregarBtn.style.display = "none";
+    }
+}
+
+/* Auth */
+async function loginYiQi(){
+  const payload=new URLSearchParams({ username:CONFIG.USERNAME, password:CONFIG.PASSWORD, grant_type: CONFIG.OAUTH?.grant_type || "password", ...(CONFIG.OAUTH?.client_id?{client_id:CONFIG.OAUTH.client_id}:{}), ...(CONFIG.OAUTH?.client_secret?{client_secret:CONFIG.OAUTH.client_secret}:{}), ...(CONFIG.OAUTH?.scope?{scope:CONFIG.OAUTH.scope}:{}), });
+  let lastErr=null;
+  for(const url of CONFIG.TOKEN_URLS){
+    try{
+      const r=await fetch(prox(url),{method:"POST",headers:{ "Content-Type":"application/x-www-form-urlencoded" },body:payload});
+      if(!r.ok) throw new Error(`Login ${url} → ${r.status}`);
+      const j=await r.json(); token=j.access_token; tokenVenceMs=Date.now()+((j.expires_in?j.expires_in-60:3000)*1000); setEstado("Conectado",true); return;
+    }catch(e){ console.error(e); lastErr=e; }
+  }
+  setEstado("Desconectado",false); setMsg("No se pudo conectar a YiQi.","warn"); throw lastErr||new Error("Login falló");
+}
+async function ensureToken(){ if(!token || Date.now()>tokenVenceMs) await loginYiQi(); }
+async function apiFetch(url, body){
+  await ensureToken();
+  let r=await fetch(prox(url),{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})});
+  if(r.status===401){ await loginYiQi(); r=await fetch(prox(url),{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})}); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+/* Utils Smarties/Extractores */
+function objectifyColumnsData(resp){ if(Array.isArray(resp?.columns)&&Array.isArray(resp?.data)){ const cols=resp.columns.map(c=>c?.name??c); return resp.data.map(arr=>{const o={}; cols.forEach((cn,i)=>o[cn]=arr[i]); return o;}); } return null; }
+function getRows(resp){ if(!resp) return []; if(Array.isArray(resp.rows)) return resp.rows; if(Array.isArray(resp.data?.rows)) return resp.data.rows; if(Array.isArray(resp.data)) return resp.data; if(Array.isArray(resp.instances)) return resp.instances; if(Array.isArray(resp.items)) return resp.items; const o=objectifyColumnsData(resp); if(Array.isArray(o)) return o; return []; }
+function normKey(s){ return String(s??"").toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/[-–—−_/.:(),;[\]{}|]/g," ").replace(/\s+/g," ").trim(); }
+function pickExact(row,candidates){ const keys=Object.keys(row||{}); const table=keys.map(k=>({k,n:normKey(k)})); for(const name of candidates){ const nn=normKey(name); const exact=table.find(o=>o.n===nn); if(exact) return row[exact.k]; } for(const name of candidates){ const nn=normKey(name); const end=table.find(o=>o.n.endsWith(" "+nn)); if(end) return row[end.k]; } return undefined; }
+function pick(row,candidates){ const keys=Object.keys(row||{}); for(const tryName of candidates){ const t=normKey(tryName); const hit=keys.find(k=>normKey(k).includes(t)); if(hit) return row[hit]; } return undefined; }
+function getDirEnvio(row){ return (row["REDV_DIRECCION_DE_ENVIO"] ?? pick(row,["Dirección de envío","Direccion de envio","Domicilio","Calle","Dirección"]) ?? "").toString().trim(); }
+function getLocEnvio(row){ return (row["REDV_LOCALIDAD_DE_ENVIO"] ?? pick(row,["Localidad de envío","Localidad","Ciudad","Partido"]) ?? "").toString().trim(); }
+function getCpEnvio(row){ return (row["REDV_CODIGO_POSTAL"] ?? pick(row,["CP","C.P.","Código Postal","Codigo Postal"]))?.toString().trim() || ""; }
+function getProvEnvio(row){ return (row["REDV_PROVINCIA_DE_ENVIO"] ?? pick(row,["Provincia de envío","Provincia"]))?.toString().trim() || ""; }
+function getMapsUrlEnvio(row){ return (row["MAPS_URL_ENVIO"] ?? row["Maps Url Envío"] ?? pick(row,["Link Mapa","Ubicación (Maps URL)","Maps URL"]))?.toString().trim() || ""; }
+function getTrloDir(row){ return (row["TRLO_DIRECCION"] ?? pick(row,["Dirección Transporte","Direccion Transporte","Transporte Dirección","Domicilio Transporte"]) ?? "").toString().trim(); }
+function getTrloLocalidad(row){ return (row["REDV_TRANS_LOCALI"] ?? row["TRLO_LOCALIDAD"] ?? pick(row,["Localidad Transporte","Ubicación","Localidad","Ciudad"]))?.toString().trim() || ""; }
+function getTrloCp(row){ return (row["TRLO_CODIGO_POSTAL"] ?? pick(row,["CP Transporte","Código Postal Transporte"]))?.toString().trim() || ""; }
+function getTrloProv(row){ return (row["TRLO_PROVINCIA"] ?? pick(row,["Provincia Transporte"]))?.toString().trim() || "CABA"; }
+function getTrloMapsUrl(row){ return (row["TRLO_MAPS_URL"] ?? pick(row,["Mapa Transporte","Link Mapa Transporte"]))?.toString().trim() || ""; }
+function getTrloHoraDesde(row){ return (row["TRLO_HORARIO_DESDE"] ?? pick(row,["Horario Desde","Desde"]))?.toString().trim() || ""; }
+function getTrloHoraHasta(row){ return (row["TRLO_HORARIO_HASTA"] ?? pick(row,["Horario Hasta","Hasta"]))?.toString().trim() || ""; }
+function getClienteTelefono(row){ return (pick(row,["CLIE_TE1", "Teléfono Cliente", "Telefono"]) ?? "").toString().trim(); }
+function getTransporteTelefono(row){ return (pick(row,["TRLO_TELEFONO", "Teléfono Transporte", "Telefono"]) ?? "").toString().trim(); }
+function fmtHora(a,b){ const clean=t=>String(t||"").replace("T"," ").trim(); const A=clean(a), B=clean(b); if(!A && !B) return "-"; if(A && B) return `${A}–${B}`; return A||B; }
+function getRemitoId(row){ let v=row["ID"]??row["id"]??row["Identificador"]??row["REMITO_ID_REMITO"]??pick(row,["Remito - Id","Remito Id","Id Remito"]); return (v==null?"":String(v).trim()); }
+function getPedidoNro(row){ let v=row["PEDI_NUMERO"]??row["PEDI_NRO_PEDIDO"]; if(v==null||v==="-" ) v=pickExact(row,["Pedido - Nro"])??pick(row,["Nro Pedido","N° Pedido","Número de Pedido"]); return (v==null||v==="-"?"":String(v).trim()); }
+function getCliente(row){ let v=row["CLIE_RAZON_SOCIAL"]; if(v==null) v=pickExact(row,["Cliente - Razón Social"])??pick(row,["Razón Social","Cliente","Nombre"]); return (v==null?"":String(v).trim()); }
+function getClienteId(row){ let v=row["REDV_CLIE_IDEN"]; if(v==null) v=pick(row,["Cliente - Identificador","CLIE_ID_CLIE","Id Cliente","Cliente Id","Identificador Cliente"]); if(v==null) v=getCliente(row); return (v==null?"":String(v).trim()); }
+function getBultos(row){ let v=row["REDV_BULTOS"]; if(v==null) v=pick(row,["Bultos","REDV BULTOS"]); return (v==null?"-":String(v).trim()); }
+function getObs(row){ return (row["PEDI_OBSERVACIONES"] ?? pickExact(row,["Pedido - Observaciones"]) ?? pick(row,["Observaciones"]))?.toString().trim() || ""; }
+function getCondVenta(row){ let v=row["REDV_PEDIDO___CONDICION_D"]; if(v==null) v=pick(row,["Condición de Venta","Condicion de Venta"]); return (v==null?"-":String(v).trim()); }
+function getFechaEntrega(row){ let v=row["PEDI_FECHA_DE_ENTREGA"]; if(!v) return ""; try{ const d=new Date(v); if(isNaN(d)) return String(v); return d.toLocaleDateString("es-AR"); }catch{ return String(v||""); } }
+function getTransportName(row){ return (row["TRLO_NOMBRE"] ?? pick(row,["Transporte","Nombre Transporte"]) ?? "").toString().trim(); }
+function getLat(row){ return (row["LATITUD"] ?? row["TRLO_LATITUD"] ?? row["REDV_LATITUD"] ?? pick(row,["Latitud"])) ?? ""; }
+function getLng(row){ return (row["LONGITUD"] ?? row["TRLO_LONGITUD"] ?? row["REDV_LONGITUD"] ?? pick(row,["Longitud"])) ?? ""; }
+function getFechaEntregaAudit(row){ const v=row["AUDI_FECHA_MODIF"] ?? pick(row,["Fecha Modificación","Fecha Entrega"]); if(!v) return ""; const d=new Date(v); if(isNaN(d)) return String(v); return d.toLocaleString("es-AR", {hour12:false}); }
+function getRemitoNro(row){ return (row["REDV_NRO"] ?? pick(row,["Remito","Nro Remito"]))?.toString().trim() || ""; }
+function getMetodoEntrega(row){ const v = (row["REDV_PEDIDO___METODO_DE_E"] ?? pick(row,["Método de Entrega","Metodo de Entrega"])) || ""; const s = String(v).trim(); let mode = "otro"; if(s==="Manual - self_service TMC") mode="local"; else if(s==="Manual - Transporte Expreso") mode="transporte"; return { raw:s, mode }; }
+function getFullAddress(parts){ const segs=[]; if(parts.address) segs.push(parts.address); if(parts.locality) segs.push(parts.locality); if(parts.province) segs.push(parts.province); if(parts.cp) segs.push(parts.cp); segs.push("Argentina"); return segs.filter(Boolean).join(", "); }
+
+function getGmapsUrl(rr) {
+    if (rr.deliveryType === 'local' && rr.mapsUrlEnvio) return rr.mapsUrlEnvio;
+    if (rr.deliveryType === 'transporte' && rr.trloMapsUrl) return rr.trloMapsUrl;
+    const baseUrl = "https://www.google.com/maps/dir/?api=1&destination=";
+    if (rr.lat && rr.lng) {
+        return `${baseUrl}${encodeURIComponent(rr.lat + ',' + rr.lng)}`;
+    }
+    const addr = getFullAddress({address: rr.displayAddress, locality: rr.displayLocality, province: rr.provEnvio, cp: rr.cpEnvio});
+    return `${baseUrl}${encodeURIComponent(addr)}`;
+}
+function getWazeUrl(rr) {
+    if (rr.lat && rr.lng) return `https://waze.com/ul?ll=${encodeURIComponent(rr.lat)},${encodeURIComponent(rr.lng)}&navigate=yes`;
+    const addr = getFullAddress({address: rr.displayAddress, locality: rr.displayLocality});
+    return `https://waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`;
+}
+function getTelUrl(phone){ const p = String(phone??"").replace(/\D/g, ''); return p ? `tel:${p}` : null; }
+function getWhatsappUrl(phone) {
+    const originalPhone = String(phone ?? "").trim();
+    if (!originalPhone) return null;
+    if (originalPhone.startsWith('+')) {
+        const num = originalPhone.replace(/\D/g, '');
+        return `https://wa.me/${num}`;
+    }
+    const num = originalPhone.replace(/\D/g, '');
+    if (!num) return null;
+    return `https://wa.me/54${num}`;
+}
+function buildRemitoViewUrl(id){ return `${CONFIG.APP_BASE}${CONFIG.REPORT_VIEW_PATH}?schemaId=${CONFIG.SCHEMA_ID_REMITO}&reportId=${CONFIG.REPORT_ID_REMITO}&instanceId=${encodeURIComponent(id)}`;}
+
+
+/* Render */
+function buildThead(){
+  $theadRow.innerHTML="";
+  const thSel=document.createElement("th"); thSel.style.width="36px"; $theadRow.appendChild(thSel);
+  const cols=COLS[MODE];
+  cols.forEach(c=>{
+    const th=document.createElement("th");
+    th.textContent=c.label; th.dataset.key=c.key; th.style.cursor="pointer";
+    th.onclick=()=>{ if(sortBy===c.key){ sortDir=-sortDir; } else { sortBy=c.key; sortDir=1; } renderTable(); };
+    $theadRow.appendChild(th);
+  });
+}
+function cmpValues(a,b){ const na=Number(a), nb=Number(b); const aNum=!Number.isNaN(na), bNum=!Number.isNaN(nb); if(aNum&&bNum) return na-nb; const da=new Date(a), db=new Date(b); if(!isNaN(da) && !isNaN(db)) return da-db; const sa=String(a??"").toLowerCase(); const sb=String(b??"").toLowerCase(); return sa.localeCompare(sb,"es"); }
+function matchesGlobal(rr, fq){ if(!fq) return true; const valStrs = Object.values(rr).map(v=> (v==null?"":String(v))).join(" ").toLowerCase(); return valStrs.includes(fq); }
+function currentFilteredRows(){
+  const fq=(searchQuery||"").toLowerCase().trim();
+  let arr=rowsRaw;
+  if(MODE==="entregados"){
+    if(delivFilter==="local") arr = arr.filter(r=>r.metodoMode==="local");
+    else if(delivFilter==="transporte") arr = arr.filter(r=>r.metodoMode==="transporte");
+  }
+  arr = arr.filter(r=>matchesGlobal(r, fq));
+  if(onlySelected){ arr = arr.filter(r=>!!selectedMap[r.id]); }
+  if(sortBy){ arr.sort((x,y)=> sortDir * cmpValues(x[sortBy], y[sortBy])); }
+  return arr;
+}
+function renderTable(){
+  const arr=currentFilteredRows();
+
+  /* Tabla (desktop) */
+  const frag=document.createDocumentFragment();
+  for(const rr of arr){
+    const tr=document.createElement("tr");
+    const tdSel=document.createElement("td");
+    const chk=document.createElement("input"); chk.type="checkbox"; chk.className="chk";
+    chk.checked=!!selectedMap[rr.id];
+    chk.addEventListener("change",()=>{ if(chk.checked) selectedMap[rr.id]=true; else delete selectedMap[rr.id]; updateActionBar(); if(onlySelected) renderTable(); });
+    tdSel.appendChild(chk); tr.appendChild(tdSel);
+
+    const cols=COLS[MODE];
+    cols.forEach(c=>{
+      const td=document.createElement("td");
+      td.classList.add('td-' + c.key);
+      let content = document.createTextNode(rr[c.key] || "-");
+
+      if (c.key === 'tipo') {
+          const badge = document.createElement('span');
+          badge.className = `type-badge ${rr.deliveryType}`;
+          badge.textContent = rr.deliveryType;
+          td.innerHTML = '';
+          td.appendChild(badge);
+      } else {
+          td.appendChild(content);
+      }
+
+      if((MODE === "aEntregar" || MODE === "enReparto") && (c.key === "displayAddress")){
+        if(rr.displayAddress){
+          const icons = document.createElement('div'); icons.className = 'nav-icons';
+          icons.innerHTML = `
+            <a href="${getGmapsUrl(rr)}" target="_blank" rel="noopener" title="Navegar con Google Maps" class="gmaps-icon"><svg class="icon"><use href="#icon-gmaps"></use></svg></a>
+            <a href="${getWazeUrl(rr)}" target="_blank" rel="noopener" title="Navegar con Waze" class="waze-icon"><svg class="icon"><use href="#icon-waze"></use></svg></a>
+          `;
+          td.appendChild(icons);
+        }
+      } else if((MODE === "aEntregar" || MODE === "enReparto") && c.key === "displayName"){
+          if(rr.displayPhone){
+            const telUrl = getTelUrl(rr.displayPhone);
+            const waUrl = getWhatsappUrl(rr.displayPhone);
+            const icons = document.createElement('div'); icons.className = 'action-icons';
+            let iconsHTML = '';
+            if(telUrl) iconsHTML += `<a href="${telUrl}" title="Llamar" class="phone-icon"><svg class="icon"><use href="#icon-phone"></use></svg></a>`;
+            if(waUrl) iconsHTML += `<a href="${waUrl}" target="_blank" rel="noopener" title="Enviar WhatsApp" class="wa-icon"><svg class="icon"><use href="#icon-whatsapp"></use></svg></a>`;
+            icons.innerHTML = iconsHTML;
+            td.appendChild(icons);
+          }
+      } else if(MODE==="entregados" && c.key==="remitoNro"){
+        const a=document.createElement("a"); a.href=buildRemitoViewUrl(rr.id); a.target="_blank"; a.rel="noopener";
+        a.textContent=rr.remitoNro || "-"; td.innerHTML=""; td.appendChild(a);
+      }
+      tr.appendChild(td);
+    });
+    frag.appendChild(tr);
+  }
+  $tbody.innerHTML=""; $tbody.appendChild(frag);
+
+  /* Cards (móvil) */
+  const cfrag=document.createDocumentFragment();
+  for(const rr of arr){
+    const container = document.createElement('div');
+    container.className = 'card-container';
+    
+    const swipeRightBg = document.createElement('div');
+    swipeRightBg.className = 'swipe-background swipe-right-bg';
+    if (MODE === 'enReparto') {
+        swipeRightBg.style.backgroundColor = 'var(--ok)';
+        swipeRightBg.innerHTML = `<span>Entregar →</span>`;
+    } else if (MODE === 'aEntregar') {
+        swipeRightBg.style.backgroundColor = 'var(--info)';
+        swipeRightBg.innerHTML = `<span>A Reparto →</span>`;
+    }
+    container.appendChild(swipeRightBg);
+
+    const row = document.createElement("div");
+    row.className = "card-row";
+    row.dataset.id = rr.id; // Guardar el ID para los gestos
+    if (selectedMap[rr.id]) row.classList.add('selected');
+
+    const chk = document.createElement("input");
+    chk.type = "checkbox"; chk.className = "chk"; chk.style.marginTop = '4px';
+    chk.onchange = () => {
+        if (chk.checked) selectedMap[rr.id] = true; else delete selectedMap[rr.id];
+        updateActionBar();
+        row.classList.toggle('selected', chk.checked);
+    };
+
+    const main = document.createElement("div"); main.className = "card-main";
+    
+    let cardHTML = '';
+    const telUrl = getTelUrl(rr.displayPhone);
+    const waUrl = getWhatsappUrl(rr.displayPhone);
+    
+    if (MODE === "aEntregar" || MODE === "enReparto") {
+        const typeBadge = `<span class="card-type-badge type-badge ${rr.deliveryType}">${rr.deliveryType}</span>`;
+        cardHTML = `
+            ${typeBadge}
+            <div class="card-header">
+                <div class="card-title">Pedido ${rr.pedido || rr.id}</div>
+                <div class="card-bultos">${rr.bultos || "-"} bultos</div>
+            </div>
+            <div class="card-address">${rr.displayName || "-"}</div>
+            <div class="card-locality">${(rr.displayAddress || "") + (rr.displayLocality ? `, ${rr.displayLocality}` : "") || "-"}</div>
+            <div class="card-meta">
+                <strong>Cliente:</strong> ${rr.cliente || "-"} <br>
+                <strong>Teléfono:</strong> ${rr.displayPhone || "-"}
+            </div>
+            <div class="card-actions">
+              <a href="${getGmapsUrl(rr)}" target="_blank" rel="noopener" class="btn-card-action gmaps-btn" title="Navegar con Google Maps"><svg class="icon" width="22" height="22"><use href="#icon-gmaps"></use></svg></a>
+              <a href="${getWazeUrl(rr)}" target="_blank" rel="noopener" class="btn-card-action waze-btn" title="Navegar con Waze"><svg class="icon" width="22" height="22"><use href="#icon-waze"></use></svg></a>
+              <a href="${telUrl || '#'}" class="btn-card-action phone-btn" title="Llamar"><svg class="icon" width="20" height="20"><use href="#icon-phone"></use></svg></a>
+              <a href="${waUrl || '#'}" target="_blank" rel="noopener" class="btn-card-action wa-btn" title="Enviar WhatsApp"><svg class="icon" width="22" height="22"><use href="#icon-whatsapp"></use></svg></a>
+            </div>
+        `;
+    } else { // entregados
+        const link = buildRemitoViewUrl(rr.id);
+        cardHTML = `
+            <div class="card-header">
+                <div class="card-title">Pedido ${rr.pedido || rr.id}</div>
+                <div class="card-bultos">${rr.bultos || "-"} bultos</div>
+            </div>
+            <div class="card-address">${rr.cliente || "-"}</div>
+            <div class="card-locality">Entregado: ${rr.fechaEntrega || "-"}</div>
+            <div class="card-meta">
+                <strong>Remito:</strong> <a class="map-link" href="${link}" target="_blank" rel="noopener">${rr.remitoNro}</a><br>
+                <strong>Método:</strong> ${rr.metodo || "-"}
+            </div>`;
+    }
+
+    main.innerHTML = cardHTML;
+    row.appendChild(chk);
+    row.appendChild(main);
+    container.appendChild(row);
+    cfrag.appendChild(container);
+  }
+  $cards.innerHTML=""; $cards.appendChild(cfrag);
+  
+  $cards.querySelectorAll('.card-actions a').forEach(button => {
+    button.addEventListener('click', (e) => {
+        if (!button.href || button.href.endsWith('#')) {
+            e.preventDefault();
+        }
+        e.stopPropagation(); 
+    });
+  });
+  
+  updateActionBar();
+}
+
+/* Export PDF */
+document.getElementById("abExport").onclick=()=>{ const ids=getSelectedIds(); if(!ids.length){ setMsg("Seleccioná al menos un pedido.","warn"); return; } const MAX_AUTO=8; ids.slice(0,MAX_AUTO).forEach((id,i)=>{ setTimeout(()=>window.open(buildRemitoViewUrl(id),"_blank","noopener"), i*200); }); if(ids.length>MAX_AUTO){ const rest=ids.slice(MAX_AUTO); const w=window.open("","_blank","noopener"); const list=rest.map(id=>`<li style="margin:6px 0"><a target="_blank" rel="noopener" href="${buildRemitoViewUrl(id)}">Remito #${id}</a></li>`).join(""); w.document.write(`<meta charset="utf-8"><title>Remitos restantes</title><body style="font-family:system-ui;padding:16px"><h3>Remitos restantes (${rest.length})</h3><p>Si solicita login, iniciá sesión y volvés a tocar Exportar.</p><ul>${list}</ul></body>`); w.document.close(); } };
+
+/* Adjuntar + Despacho */
+function dataURLToBlob(dataURL){ const [meta,b64]=dataURL.split(","); const bin=atob(b64); const u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i); const mime=(meta.match(/data:(.*);base64/)||[])[1]||"image/png"; return new Blob([u8],{type:mime}); }
+function loadImage(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight){ const words=text.split(/\s+/); let line=""; let cy=y; for(let n=0;n<words.length;n++){ const test=line ? line+" "+words[n] : words[n]; if(ctx.measureText(test).width>maxWidth && line){ ctx.fillText(line,x,cy); line=words[n]; cy+=lineHeight; } else{ line=test; } } if(line) ctx.fillText(line,x,cy); return cy; }
+async function composeSignedImage(options){
+  const {sigDataURL,nombre,dni,comentarios,fotoDataURL, transportName, totalBultos, pedidosList} = options;
+  const sigImg=await loadImage(sigDataURL); const w=sigImg.width, h=sigImg.height;
+  const mask=document.createElement("canvas"); mask.width=w; mask.height=h; const mc=mask.getContext("2d"); mc.drawImage(sigImg,0,0); mc.globalCompositeOperation="source-in"; mc.fillStyle="#111"; mc.fillRect(0,0,w,h);
+  const linesTop=[]; if(transportName){ linesTop.push(`Transporte: ${transportName}`); linesTop.push(`Total de bultos: ${totalBultos}`); }
+  if(pedidosList && pedidosList.length){ linesTop.push(`Pedidos: ${pedidosList.join(", ")}`); }
+  linesTop.push(`Fecha: ${new Date().toLocaleString("es-AR")}`); if(nombre) linesTop.push(`Recibió: ${nombre}`); if(dni) linesTop.push(`DNI/CUIT: ${dni}`); if((comentarios||"").trim()) linesTop.push(`Comentarios: ${comentarios.trim()}`);
+  const headerH= 20 + linesTop.length*22;
+  const margin=16;
+  let fotoImg=null, fotoH=0, fotoLabelH=0;
+  if(fotoDataURL){ fotoImg=await loadImage(fotoDataURL); fotoLabelH=22; fotoH=Math.min(Math.round((w*fotoImg.height)/Math.max(1,fotoImg.width)), Math.round(h*1.0)); }
+  const totalH=headerH+h+(fotoImg?(margin+fotoLabelH+fotoH):0)+margin;
+  const cvs=document.createElement("canvas"); cvs.width=w; cvs.height=totalH; const c=cvs.getContext("2d");
+  c.fillStyle="#fff"; c.fillRect(0,0,cvs.width,cvs.height);
+  c.fillStyle="#111"; c.font="16px system-ui, Segoe UI, Roboto"; const maxW=w-32; let cy=24;
+  for(const txt of linesTop){ if(txt.startsWith("Pedidos: ")){ cy = drawWrappedText(c, txt, 16, cy, maxW, 20) + 22; } else { c.fillText(txt,16,cy); cy+=22; } }
+  c.drawImage(mask,0,headerH);
+  if(fotoImg){ const yBase=headerH+h+margin; c.fillStyle="#333"; c.font="14px system-ui, Segoe UI, Roboto"; c.fillText("Foto (opcional)",16,yBase+14); c.drawImage(fotoImg,0,yBase+fotoLabelH,w,fotoH); }
+  return cvs.toDataURL("image/png");
+}
+async function apiFetchForm(url, formData){
+  await ensureToken();
+  let r=await fetch(prox(url),{method:"POST",headers:{ "Authorization":"Bearer "+token },body:formData});
+  if(r.status===401){ await loginYiQi(); r=await fetch(prox(url),{method:"POST",headers:{ "Authorization":"Bearer "+token },body:formData}); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r;
+}
+async function subirAdjuntoUnico(instanceId, dataUrl){
+  const fileName=`comprobante-${instanceId}.png`;
+  const fd=new FormData();
+  fd.append("schemaId", String(CONFIG.SCHEMA_ID_REMITO));
+  fd.append(String(CONFIG.ATT_FIELD_ID), new File([dataURLToBlob(dataUrl)], fileName, {type:"image/png"}));
+  await apiFetchForm(CONFIG.SAVEFILE_URL, fd);
+  const body={ entityId:Number(CONFIG.ENTITY_ID_REMITO), schemaId:Number(CONFIG.SCHEMA_ID_REMITO), instanceId:String(instanceId), form:"", uploads:`${CONFIG.ATT_FIELD_ID}=${fileName}`, password:null, removedFiles:[] };
+  await apiFetch(CONFIG.SAVE_URL, body);
+}
+async function ejecutarTransicion(ids, transitionId) {
+    const payload = {
+        schemaId: Number(CONFIG.SCHEMA_ID_REMITO),
+        ids: ids.map(String),
+        transitionId: Number(transitionId),
+        form: ""
+    };
+    return apiFetch(CONFIG.WORKFLOW_EXEC_URL, payload);
+}
+
+/* Modal/flujo */
+let currentWizardStep = 1;
+const $modal=document.getElementById("modal"), $modalPanel=document.getElementById("modalPanel");
+const $inpNombre=document.getElementById("inpNombre"), $inpDni=document.getElementById("inpDni"), $inpComentarios=document.getElementById("inpComentarios"), $chkAcepto=document.getElementById("chkAcepto");
+const $btnConfirmar=document.getElementById("btnConfirmar"), $btnCancelar=document.getElementById("btnCancelar"), $btnNext=document.getElementById("btnNext"), $btnPrev=document.getElementById("btnPrev");
+const $topInfo=document.getElementById("topInfo");
+const $filePhoto=document.getElementById("filePhoto"), $btnUploadPhoto=document.getElementById("btnUploadPhoto");
+const $photoArea=document.getElementById("photoArea"), $dniPrev=document.getElementById("dniPrev");
+let dniDataUrl=null;
+$btnUploadPhoto.onclick = ()=> $filePhoto.click();
+$filePhoto.onchange = (e)=>{ const f=e.target.files?.[0]; if(!f){ dniDataUrl=null; $photoArea.style.display="none"; $dniPrev.style.display="none"; return; } const rd=new FileReader(); rd.onload=()=>{ dniDataUrl=String(rd.result); $dniPrev.src=dniDataUrl; $dniPrev.style.display="block"; $photoArea.style.display="block"; }; rd.readAsDataURL(f); };
+
+function updateWizardButtons() {
+    $btnPrev.style.display = (currentWizardStep > 1) ? 'inline-flex' : 'none';
+    $btnNext.style.display = (currentWizardStep < 4) ? 'inline-flex' : 'none';
+    $btnConfirmar.style.display = (currentWizardStep === 4) ? 'inline-flex' : 'none';
+}
+function goToWizardStep(step) {
+    document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+    document.getElementById(`wizardStep${step}`).classList.add('active');
+    currentWizardStep = step;
+    updateWizardButtons();
+}
+$btnNext.onclick = () => { if(currentWizardStep < 4) goToWizardStep(currentWizardStep + 1); };
+$btnPrev.onclick = () => { if(currentWizardStep > 1) goToWizardStep(currentWizardStep - 1); };
+
+function showActionBar(show){
+    if(show){
+        $ab.classList.add('visible');
+        document.body.classList.add('withBar');
+        updateActionBar();
+    } else {
+        $ab.classList.remove('visible');
+        document.body.classList.remove('withBar');
+    }
+}
+function abrirModalTopInfo_local(sel){ const pedidos = sel.map(x=>x.pedido||x.id).filter(Boolean).join(", "); const cliente = sel[0]?.cliente || ""; $topInfo.innerHTML = `<div class="infoBig">PEDIDOS: ${pedidos || "-"}</div>${cliente?`<div class="infoMid">Cliente: ${cliente}</div>`:""}<div class="infoSmall">Confirmá recepción, podés firmar y (opcional) cargar foto.</div>`; }
+function abrirModalTopInfo_transporte(sel){ const b = totalBultos(sel); const pedidos = sel.map(x=>x.pedido||x.id).filter(Boolean).join(", "); const tname = sel[0]?.displayName || "Transporte"; $topInfo.innerHTML = `<div class="infoBig">📦 BULTOS A ENTREGAR: ${b}</div><div class="infoMid">Transportista: ${tname}</div><div class="infoSmall">Pedidos: ${pedidos || "-"}</div>`; }
+function abrirModal(sel){ 
+    goToWizardStep(1); // Reset wizard
+    $modal.style.display="flex"; 
+    $inpNombre.focus(); 
+    resizeCanvas(); 
+    showActionBar(false); 
+    attachKeyboardAdjust(); 
+}
+function cerrarModal(){ $modal.style.display="none"; detachKeyboardAdjust(); showActionBar(true); }
+function totalBultos(items){ let s=0; for(const it of items){ const n=parseFloat(String(it.bultos||"").replace(",",".").replace(/[^\d.]/g,"")); if(!isNaN(n)) s+=n; } return s; }
+
+let _seleccionActual=[];
+document.getElementById("abEntregar").onclick = async () => {
+    const ids = getSelectedIds();
+    if (!ids.length) {
+        setMsg("Seleccioná al menos un pedido.", "warn");
+        return;
+    }
+    const sel = rowsRaw.filter(x => ids.includes(String(x.id)));
+    const pedidosList = sel.map(x=>x.pedido||x.id).filter(Boolean);
+
+    if (MODE === "aEntregar") {
+        if (await showConfirmation("Pasar a Reparto", `¿Confirmás que querés pasar ${ids.length} pedido(s) a 'En Reparto'?`)) {
+            try {
+                disableActions(true);
+                showLoader(`Enviando a reparto pedido(s) #${pedidosList.join(', ')}...`);
+                await ejecutarTransicion(ids, CONFIG.TRANSITION_ID_DESPACHAR);
+                selectedMap = {};
+                await cargarRemitos();
+                hideLoader();
+            } catch (e) {
+                console.error(e);
+                hideLoader();
+                setMsg("No se pudo completar la operación.", "warn");
+            } finally {
+                disableActions(false);
+                updateActionBar();
+            }
+        }
+    } 
+    else if (MODE === "enReparto") {
+        _seleccionActual = sel;
+        const uniq = arr => [...new Set(arr.filter(v => v != null && String(v).trim() !== "").map(v => String(v).trim()))];
+        const isTransportDelivery = sel.length > 0 && sel.some(x => x.deliveryType === 'transporte');
+        
+        if (isTransportDelivery) {
+            const transports = uniq(sel.map(x => x.displayName));
+            if (transports.length > 1) {
+                setMsg("No puede entregar a dos transportes distintos en la misma confirmación.", "warn");
+                return;
+            }
+            abrirModalTopInfo_transporte(sel);
+        } else {
+            const clients = uniq(sel.map(x => x.clientId || x.cliente));
+            if (clients.length > 1) {
+                setMsg("No puede realizar una entrega a dos clientes distintos al mismo tiempo.", "warn");
+                return;
+            }
+            abrirModalTopInfo_local(sel);
+        }
+        abrirModal(sel);
+    }
+};
+document.getElementById("btnCancelar").onclick=()=>{ cerrarModal(); };
+
+/* Firma */
+const $cv=document.getElementById("cv"); let ctx, drawing=false, last=null;
+function resizeCanvas(){ const dpr=Math.max(1,window.devicePixelRatio||1); const cssW=$cv.clientWidth, cssH=$cv.clientHeight; $cv.width=Math.round(cssW*dpr); $cv.height=Math.round(cssH*dpr); ctx=$cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineWidth=1.6; ctx.lineJoin=ctx.lineCap='round'; ctx.strokeStyle="#e5e7eb"; }
+if('ResizeObserver' in window){ new ResizeObserver(resizeCanvas).observe($cv); } else { window.addEventListener('resize',resizeCanvas); }
+function getPos(e){ const r=$cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; }
+$cv.addEventListener("pointerdown",e=>{drawing=true; last=getPos(e);});
+$cv.addEventListener("pointermove",e=>{ if(!drawing) return; const p=getPos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; });
+["pointerup","pointerleave","pointercancel"].forEach(evt=>$cv.addEventListener(evt,()=>drawing=false));
+document.getElementById("lnkLimpiar").onclick=()=>{ ctx.clearRect(0,0,$cv.clientWidth,$cv.clientHeight); };
+
+/* Confirmar */
+document.getElementById("btnConfirmar").onclick=async ()=>{
+  try{
+    if(!$chkAcepto.checked){ setMsg("Debés aceptar la declaración.","warn"); return; }
+    const nombre=($inpNombre.value||"").trim(); const dni=($inpDni.value||"").trim(); const comentarios=($inpComentarios.value||"").trim();
+    const sigData=$cv.toDataURL("image/png");
+    if(!sigData || sigData.length<2000){ setMsg("Falta la firma.","warn"); return; }
+    disableActions(true);
+    showLoader("Procesando firma y adjuntos...");
+    const isTransportDelivery = _seleccionActual.some(item => item.deliveryType === 'transporte');
+    const transportName = isTransportDelivery ? (_seleccionActual[0]?.displayName || "") : "";
+    const totalB = isTransportDelivery ? totalBultos(_seleccionActual) : undefined;
+    const pedidosList = _seleccionActual.map(x=>x.pedido||x.id).filter(Boolean);
+    const composedUrl=await composeSignedImage({ sigDataURL: sigData, nombre, dni, comentarios, fotoDataURL: (dniDataUrl || null), transportName, totalBultos: totalB, pedidosList });
+    for(const it of _seleccionActual){ await subirAdjuntoUnico(it.id,composedUrl); }
+    await ejecutarTransicion(_seleccionActual.map(x => x.id), CONFIG.TRANSITION_ID_ENTREGAR);
+    hideLoader();
+    const title = `¡Pedido(s) #${pedidosList.join(', ')} entregado(s)!`;
+    const cliente = _seleccionActual[0]?.cliente || "";
+    showGracias(title, `A ${cliente}. La factura llegará por mail.`);
+    cerrarModal();
+    if(ctx){ ctx.clearRect(0,0,$cv.clientWidth,$cv.clientHeight); }
+    dniDataUrl=null; $photoArea.style.display="none"; $dniPrev.style.display="none";
+    selectedMap={}; await new Promise(r => setTimeout(r,1500)); await cargarRemitos();
+  }catch(e){ console.error(e); hideLoader(); setMsg("No se pudo completar la operación.","warn"); showActionBar(true); }
+  finally{ disableActions(false); updateActionBar(); }
+};
+
+/* Búsqueda/orden */
+document.getElementById("swSolo")?.addEventListener("change",()=>{ onlySelected=$swSolo.checked; renderTable(); });
+$inpBuscar.addEventListener("input", ()=>{ searchQuery=$inpBuscar.value||""; renderTable(); });
+$btnRefrescar.onclick=()=>cargarRemitos();
+let toggleAllOn=true;
+$btnToggleAll?.addEventListener("click", ()=>{ const shouldSelect=toggleAllOn; const arr=currentFilteredRows(); arr.forEach(r=>{ if(shouldSelect) selectedMap[r.id]=true; else delete selectedMap[r.id]; }); toggleAllOn=!toggleAllOn; $btnToggleAll.textContent=toggleAllOn?"Seleccionar todos":"Deseleccionar todos"; renderTable(); });
+
+/* Tabs / filtros entregados */
+function updateTabs(){
+  $tabAEntregar.classList.toggle("active", MODE==="aEntregar");
+  $tabEnReparto.classList.toggle("active", MODE==="enReparto");
+  $tabEntregados.classList.toggle("active", MODE==="entregados");
+  $delivFilters.style.display = MODE==="entregados" ? "flex" : "none";
+  document.getElementById("optimize-row").style.display = (MODE==="aEntregar" || MODE==="enReparto") ? "flex" : "none";
+  buildMobileSortOptions();
+  updateTabIndicators();
+}
+$tabAEntregar.onclick = ()=>{ if(MODE!=="aEntregar") startMode("aEntregar"); };
+$tabEnReparto.onclick = ()=>{ if(MODE!=="enReparto") startMode("enReparto"); };
+$tabEntregados.onclick = ()=>{ if(MODE!=="entregados") startMode("entregados"); };
+[...document.querySelectorAll('#delivFilters .pill')].forEach(p=>{
+  p.addEventListener('click', ()=>{ [...document.querySelectorAll('#delivFilters .pill')].forEach(x=>x.classList.remove('active')); p.classList.add('active'); delivFilter = p.dataset.deliv; renderTable(); });
+});
+
+/* Carga */
+async function cargarRemitos(){
+  try{
+    limpiarTabla();
+    
+    if (MODE === "aEntregar") {
+      const fetchLocal = apiFetch(`${CONFIG.GETLIST_BASE}?entityId=${SMARTIES.local.entityId}&schemaId=${SMARTIES.local.schemaId}&smartieId=${SMARTIES.local.smartieId}`, {page:1,pageSize:1000});
+      const fetchTransporte = apiFetch(`${CONFIG.GETLIST_BASE}?entityId=${SMARTIES.transporte.entityId}&schemaId=${SMARTIES.transporte.schemaId}&smartieId=${SMARTIES.transporte.smartieId}`, {page:1,pageSize:1000});
+      
+      const [resLocal, resTransporte] = await Promise.all([fetchLocal, fetchTransporte]);
+      
+      const locales = getRows(resLocal).map(rr => ({
+        ...rr,
+        id: getRemitoId(rr), deliveryType: 'local', tipo: 'local',
+        pedido:getPedidoNro(rr), cliente:getCliente(rr), clientId:getClienteId(rr), bultos:getBultos(rr), obs:getObs(rr), cond:getCondVenta(rr),
+        displayName: getCliente(rr),
+        displayAddress: getDirEnvio(rr),
+        displayLocality: getLocEnvio(rr),
+        displayPhone: getClienteTelefono(rr),
+        dirEnvio:getDirEnvio(rr), locEnvio:getLocEnvio(rr), cpEnvio:getCpEnvio(rr), provEnvio:getProvEnvio(rr), mapsUrlEnvio:getMapsUrlEnvio(rr),
+        lat:String(getLat(rr)??"").trim(), lng:String(getLng(rr)??"").trim()
+      }));
+
+      const transportes = getRows(resTransporte).map(rr => ({
+        ...rr,
+        id: getRemitoId(rr), deliveryType: 'transporte', tipo: 'transporte',
+        pedido:getPedidoNro(rr), cliente:getCliente(rr), clientId:getClienteId(rr), bultos:getBultos(rr), obs:getObs(rr), cond:getCondVenta(rr),
+        displayName: getTransportName(rr),
+        displayAddress: getTrloDir(rr),
+        displayLocality: getTrloLocalidad(rr),
+        displayPhone: getTransporteTelefono(rr),
+        trloDir:getTrloDir(rr), trloLocalidad:getTrloLocalidad(rr), trloCp:getTrloCp(rr), trloProv:getTrloProv(rr), trloMapsUrl:getTrloMapsUrl(rr),
+        lat:String(getLat(rr)??"").trim(), lng:String(getLng(rr)??"").trim()
+      }));
+
+      rowsRaw = [...locales, ...transportes];
+      sortBy='pedido'; sortDir=1;
+
+    } else {
+        const sm=SMARTIES[MODE];
+        const url=`${CONFIG.GETLIST_BASE}?entityId=${sm.entityId}&schemaId=${sm.schemaId}&smartieId=${sm.smartieId}`;
+        const r=await apiFetch(url,{page:1,pageSize:1000});
+        const rows=getRows(r);
+
+        if(MODE==="entregados"){
+          rowsRaw = rows.map(rr=>{
+            const metodo = getMetodoEntrega(rr);
+            const friendly = metodo.mode==="local" ? "Entregas Locales" : (metodo.mode==="transporte" ? "Entregas en Transporte" : metodo.raw||"-");
+            return { id:getRemitoId(rr), pedido:getPedidoNro(rr), cliente:getCliente(rr), fechaEntrega:getFechaEntregaAudit(rr), remitoNro:getRemitoNro(rr), bultos:getBultos(rr), transportName:getTransportName(rr), metodo:friendly, metodoRaw:metodo.raw, metodoMode:metodo.mode };
+          });
+          sortBy="fechaEntrega"; sortDir=-1;
+        } else if (MODE==="enReparto") {
+          rowsRaw = rows.map(rr => {
+            const isTransporte = !!getTransportName(rr);
+            return {
+              ...rr,
+              id:getRemitoId(rr), deliveryType: isTransporte ? 'transporte' : 'local', tipo: isTransporte ? 'transporte' : 'local',
+              pedido:getPedidoNro(rr), cliente:getCliente(rr), clientId:getClienteId(rr), bultos:getBultos(rr), obs:getObs(rr), cond:getCondVenta(rr),
+              displayName: isTransporte ? getTransportName(rr) : getCliente(rr),
+              displayAddress: isTransporte ? getTrloDir(rr) : getDirEnvio(rr),
+              displayLocality: isTransporte ? getTrloLocalidad(rr) : getLocEnvio(rr),
+              displayPhone: isTransporte ? getTransporteTelefono(rr) : getClienteTelefono(rr),
+              lat:String(getLat(rr)??"").trim(), lng:String(getLng(rr)??"").trim()
+            }
+          });
+          sortBy=null; sortDir=1;
+        }
+    }
+    
+    buildThead(); renderTable();
+    updateTabIndicators();
+  }catch(e){ console.error(e); setMsg("Error consultando YiQi.","warn"); }
+}
+
+/* Indicadores de Solapas */
+async function updateTabIndicators() {
+    const counts = {};
+    const modesToCount = ['local', 'transporte', 'enReparto'];
+    await Promise.all(modesToCount.map(async (mode) => {
+        try {
+            const sm = SMARTIES[mode];
+            const url = `${CONFIG.GETLIST_BASE}?entityId=${sm.entityId}&schemaId=${sm.schemaId}&smartieId=${sm.smartieId}`;
+            const r = await apiFetch(url, { page: 1, pageSize: 1 });
+            counts[mode] = r?.totalCount ?? getRows(r).length;
+        } catch (e) { counts[mode] = 0; }
+    }));
+
+    const totalAEntregar = (counts.local || 0) + (counts.transporte || 0);
+    $tabAEntregar.querySelector('.tab-count').textContent = totalAEntregar > 0 ? totalAEntregar : '';
+    $tabEnReparto.querySelector('.tab-count').textContent = counts.enReparto > 0 ? counts.enReparto : '';
+}
+
+/* Teclado móvil */
+let _vvHandlers=null;
+function attachKeyboardAdjust(){
+  if(!window.visualViewport) return;
+  const vv = window.visualViewport;
+  const baseInnerH = window.innerHeight;
+  function adjust(){
+    const vh = vv.height || baseInnerH;
+    const kbdOpen = vh < baseInnerH - 80;
+    document.getElementById("modalPanel").style.maxHeight = Math.max(320, Math.min(vh - 24, baseInnerH - 24)) + "px";
+    document.getElementById("cv").style.height = kbdOpen ? "170px" : "240px";
+    resizeCanvas();
+    const act = document.activeElement;
+    if(act && document.getElementById("modal").contains(act)){ act.scrollIntoView({block:"center"}); }
+  }
+  _vvHandlers = { resize: adjust, scroll: adjust };
+  vv.addEventListener("resize", adjust); vv.addEventListener("scroll", adjust);
+  [document.getElementById("inpNombre"),document.getElementById("inpDni"),document.getElementById("inpComentarios")].forEach(el=>{ el.addEventListener("focus", adjust); el.addEventListener("input", adjust); });
+  adjust();
+}
+function detachKeyboardAdjust(){
+  if(!window.visualViewport || !_vvHandlers) return;
+  const vv = window.visualViewport;
+  vv.removeEventListener("resize", _vvHandlers.resize); vv.removeEventListener("scroll", _vvHandlers.scroll);
+  _vvHandlers=null;
+  document.getElementById("modalPanel").style.maxHeight = "90vh";
+  document.getElementById("cv").style.height = "240px";
+  resizeCanvas();
+}
+
+/* Orden móvil */
+function buildMobileSortOptions(){
+  const mobileSortControls = document.querySelector('.mobileSort');
+  if(mobileSortControls) mobileSortControls.style.display = 'none';
+}
+$selSortField.addEventListener("change", ()=>{ sortBy = $selSortField.value || null; sortDir = sortDir || 1; renderTable(); });
+$btnSortDir.addEventListener("click", ()=>{ sortDir = -sortDir; $btnSortDir.textContent = (sortDir<0?"Descendente":"Ascendente"); renderTable(); });
+
+/* GESTOS SWIPE */
+let touchstartX = 0, touchstartY = 0, currentCard = null, deltaX = 0;
+const swipeThreshold = 80; 
+
+$cards.addEventListener('touchstart', function(event) {
+    if (event.target.closest('.card-actions, .chk')) return;
+    currentCard = event.target.closest('.card-row');
+    if (!currentCard) return;
+    touchstartX = event.changedTouches[0].screenX;
+    touchstartY = event.changedTouches[0].screenY;
+    currentCard.style.transition = 'none'; 
+}, {passive: true});
+
+$cards.addEventListener('touchmove', function(event) {
+    if (!currentCard) return;
+    deltaX = event.changedTouches[0].screenX - touchstartX;
+    const deltaY = event.changedTouches[0].screenY - touchstartY;
+    
+    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && deltaX < 0) {
+        currentCard.style.transform = `translateX(${deltaX}px)`;
+        const bg = currentCard.parentElement.querySelector('.swipe-right-bg');
+        if(bg) bg.classList.add('visible');
+    }
+}, {passive: true});
+
+$cards.addEventListener('touchend', function(event) {
+    if (!currentCard) return;
+    currentCard.style.transition = 'transform 0.2s ease-out';
+    const bg = currentCard.parentElement.querySelector('.swipe-right-bg');
+    if(bg) bg.classList.remove('visible');
+
+    if (deltaX < -swipeThreshold) {
+        handleGesture(currentCard);
+    } else {
+        currentCard.style.transform = 'translateX(0)';
+    }
+    touchstartX = 0; touchstartY = 0; deltaX = 0; currentCard = null;
+}, false);
+
+async function handleGesture(card) {
+    const pedidoId = card.dataset.id;
+    const pedido = rowsRaw.find(r => r.id === pedidoId);
+    if (!pedido) { card.style.transform = 'translateX(0)'; return; }
+
+    let confirmed = false;
+    if (MODE === 'enReparto') {
+        _seleccionActual = [pedido];
+        if (pedido.deliveryType === 'transporte') {
+            abrirModalTopInfo_transporte(_seleccionActual);
+        } else {
+            abrirModalTopInfo_local(_seleccionActual);
+        }
+        abrirModal(_seleccionActual);
+        confirmed = true;
+    } else if (MODE === 'aEntregar') {
+        confirmed = await showConfirmation('Pasar a Reparto', `¿Mover el Pedido #${pedido.pedido || pedido.id} a 'En Reparto'?`);
+        if (confirmed) {
+            try {
+                disableActions(true); 
+                showLoader(`Enviando a reparto pedido #${pedido.pedido || pedido.id}...`);
+                await ejecutarTransicion([pedidoId], CONFIG.TRANSITION_ID_DESPACHAR);
+                await cargarRemitos();
+                hideLoader();
+            } catch(e) { 
+                hideLoader();
+                setMsg("Error al mover a reparto.", "warn"); 
+            }
+            finally { disableActions(false); }
+        }
+    }
+    
+    if(!confirmed) card.style.transform = 'translateX(0)';
+}
+
+
+/* Modal de Confirmación Personalizado */
+async function showConfirmation(title, message) {
+    const confirmModal = document.getElementById('confirmModal');
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    
+    confirmModal.style.display = 'flex';
+
+    return new Promise(resolve => {
+        document.getElementById('confirmOk').onclick = () => {
+            confirmModal.style.display = 'none';
+            resolve(true);
+        };
+        document.getElementById('confirmCancel').onclick = () => {
+            confirmModal.style.display = 'none';
+            resolve(false);
+        };
+    });
+}
+
+function showLoader(text) {
+    document.getElementById('loaderText').textContent = text;
+    document.getElementById('loader').style.display = 'flex';
+}
+
+function hideLoader() {
+    document.getElementById('loader').style.display = 'none';
+}
+
+/* Inicio */
+async function startMode(m){
+  MODE=m;
+  updateTabs();
+  showActionBar(true);
+  buildMobileSortOptions();
+  try{
+    showLoader("Conectando...");
+    await loginYiQi();
+    await cargarRemitos();
+    hideLoader();
+  }catch(_){
+    hideLoader();
+  }
+}
+applyMobileHeader();
+startMode("aEntregar");
+</script>
+</body>
+</html>

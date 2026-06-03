@@ -1,0 +1,85 @@
+  67924:             "description": "El usuario no tiene permisos"
+  67925:           }
+  67926:         }
+  67927:       }
+  67928:     },
+  67929:     "/MOVIMIENTOS_CLIENTES/report": {
+  67930:       "get": {
+  67931:         "tags": [
+  67932:           "Reportes / Movimientos de clientes"
+  67933:         ],
+  67934:         "summary": "Descarga un reporte asociado a una entidad",
+  67935:         "description": "Devuelve el reporte solicitado (nombre y contenido en binario) para una instancia de entidad.",
+  67936:         "parameters": [
+  67937:           {
+  67938:             "name": "reportName",
+  67939:             "in": "query",
+  67940:             "description": "Nombre del reporte",
+  67941:             "required": true,
+  67942:             "schema": {
+  67943:               "type": "string"
+  67944:             }
+  67945:           },
+  67946:           {
+  67947:             "name": "instanceId",
+  67948:             "in": "query",
+  67949:             "description": "Id de la instancia",
+  67950:             "required": true,
+  67951:             "schema": {
+  67952:               "type": "integer"
+  67953:             }
+  67954:           },
+  67955:           {
+  67956:             "name": "schemaId",
+  67957:             "in": "query",
+  67958:             "description": "Id del esquema",
+  67959:             "required": true,
+  67960:             "schema": {
+  67961:               "type": "integer"
+  67962:             }
+  67963:           }
+  67964:         ],
+  67965:         "responses": {
+  67966:           "200": {
+  67967:             "description": "Reporte encontrado",
+  67968:             "content": {
+  67969:               "application/octet-stream": {
+  67970:                 "schema": {
+  67971:                   "type": "object",
+  67972:                   "properties": {
+  67973:                     "fileName": {
+  67974:                       "type": "string",
+  67975:                       "description": "Nombre del archivo de reporte"
+  67976:                     },
+  67977:                     "content": {
+  67978:                       "type": "string",
+  67979:                       "description": "Contenido binario (base64)",
+  67980:                       "format": "byte"
+  67981:                     }
+  67982:                   }
+  67983:                 }
+  67984:               }
+  67985:             }
+  67986:           },
+  67987:           "400": {
+  67988:             "description": "No existe una Entidad con ese nombre / No existe una instancia en Entidad con ese Id / No existe un reporte con ese nombre en la entidad"
+  67989:           },
+  67990:           "403": {
+  67991:             "description": "El usuario no tiene permisos"
+  67992:           }
+  67993:         }
+  67994:       }
+  67995:     },
+  67996:     "/PAGO_MIS_CUENTAS": {
+  67997:       "post": {
+  67998:         "tags": [
+  67999:           "Reportes / Exportar Pago Mis Cuentas"
+  68000:         ],
+  68001:         "summary": "Create a Exportar Pago Mis Cuentas.",
+  68002:         "description": "Creates a new instance of Exportar Pago Mis Cuentas.\n\n**Key Attributes (Unique):** `PAMC_DIA` (Día)\n\nThese attributes form the entity's unique key. If you attempt to create an instance with key values that already exist, the API will return HTTP 409 Conflict.",
+  68003:         "requestBody": {
+  68004:           "content": {
+  68005:             "application/json": {
+  68006:               "schema": {
+  68007:                 "required": [
+  68008:                   "schemaId",

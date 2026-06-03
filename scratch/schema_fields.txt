@@ -1,0 +1,89 @@
+Line 407 (SALDO): "AJUS_SALDO": {
+Line 904 (SALDO): "COBR_DE_SALDO_PREVIO": {
+Line 915 (SALDO): "COBR_ESTADO_SALDO": {
+Line 916 (saldo): "title": "Estado de saldo no imputado del cliente",
+Line 1559 (SALDO): "AJUS_SALDO": {
+Line 2302 (SALDO): "AJUS_SALDO": {
+Line 2862 (SALDO): "COBR_DE_SALDO_PREVIO",
+Line 2864 (SALDO): "COBR_ESTADO_SALDO",
+Line 2966 (SALDO): "COBR_DE_SALDO_PREVIO",
+Line 2968 (SALDO): "COBR_ESTADO_SALDO",
+Line 5683 (saldo): "description": "Excedente de la NC que va al saldo de ajuste del cliente",
+Line 11818 (SALDO): "CODP_COBRAR_DESDE_SALDO_N": {
+Line 11819 (saldo): "title": "Cobrar desde saldo no imputado",
+Line 11821 (saldo): "description": "Indica si el importe se descuenta del saldo no imputado del cliente.",
+Line 14552 (SALDO): "COBR_DE_SALDO_PREVIO": {
+Line 14562 (SALDO): "COBR_ESTADO_SALDO": {
+Line 14563 (saldo): "title": "Estado de saldo no imputado del cliente",
+Line 15875 (SALDO): "CODP_COBRAR_DESDE_SALDO_N": {
+Line 15876 (saldo): "title": "Cobrar desde saldo no imputado",
+Line 18427 (SALDO): "CODP_COBRAR_DESDE_SALDO_N": {
+Line 18428 (saldo): "title": "Cobrar desde saldo no imputado",
+Line 18430 (saldo): "description": "Indica si el importe se descuenta del saldo no imputado del cliente.",
+Line 21938 (SALDO): "RECR_SALDO_PREVIO": {
+Line 22229 (SALDO): "RECR_SALDO_PREVIO": {
+Line 22470 (SALDO): "RECR_SALDO_PREVIO": {
+Line 26966 (SALDO): "CODP_COBRAR_DESDE_SALDO_N": {
+Line 26967 (saldo): "title": "Cobrar desde saldo no imputado",
+Line 26969 (saldo): "description": "Indica si el importe se descuenta del saldo no imputado del cliente.",
+Line 27203 (SALDO): "CODP_COBRAR_DESDE_SALDO_N": {
+Line 27204 (saldo): "title": "Cobrar desde saldo no imputado",
+Line 27206 (saldo): "description": "Indica si el importe se descuenta del saldo no imputado del cliente.",
+Line 27436 (SALDO): "CODP_COBRAR_DESDE_SALDO_N": {
+Line 27437 (saldo): "title": "Cobrar desde saldo no imputado",
+Line 27439 (saldo): "description": "Indica si el importe se descuenta del saldo no imputado del cliente.",
+Line 27686 (SALDO): "CODP_SALDO_DEL_CLIENTE",
+Line 27687 (SALDO): "CODP_COBRAR_DESDE_SALDO_N",
+Line 27784 (SALDO): "CODP_SALDO_DEL_CLIENTE",
+Line 27785 (SALDO): "CODP_COBRAR_DESDE_SALDO_N",
+Line 44921 (SALDO): "AJUS_SALDO": {
+Line 45691 (SALDO): "AJUS_SALDO": {
+Line 46129 (SALDO): "AJUS_SALDO": {
+Line 52183 (CLIE_SALDO): "CLIE_SALDO_DE_AJUSTES": {
+Line 52183 (SALDO): "CLIE_SALDO_DE_AJUSTES": {
+Line 52188 (CLIE_SALDO): "CLIE_SALDO_CLIENTE": {
+Line 52188 (SALDO): "CLIE_SALDO_CLIENTE": {
+Line 52193 (CLIE_SALDO): "CLIE_SALDO_PROVEEDOR": {
+Line 52193 (SALDO): "CLIE_SALDO_PROVEEDOR": {
+Line 52198 (SALDO): "CLIE_DIFERENCIA_SALDOS": {
+Line 59182 (CLIE_SALDO): "CLIE_SALDO_CLIENTE": {
+Line 59182 (SALDO): "CLIE_SALDO_CLIENTE": {
+Line 59183 (CLIE_SALDO): "title": "CLIE_SALDO_CLIENTE",
+Line 59183 (SALDO): "title": "CLIE_SALDO_CLIENTE",
+Line 59441 (CLIE_SALDO): "CLIE_SALDO_CLIENTE": {
+Line 59441 (SALDO): "CLIE_SALDO_CLIENTE": {
+Line 59442 (CLIE_SALDO): "title": "CLIE_SALDO_CLIENTE",
+Line 59442 (SALDO): "title": "CLIE_SALDO_CLIENTE",
+Line 59652 (CLIE_SALDO): "CLIE_SALDO_CLIENTE": {
+Line 59652 (SALDO): "CLIE_SALDO_CLIENTE": {
+Line 59653 (CLIE_SALDO): "title": "CLIE_SALDO_CLIENTE",
+Line 59653 (SALDO): "title": "CLIE_SALDO_CLIENTE",
+Line 59884 (CLIE_SALDO): "CLIE_SALDO_CLIENTE",
+Line 59884 (SALDO): "CLIE_SALDO_CLIENTE",
+Line 59977 (CLIE_SALDO): "CLIE_SALDO_CLIENTE",
+Line 59977 (SALDO): "CLIE_SALDO_CLIENTE",
+Line 60412 (SALDO): "SALDO_CLIENTE": {
+Line 60750 (SALDO): "SALDO_CLIENTE": {
+Line 61022 (SALDO): "SALDO_CLIENTE": {
+Line 61341 (SALDO): "name": "SALDO_CLIENTE",
+Line 61483 (SALDO): "SALDO_CLIENTE",
+Line 61589 (SALDO): "SALDO_CLIENTE",
+Line 66537 (MOVIMIENTOS_CLIENTES): "/MOVIMIENTOS_CLIENTES": {
+Line 66672 (CLIE_SALDO): "CLIE_SALDO_CLIENTE": {
+Line 66672 (SALDO): "CLIE_SALDO_CLIENTE": {
+Line 66755 (MOVIMIENTOS_CLIENTES): "/MOVIMIENTOS_CLIENTES/{id}": {
+Line 66923 (CLIE_SALDO): "CLIE_SALDO_CLIENTE": {
+Line 66923 (SALDO): "CLIE_SALDO_CLIENTE": {
+Line 67124 (CLIE_SALDO): "CLIE_SALDO_CLIENTE": {
+Line 67124 (SALDO): "CLIE_SALDO_CLIENTE": {
+Line 67222 (MOVIMIENTOS_CLIENTES): "/MOVIMIENTOS_CLIENTES/search": {
+Line 67366 (CLIE_SALDO): "name": "CLIE_SALDO_CLIENTE",
+Line 67366 (SALDO): "name": "CLIE_SALDO_CLIENTE",
+Line 67430 (MOVIMIENTOS_CLIENTES): "/MOVIMIENTOS_CLIENTES/smartie": {
+Line 67484 (MOVIMIENTOS_CLIENTES): "/MOVIMIENTOS_CLIENTES/query": {
+Line 67560 (CLIE_SALDO): "CLIE_SALDO_CLIENTE",
+Line 67560 (SALDO): "CLIE_SALDO_CLIENTE",
+Line 67651 (CLIE_SALDO): "CLIE_SALDO_CLIENTE",
+Line 67651 (SALDO): "CLIE_SALDO_CLIENTE",
+Line 67763 (MOVIMIENTOS_CLIENTES): "/MOVIMIENTOS_CLIENTES/file": {
+Line 67929 (MOVIMIENTOS_CLIENTES): "/MOVIMIENTOS_CLIENTES/report": {

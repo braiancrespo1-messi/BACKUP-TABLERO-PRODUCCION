@@ -1,0 +1,6 @@
+# MEJORAS PENDIENTES - APP LOZA
+
+## Módulo: Recepción Masiva / Procesamiento de Jaulas
+- [X] Implementar indicador de progreso visual en la UI (overlay o status bar) que informe el avance real durante procesos masivos.
+- [X] Ejemplo: "Procesando jaula 1 de 12...", "Procesando jaula 2 de 12...", etc.
+- [X] Actualmente se informa por consola/status pero se necesita algo más protagónico para que el usuario sepa que el proceso sigue vivo cuando son muchos bultos.

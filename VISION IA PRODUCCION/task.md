@@ -1,0 +1,10 @@
+- [x] Install base dependencies (`opencv-python`, `numpy`, `ultralytics`)
+- [x] Create Python pose tracking script (`pose_tracker.py`)
+- [x] Implement keypoints extraction and movement magnitude calculation
+- [x] Verify script imports and simulation logs
+- [x] Install Firebase dependencies (`firebase-admin`)
+- [x] Implement MJPEG Streaming Server inside `pose_tracker.py`
+- [x] Implement circular frame buffer and automated idle clip recorder in `pose_tracker.py`
+- [x] Update `dashboard.html` with interactive Live Stream modals and recorded logs
+- [x] Verify local MJPEG stream and automated video clip recording on simulation
+- [x] Document final results in `walkthrough.md`

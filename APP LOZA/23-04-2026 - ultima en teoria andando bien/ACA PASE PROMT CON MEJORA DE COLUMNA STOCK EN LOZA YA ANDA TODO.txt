@@ -1,0 +1,22 @@
+Anduvo perfecto! te paso algunas cositas:
+1) Necesito botón de refresh en el Detalle y Control de Jaula bien al margen derecho y agregame en el encabezado de esta columna también los datos de Jaula N° y Remito de proveedor que estoy procesando . Tiene que entrar todo en la barra de titulo (Screen 2) 
+
+2) Cuando procesamos ingreso final necesito que al finalizar me hagas un refresh en Stock Crudo asi ya "desaaparece" lo consumido.
+
+3) Mejoras en Columna stock crudo
+ - Agregar lupita en stock crudo que me permita encontrar mas facil un item
+ - Titulo: cambiar Stock Crudo por "Stock en Loza"
+ - Comprimir un poco la columna semielaborado (crudo) ya que hay demasiado espacio entre esta columna y la q le sigue que es "stock actual" 
+ - en Transformar A me gustaría que asi como tenemos en gris la descrpción del semieleaborado, que se vea también la descripción del producto terminado segun el SKU que aparezca. O si eso la vuelve muy cargada a la columna lo q podemos hacer es simplemente que al posicionarnos arriba del SKU de producto terminado nos aparezca el nombre entero. 
+- Quitar el RECIBIR y dejar solo el "+" , asi no queda tan cargada
+
+
+--------
+
+1) Ok a las fuentes. Pero lo que pedi es que la columna stock actual me la corras un poco mas para la izquierda digamos ya que tenemos demasiado espacio en blanco entre Producto en Loza y Stock actual... fijate de comprimir un poco el ancho de la columna STOCK LOZA aprovechando el espacio q tenemos disponible ahi. LAS FUENTES DEJALO TAL CUAL
+
+2) Al posicionarme sobre un SKU de  dde la columna trasnformar a me aparece lo q te mando en el screen 2 ... decime, que dato te falta para matchear ese SKU con el Nombre del artículo de la base de datos de artículos cuya colección es producto terminado o producto terminado2 ... decime y te ayudo.
+
+3) Explicame una cosa esto es muy importante: Cada vez que me dirijo al módulo Control de calidad, para poder "activar"  de algun modo el botón "+" (ver screen 3) y que se ponga azul, tengo q entrar sí o sí a Recetas en la herramienta de configuración y no hacer ningun cambio, simplemente cancelar y ya.. recien ahi, crear una jaula y refrescar pero sí o sí con una  jaula creada.. sino se me pone un "+"  en gris que hasta q no presiono en la jaula y le doy refresh manual no se activa.
+
+Decime por qué tengo q entrar a recetas cada vez q inicio la app sino eso no anda.. revisá bien, dame el diagnóstico y soluciones para mejorar esto. 

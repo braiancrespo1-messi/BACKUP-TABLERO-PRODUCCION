@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Faltantes — TMC</title>
+<style>
+  :root{
+    --bg1:#0d1424; --bg2:#0f162b;
+    --card:#111827; --chip:#1f2937; --muted:#9aa3af; --text:#f8fafc; --line:#1f2a3d;
+    --info:#38bdf8; --ok:#22c55e; --danger:#ef4444; --warn:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text)}
+  .wrap{max-width:1250px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .inner{padding:16px}
+
+  .topbar{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#0f172a,#0f172ad9);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 16px}
+  h1{margin:0;font-size:28px}
+  .tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .tab{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#0b1222;color:#cbd5e1;font-weight:700}
+  .tab.act{background:#1f5ed8;color:#fff;border-color:#2a6bff}
+  .status{padding:6px 12px;border-radius:999px;background:#0b1222;border:1px solid #334155;font-size:12px}
+  .status.ok{background:#11331c;border-color:#14532d;color:#a7f3d0}
+  .ml-auto{margin-left:auto}
+
+  /* Toolbar */
+  .toolbar{display:grid;grid-template-columns:auto auto auto auto auto 1fr auto auto auto;gap:10px;align-items:center;padding:0 16px 10px}
+  .toolbar .search{width:100%;min-width:240px;max-width:520px}
+  .chips{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:#0b1222;border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:12px}
+  .chip .x{cursor:pointer;opacity:.8}
+
+  .btn{border:none;border-radius:12px;color:#fff;padding:10px 14px;font-weight:700}
+  .btn-info{background:var(--info)} .btn-sec{background:#374151}
+  .btn-ghost{background:#0b1222;border:1px solid var(--line)}
+  .btn-primary{background:#2563eb}
+  .btn-danger{background:var(--danger)}
+  .btn-xs{padding:6px 10px;font-size:12px;border-radius:10px}
+  .inp{background:#0b1222;border:1px solid var(--line);border-radius:10px;color:#e5e7eb;padding:10px 12px}
+  .inp::placeholder{color:#94a3b8}
+  .badge{padding:6px 8px;border-radius:999px;background:var(--chip);font-size:12px;border:1px solid transparent;display:inline-block}
+  .msg{position:fixed;right:16px;top:86px;z-index:80;display:none;padding:10px 12px;border-radius:12px;background:#0b1222;border:1px solid var(--line);max-width:min(560px,60vw);white-space:normal;word-break:break-word;line-height:1.25;box-shadow:0 6px 22px rgba(0,0,0,.35)}
+  @media (max-width:700px){ .msg{left:12px;right:12px;max-width:none} }
+
+  .stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:0 16px 12px}
+  .stat{background:#0b1222;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+  .stat h4{margin:0 0 4px;font-size:12px;color:#cbd5e1;font-weight:600}
+  .stat .n{font-size:18px;font-weight:900}
+
+  .wrap-main{padding:16px}
+
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
+  th{text-align:left;color:#d1d5db;font-weight:600;user-select:none;white-space:nowrap}
+  tr:hover{background:#0f1b33}
+  .w32{width:32px} .w48{width:48px} .w60{width:60px}
+  .sortable{cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .sort-ico{opacity:.6;font-size:12px}
+  .sort-ico.hidden{opacity:.2;visibility:hidden}
+
+  .expBtn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #60a5fa;background:#0b1222;border-radius:8px;color:#bfe0ff;font-weight:900;font-size:16px;line-height:1}
+  .expBtn.open{background:#173e87;color:#fff;border-color:#93c5fd}
+
+  .subrow td{background:#0e1525}
+  .subtable{width:100%;border-collapse:collapse;margin:6px 0 4px}
+  .subtable th,.subtable td{border-bottom:1px dashed var(--line);padding:8px 10px;font-size:13px}
+
+  .dot{display:inline-block;width:10px;height:10px;border-radius:999px;vertical-align:middle}
+  .dot.red{background:#c10505} .dot.blue{background:#0000ff} .dot.gray{background:#6b7280}
+
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px}
+  .pill.gray{background:#374151;color:#e5e7eb}
+  .pill.green{background:#063f22;color:#34d399;border:1px solid #065f46}
+  .pill.red{background:#3f0611;color:#fca5a5;border:1px solid #7f1d1d}
+  .pill[disabled]{opacity:.6;pointer-events:none}
+
+  .filters{display:flex;gap:10px;align-items:center}
+  .select{appearance:none;background:#0b1222;border:1px solid var(--line);color:#e5e7eb;border-radius:10px;padding:10px 14px}
+
+  button,.btn,.expBtn,.tab,.chip,.chip .x,.select,.sortable,.pill[onclick]{cursor:pointer}
+  .col-actions{display:flex;flex-direction:column;gap:6px;align-items:center}
+
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:100}
+  .modal .box{background:#0b1222;border:1px solid var(--line);padding:22px 26px;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.6);min-width:280px;text-align:center}
+
+  .saldo.pos{color:#22c55e;font-weight:700}
+  .saldo.neg{color:#ef4444;font-weight:700}
+
+  /* Dropdowns */
+  .dropdown{position:relative}
+  .menu{position:absolute;right:0;top:calc(100% + 6px);background:#0b1222;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);padding:8px;display:none;min-width:220px;z-index:60}
+  .menu.show{display:block}
+  .menu h4{margin:4px 8px 8px;font-size:12px;color:#cbd5e1;opacity:.9}
+  .menu label{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px}
+  .menu label:hover{background:#0f162b}
+  .menu .row{display:flex;gap:8px;padding:6px 8px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="head wrap">
+    <h1>FALTANTES POR PEDIDO</h1>
+    <div class="tabs">
+      <button id="tabPedidos" class="tab act">FALTANTES POR PEDIDO</button>
+      <button id="tabProductos" class="tab">FALTANTES POR PRODUCTOS</button>
+      <button id="tabClientes" class="tab">FALTANTES POR CLIENTES</button>
+    </div>
+    <div id="estado" class="status ml-auto">Desconectado</div>
+    <div id="smartieCount" class="status">Smartie 2589: 0 filas · visibles: 0 · páginas: 0 (~0/pág)</div>
+  </div>
+
+  <div class="toolbar wrap">
+    <button id="btnRefrescar" class="btn btn-info">Refrescar</button>
+
+    <label style="display:flex;gap:8px;align-items:center">
+      <input type="checkbox" id="chkFaltantes"/>
+      <span>Mostrar faltantes</span>
+    </label>
+
+    <div class="filters">
+      <select id="selAccion" class="select">
+        <option value="">Acción: Todas</option>
+        <option value="RESERVAR">Solo RESERVAR</option>
+        <option value="REPONER">Solo REPONER</option>
+        <option value="NINGUNA">Solo NINGUNA</option>
+      </select>
+      <select id="selEstado" class="select">
+        <option value="">Estado: Todos</option>
+      </select>
+    </div>
+
+    <input id="inpBuscar" class="inp search" placeholder="Buscar en pedidos e ítems…" autocomplete="off" spellcheck="false"/>
+
+    <!-- Dropdown Columnas (solo Productos; se oculta en otras vistas) -->
+    <div class="dropdown">
+      <button id="btnCols" class="btn btn-ghost" title="Mostrar/ocultar columnas (Productos)">Columnas ▾</button>
+      <div id="menuCols" class="menu">
+        <h4>Faltantes por productos</h4>
+        <label><input type="checkbox" id="colGrupo"/> Grupo</label>
+        <label><input type="checkbox" id="colSubgrupo"/> Subgrupo</label>
+        <label><input type="checkbox" id="colSub2"/> 2º Subgrupo</label>
+      </div>
+    </div>
+
+    <!-- Dropdown Estados (TODAS las vistas) -->
+    <div class="dropdown">
+      <button id="btnEstados" class="btn btn-ghost" title="Filtrar por estados">Estados ▾</button>
+      <div id="menuEstados" class="menu">
+        <h4>Estados</h4>
+        <div id="estadosContainer"></div>
+        <div class="row">
+          <button id="btnEstadosTodos" class="btn btn-sec btn-xs">Todos</button>
+          <button id="btnEstadosPend" class="btn btn-primary btn-xs">Pendientes</button>
+        </div>
+      </div>
+    </div>
+
+    <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
+
+    <!-- AVISOS: ahora es un toast ancho y fijo -->
+    <span id="msg" class="msg" style="display:none"></span>
+
+    <div id="chips" class="chips"></div>
+  </div>
+
+  <!-- Métricas (sin cambios) -->
+  <div class="stats wrap" id="stats">
+    <div class="stat"><h4>Pedidos (RESERVAR)</h4><div class="n" id="st_reservar">0</div></div>
+    <div class="stat"><h4>Pedidos (REPONER)</h4><div class="n" id="st_reponer">0</div></div>
+    <div class="stat"><h4>SKUs NO disponibles</h4><div class="n" id="st_skus">0</div></div>
+    <div class="stat"><h4>Ítems NO disponibles</h4><div class="n" id="st_items">0</div></div>
+    <div class="stat"><h4>Total faltantes</h4><div class="n" id="st_faltan">0</div></div>
+    <div class="stat"><h4>Pedidos totales</h4><div class="n" id="st_pedidos">0</div></div>
+  </div>
+</div>
+
+<div class="wrap wrap-main">
+  <div class="card">
+    <div class="inner">
+      <!-- Vista pedidos -->
+      <div id="viewPedidos">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="w32"><input type="checkbox" id="chkExpandPedidos" title="Expandir / encoger solo pedidos"/></th>
+                <th class="w60"></th>
+                <th><span class="sortable" data-key="pedido">Pedido - Nro <span id="i-pedido" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="cliente">Cliente <span id="i-cliente" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="obs">Observaciones <span id="i-obs" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="edad">Antigüedad (días) <span id="i-edad" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="estado">Estado <span id="i-estado" class="sort-ico hidden">▲</span></span></th>
+                <th>Acciones</th>
+                <th class="w32" title="Comentarios">💬</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyPedidos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Vista productos -->
+      <div id="viewProductos" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="w48"><input type="checkbox" id="chkExpandProductos" title="Expandir / encoger solo SKUs"/></th>
+                <th class="w60"></th>
+                <th><span class="sortable" data-key="sku">SKU <span id="ip-sku" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="prod">Producto <span id="ip-prod" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="total">Cantidad total (faltan) <span id="ip-total" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="origen">Cant. origen <span id="ip-origen" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="saldo">Saldo stock <span id="ip-saldo" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="grupo">Grupo <span id="ip-grupo" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="subgrupo">Subgrupo <span id="ip-subgrupo" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="sub2">2º Subgrupo <span id="ip-sub2" class="sort-ico hidden">▲</span></span></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyProductos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Vista clientes -->
+      <div id="viewClientes" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="w48"><input type="checkbox" id="chkExpandClientes" title="Expandir / encoger solo clientes"/></th>
+                <th><span class="sortable" data-key="cliente">Cliente <span id="icli-cliente" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="pedidos">Pedidos <span id="icli-pedidos" class="sort-ico hidden">▲</span></span></th>
+                <th><span class="sortable" data-key="total">Faltantes totales <span id="icli-total" class="sort-ico hidden">▲</span></span></th>
+                <th>Estados</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyClientes"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modales -->
+<div id="busy" class="modal"><div class="box" id="busyText">Procesando…</div></div>
+<div id="dialog" class="modal"><div class="box" id="dialogBox">
+  <div id="dialogContent" style="margin-bottom:14px;text-align:left"></div>
+  <button class="btn btn-sec" onclick="closeDialog()">Cerrar</button>
+</div></div>
+
+<script>
+/* ================= CONFIG ================= */
+const CONFIG = {
+  USERNAME: "XXXXXXXX",
+  PASSWORD: "XXXXXXXX",
+
+  API_BASE: "https://api.yiqi.com.ar",
+  APP_BASE: "https://me.yiqi.com.ar",
+
+  TOKEN_URLS: [
+    "https://api.yiqi.com.ar/token",
+    "https://api.yiqi.com.ar/connect/token"
+  ],
+  OAUTH: { client_id:"", client_secret:"", scope:"", grant_type:"password" },
+
+  GETLIST_BASE: "https://api.yiqi.com.ar/api/instancesApi/GetList",
+  WORKFLOW_EXEC_URL: "https://api.yiqi.com.ar/api/workflowApi/ExecuteTransition",
+
+  SCHEMA_ID: 1491,
+  ENTITY_ID_REPORTE: 1231,
+  SMARTIE_FALTANTES_REPORTE: 2589,
+
+  TRANSITION_REINICIAR: 119223,            // Reinicio desde EOP
+  TRANSITION_RESERVA: 118971,              // Reservar (EOP/AEP)
+  TRANSITION_RESERVA_Q2: 118974,           // Reservar desde Q2
+
+  TRANSITION_ANULAR_Q2: 118945,
+  TRANSITION_ANULAR_EOP: 119140,
+  TRANSITION_REINICIO_Q2: 119224,
+  TRANSITION_LIBERAR_RESERVAS: 119233,     // Reiniciar en AEP = liberar reservas
+  TRANSITION_ANULAR_AEP: 118947            // Anular desde AEP
+};
+
+/* ============== Estado/UI ============== */
+let token=null, tokenVenceMs=0;
+let dataRaw=[];
+let pedidos=[];
+let productos=[];
+let clientes=[];
+
+let activeTab="pedidos";
+let sortKey="pedido", sortDir=1;
+let sortKeyProd="total", sortDirProd=-1;
+let sortKeyCli="total", sortDirCli=-1;
+
+let openPedidos=new Set();
+let openSkus=new Set();
+let openClientes=new Set();
+
+let filtroSoloFaltantes=false;
+let filtroAccion="";
+let filtroEstado="";
+let searchQuery="";
+
+/* columnas productos */
+let visCols = { grupo:false, subgrupo:false, sub2:false };
+
+/* estados check (todas vistas) */
+let estadosDisponibles = [];
+let allowedStates = new Set();
+
+/* UI refs */
+const $estado=document.getElementById("estado");
+const $smartie=document.getElementById("smartieCount");
+const $msg=document.getElementById("msg");
+const $tbodyPedidos=document.getElementById("tbodyPedidos");
+const $tbodyProductos=document.getElementById("tbodyProductos");
+const $tbodyClientes=document.getElementById("tbodyClientes");
+const $chkFaltantes=document.getElementById("chkFaltantes");
+const $selAccion=document.getElementById("selAccion");
+const $selEstado=document.getElementById("selEstado");
+const $inpBuscar=document.getElementById("inpBuscar");
+const $chips=document.getElementById("chips");
+const $chkExpandPedidos=document.getElementById("chkExpandPedidos");
+const $chkExpandProductos=document.getElementById("chkExpandProductos");
+const $chkExpandClientes=document.getElementById("chkExpandClientes");
+
+const $btnCols=document.getElementById("btnCols");
+const $menuCols=document.getElementById("menuCols");
+const $colGrupo=document.getElementById("colGrupo");
+const $colSubgrupo=document.getElementById("colSubgrupo");
+const $colSub2=document.getElementById("colSub2");
+
+const $btnEstados=document.getElementById("btnEstados");
+const $menuEstados=document.getElementById("menuEstados");
+const $estadosContainer=document.getElementById("estadosContainer");
+const $btnEstadosTodos=document.getElementById("btnEstadosTodos");
+const $btnEstadosPend=document.getElementById("btnEstadosPend");
+
+const $stRes=document.getElementById("st_reservar");
+const $stRep=document.getElementById("st_reponer");
+const $stSkus=document.getElementById("st_skus");
+const $stItems=document.getElementById("st_items");
+const $stFaltan=document.getElementById("st_faltan");
+const $stPedidos=document.getElementById("st_pedidos");
+
+/* Smartie counters */
+let smartieRowsTotal = 0;
+let lastVisibleItemsCount = 0;
+let smartiePagesFetched = 0;
+let smartieEffectivePageSize = 0;
+
+/* ============ Utils ============ */
+function strip(s){return String(s??"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function cmp(a,b){ const na=Number(a), nb=Number(b); const aN=!Number.isNaN(na), bN=!Number.isNaN(nb); if(aN&&bN) return na-nb; const sa=strip(a), sb=strip(b); return sa.localeCompare(sb,"es"); }
+function setMsg(txt, kind=""){ const $m=$msg; if(!txt){ $m.style.display="none"; $m.textContent=""; return; } $m.textContent=txt; $m.style.display="inline-block"; $m.className="msg"; if(kind==="warn") $m.style.borderColor="#7c2d12"; }
+function setEstado(txt, ok){ $estado.textContent=txt; $estado.className="status"+(ok?" ok":""); }
+function setSmartieInfo(){ if($smartie){ const approx = smartieEffectivePageSize || 0; $smartie.textContent = `Smartie ${CONFIG.SMARTIE_FALTANTES_REPORTE}: ${smartieRowsTotal} filas · visibles: ${lastVisibleItemsCount} · páginas: ${smartiePagesFetched} (~${approx}/pág)`; } }
+function parseDisponibilidad(v){ const s=String(v??"").trim().toUpperCase(); if(!s) return ""; if(s.includes("C10505")) return "red"; if(s.includes("0000FF")) return "blue"; return ""; }
+function normEstado(s){ return strip(s).replace(/\s+/g,' '); }
+
+/* Modales */
+const $busy=document.getElementById("busy");
+const $busyText=document.getElementById("busyText");
+function showBusy(msg){ $busyText.textContent=msg||"Procesando…"; $busy.style.display="flex"; }
+function hideBusy(){ $busy.style.display="none"; }
+const $dialog=document.getElementById("dialog");
+const $dialogContent=document.getElementById("dialogContent");
+function openDialog(html){ $dialogContent.innerHTML=html; $dialog.style.display="flex"; }
+function closeDialog(){ $dialog.style.display="none"; }
+
+/* ============ Auth/Fetch ============ */
+async function loginYiQi(){
+  const payload=new URLSearchParams({
+    username:CONFIG.USERNAME, password:CONFIG.PASSWORD,
+    grant_type: CONFIG.OAUTH?.grant_type || "password",
+    ...(CONFIG.OAUTH?.client_id?{client_id:CONFIG.OAUTH.client_id}:{}),
+    ...(CONFIG.OAUTH?.client_secret?{client_secret:CONFIG.OAUTH.client_secret}:{}),
+    ...(CONFIG.OAUTH?.scope?{scope:CONFIG.OAUTH.scope}:{}),
+  });
+  let lastErr=null;
+  for(const url of CONFIG.TOKEN_URLS){
+    try{
+      const r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/x-www-form-urlencoded" },body:payload});
+      if(!r.ok) throw new Error(`Login ${url} → ${r.status}`);
+      const j=await r.json();
+      token=j.access_token; tokenVenceMs=Date.now()+((j.expires_in?j.expires_in-60:3000)*1000);
+      setEstado("Conectado",true); return;
+    }catch(e){ lastErr=e; }
+  }
+  setEstado("Desconectado",false); setMsg("No se pudo conectar.","warn"); throw lastErr||new Error("Login fail");
+}
+async function ensureToken(){ if(!token || Date.now()>tokenVenceMs) await loginYiQi(); }
+async function apiPost(url, body){
+  await ensureToken();
+  let r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})});
+  if(r.status===401){ await loginYiQi(); r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})}); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+/* ============ Datos ============ */
+function getRows(resp){
+  if(!resp) return [];
+  if(Array.isArray(resp.rows)) return resp.rows;
+  if(Array.isArray(resp.data?.rows)) return resp.data.rows;
+  if(Array.isArray(resp.data)) return resp.data;
+  if(Array.isArray(resp.instances)) return resp.instances;
+  if(Array.isArray(resp.items)) return resp.items;
+  if(Array.isArray(resp.columns) && Array.isArray(resp.data)){
+    const cols=resp.columns.map(c=>c?.name??c);
+    return resp.data.map(arr=>{const o={}; cols.forEach((cn,i)=>o[cn]=arr[i]); return o;});
+  }
+  return [];
+}
+
+/* Paginación */
+async function fetchAllSmartieRows({entityId, schemaId, smartieId, pageSize=50, maxPages=200}){
+  const baseUrl = `${CONFIG.GETLIST_BASE}?entityId=${entityId}&schemaId=${schemaId}&smartieId=${smartieId}`;
+  let page=1, all=[];
+  smartiePagesFetched = 0;
+  smartieEffectivePageSize = 0;
+
+  while(page<=maxPages){
+    setMsg(`Cargando… pág ${page}`, "");
+    const resp = await apiPost(baseUrl, { page, pageSize });
+    const rows = getRows(resp);
+
+    if(page===1) smartieEffectivePageSize = rows.length || 0;
+    const count = rows.length;
+    if(count===0){ break; }
+    all.push(...rows);
+    smartiePagesFetched++;
+    if(count < pageSize){ break; }
+    page++;
+  }
+  return all;
+}
+
+function mapItem(row){
+  const pedido = (row["NUMERO"] ?? row["PEDI_NUMERO"] ?? row["PEDIDO"] ?? "").toString().trim();
+  const pedidoId = (row["ID"] ?? row["PEDI_ID"] ?? "").toString().trim();
+  const cliente = (row["CLIENTE"] ?? row["CLIE_RAZON_SOCIAL"] ?? "").toString().trim();
+  const obs = (row["OBSERVACIONES"] ?? "").toString().trim();
+  const edad = Number((row["ANTIGUEDAD"] ?? 0))||0;
+  const estado = (row["DESC_ESTADO"] ?? "").toString().trim();
+
+  const sku = (row["SKU"] ?? "").toString().trim();
+  const prod = (row["PRODUCTO"] ?? "").toString().trim();
+  const extra = (row["TEXTO_ADICIONAL"] ?? "").toString().trim();
+  const cant = Number(row["CANT_A_ENTREGAR"] ?? 0) || 0;
+  const origen = Number(row["CANTIDAD_ORIGEN"] ?? 0) || 0;
+
+  const grupo = (row["GRUPO_ART"] ?? "").toString().trim();
+  const subgrupo = (row["SUBGRUPO_ART"] ?? "").toString().trim();
+  const sub2 = (row["SEGUNDO_SUBGRUPO_ART"] ?? "").toString().trim();
+
+  const disp = parseDisponibilidad(row["DISPONIBLE"]);
+  const reservado = (disp==="blue") ? cant : 0;
+  const faltan = Math.max(0, cant - reservado);
+
+  let accion="NINGUNA";
+  if(faltan>0){
+    if(origen>0) accion="RESERVAR";
+    else accion="REPONER";
+  }
+
+  return { pedido, pedidoId, cliente, obs, edad, estado, sku, prod, extra, cant, reservado, disp, faltan, origen, accion, grupo, subgrupo, sub2 };
+}
+
+async function cargar(){
+  try{
+    setMsg("Cargando…");
+    const allRows = await fetchAllSmartieRows({
+      entityId: CONFIG.ENTITY_ID_REPORTE,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.SMARTIE_FALTANTES_REPORTE,
+      pageSize: 50
+    });
+
+    smartieRowsTotal = allRows.length;
+    dataRaw = allRows.map(mapItem);
+
+    // selector simple (histórico)
+    const ests=[...new Set(dataRaw.map(x=>x.estado).filter(Boolean))].sort((a,b)=>strip(a).localeCompare(strip(b),"es"));
+    const cur=filtroEstado;
+    document.getElementById("selEstado").innerHTML = `<option value="">Estado: Todos</option>` + ests.map(e=>`<option ${e===cur?'selected':''}>${e}</option>`).join("");
+
+    initEstadosMenu(); // Estados ▾ (todas las vistas)
+    rebuildAll();
+    setMsg(activeTab==="pedidos" ? `Encontramos ${pedidos.length} pedido(s).` :
+          activeTab==="productos" ? `Encontramos ${productos.length} SKU(s).` :
+          `Encontramos ${clientes.length} cliente(s).`);
+  }catch(e){ console.error(e); setMsg("Error al consultar datos","warn"); }
+}
+
+/* ============ Filtros & Grupo ============ */
+function applyItemFilters(it){
+  if(filtroSoloFaltantes && !(it.faltan>0)) return false;
+  if(filtroAccion && it.accion!==filtroAccion) return false;
+
+  // selector simple (histórico)
+  if(filtroEstado && it.estado!==filtroEstado) return false;
+
+  // Estados ▾ (checkboxes)
+  if(allowedStates.size>0 && !allowedStates.has(it.estado)) return false;
+
+  if(searchQuery){
+    let blob=strip(`${it.pedido} ${it.cliente} ${it.obs} ${it.estado} ${it.sku} ${it.prod} ${it.extra}`);
+    if(activeTab==="productos"){
+      // solo busca en columnas visibles (como pediste)
+      if(visCols.grupo) blob+= " "+strip(it.grupo);
+      if(visCols.subgrupo) blob+= " "+strip(it.subgrupo);
+      if(visCols.sub2) blob+= " "+strip(it.sub2);
+    }
+    if(!blob.includes(searchQuery)) return false;
+  }
+  return true;
+}
+
+function buildPedidos(){
+  const map=new Map();
+  for(const it of dataRaw){
+    if(!applyItemFilters(it)) continue;
+    if(!map.has(it.pedido)) map.set(it.pedido, {pedido:it.pedido, pedidoId:it.pedidoId, cliente:it.cliente, obs:it.obs, edad:it.edad, estado:it.estado, items:[]});
+    map.get(it.pedido).items.push(it);
+  }
+  pedidos=[...map.values()];
+}
+
+function buildProductos(){
+  const map=new Map();
+  for(const it of dataRaw){
+    if(!applyItemFilters(it)) continue;
+    if(!map.has(it.sku)) map.set(it.sku,{sku:it.sku, prod:it.prod, items:[], total:0, origen:null, saldo:0, grupo:it.grupo, subgrupo:it.subgrupo, sub2:it.sub2});
+    const g=map.get(it.sku);
+    g.items.push(it);
+    g.total += it.faltan;
+    g.origen = g.origen==null ? it.origen : Math.max(g.origen, it.origen);
+    if(!g.grupo && it.grupo) g.grupo=it.grupo;
+    if(!g.subgrupo && it.subgrupo) g.subgrupo=it.subgrupo;
+    if(!g.sub2 && it.sub2) g.sub2=it.sub2;
+  }
+  for(const g of map.values()){ g.saldo = (g.origen||0) - (g.total||0); }
+  productos=[...map.values()];
+}
+
+function buildClientes(){
+  const byCli = new Map();
+  for(const it of dataRaw){
+    if(!applyItemFilters(it)) continue;
+    if(!byCli.has(it.cliente)){
+      byCli.set(it.cliente, { cliente: it.cliente, pedidosMap: new Map(), estadosCount: new Map(), total: 0 });
+    }
+    const c = byCli.get(it.cliente);
+
+    if(!c.pedidosMap.has(it.pedido)){
+      c.pedidosMap.set(it.pedido, { pedido: it.pedido, pedidoId: it.pedidoId, estado: it.estado, edad: it.edad, obs: it.obs, cliente: it.cliente, items: [], total:0 });
+    }
+    const p = c.pedidosMap.get(it.pedido);
+    p.items.push(it);
+    p.total += it.faltan;
+
+    c.total += it.faltan;
+    c.estadosCount.set(it.estado, (c.estadosCount.get(it.estado)||0)+1);
+  }
+
+  clientes = [...byCli.values()].map(c=>{
+    return {
+      cliente: c.cliente,
+      total: c.total,
+      pedidos: c.pedidosMap.size,
+      estadosCount: c.estadosCount,
+      pedidosArr: [...c.pedidosMap.values()]
+    };
+  });
+}
+
+function computeStats(){
+  const items=[];
+  for(const it of dataRaw){ if(applyItemFilters(it)) items.push(it); }
+
+  lastVisibleItemsCount = items.length;
+
+  const pedidosSet=new Set(items.map(i=>i.pedido));
+  const pedidosReservar = new Set(items.filter(i=>i.accion==="RESERVAR").map(i=>i.pedido));
+  const pedidosReponer  = new Set(items.filter(i=>i.accion==="REPONER").map(i=>i.pedido));
+  const skusNoDisp = new Set(items.filter(i=>i.disp==="red" && i.faltan>0).map(i=>i.sku));
+  const itemsNoDisp = items.filter(i=>i.disp==="red" && i.faltan>0).length;
+  const totalFaltan = items.reduce((s,i)=>s+(i.faltan||0),0);
+
+  $stRes.textContent = pedidosReservar.size;
+  $stRep.textContent = pedidosReponer.size;
+  $stSkus.textContent = skusNoDisp.size;
+  $stItems.textContent = itemsNoDisp;
+  $stFaltan.textContent = totalFaltan;
+  $stPedidos.textContent = pedidosSet.size;
+}
+
+function renderChips(){
+  const chips=[];
+  if(filtroSoloFaltantes) chips.push({k:"faltantes", label:"Mostrar faltantes"});
+  if(filtroAccion) chips.push({k:"accion", label:`Acción: ${filtroAccion}`});
+  if(filtroEstado) chips.push({k:"estado", label:`Estado: ${filtroEstado}`});
+  if(searchQuery) chips.push({k:"buscar", label:`Buscar: "${$inpBuscar.value}"`});
+
+  $chips.innerHTML="";
+  for(const c of chips){
+    const el=document.createElement("span");
+    el.className="chip";
+    const x=document.createElement("span"); x.textContent="×"; x.className="x";
+    x.onclick=()=>{
+      if(c.k==="faltantes"){ filtroSoloFaltantes=false; $chkFaltantes.checked=false; }
+      if(c.k==="accion"){ filtroAccion=""; $selAccion.value=""; }
+      if(c.k==="estado"){ filtroEstado=""; $selEstado.value=""; }
+      if(c.k==="buscar"){ searchQuery=""; $inpBuscar.value=""; }
+      rebuildAll();
+      setMsg(activeTab==="pedidos" ? `Encontramos ${pedidos.length} pedido(s).` :
+            activeTab==="productos" ? `Encontramos ${productos.length} SKU(s).` :
+            `Encontramos ${clientes.length} cliente(s).`);
+    };
+    el.append(c.label,x);
+    $chips.appendChild(el);
+  }
+  if(!chips.length){ $chips.innerHTML=""; }
+}
+
+function rebuildAll(){
+  buildPedidos();
+  buildProductos();
+  buildClientes();
+  computeStats();
+  renderPedidos();
+  renderProductos();
+  renderClientes();
+  renderChips();
+  setSmartieInfo();
+  updateToolbarPerTab();
+}
+
+/* ============ Render Pedidos ============ */
+function sortAndFilterPedidos(arr){
+  const a=[...arr];
+  if(sortKey) a.sort((x,y)=> sortDir * cmp(x[sortKey], y[sortKey]));
+  return a;
+}
+function renderPedidos(){
+  const arr = sortAndFilterPedidos(pedidos);
+  document.querySelectorAll("#i-pedido,#i-cliente,#i-obs,#i-edad,#i-estado").forEach(i=>i.classList.add("hidden"));
+  const ico = document.getElementById(`i-${sortKey}`); if(ico){ ico.textContent=sortDir>0?"▲":"▼"; ico.classList.remove("hidden"); }
+
+  if($chkExpandPedidos){
+    const allOpen = arr.length>0 && arr.every(p=>openPedidos.has(p.pedido));
+    $chkExpandPedidos.checked = allOpen;
+  }
+
+  const frag=document.createDocumentFragment();
+  for(const p of arr){
+    const tr=document.createElement("tr");
+
+    const tdChk=document.createElement("td"); tdChk.textContent="";
+    const tdBtn=document.createElement("td");
+    const btn=document.createElement("button");
+    const open=openPedidos.has(p.pedido);
+    btn.className="expBtn"+(open?" open":""); btn.textContent=open?"−":"+"; btn.onclick=()=>{ if(open) openPedidos.delete(p.pedido); else openPedidos.add(p.pedido); renderPedidos(); };
+    tdBtn.appendChild(btn);
+
+    const tdPedido=document.createElement("td"); tdPedido.textContent=p.pedido||"-";
+    const tdCli=document.createElement("td"); tdCli.textContent=p.cliente||"-";
+    const tdObs=document.createElement("td"); tdObs.textContent=p.obs||"-";
+    const tdEdad=document.createElement("td"); tdEdad.textContent=p.edad;
+    const tdEst=document.createElement("td"); tdEst.textContent=p.estado||"-";
+
+    const tdAcc=document.createElement("td");
+    const wrap=document.createElement("div"); wrap.className="col-actions";
+    const disabled = !p.pedidoId;
+
+    const bAnu=document.createElement("button");
+    bAnu.className="btn btn-danger btn-xs"; bAnu.textContent="Anular";
+    bAnu.disabled = disabled;
+    bAnu.onclick=()=>{ if(!disabled) anularFlow(p.pedidoId, p.estado, p.pedido); };
+
+    const bRei=document.createElement("button");
+    bRei.className="btn btn-primary btn-xs"; bRei.textContent="Reiniciar";
+    bRei.disabled = disabled;
+    bRei.onclick=()=>{ if(!disabled) reiniciarFlow(p.pedidoId, p.estado, p.pedido); };
+
+    wrap.append(bAnu,bRei);
+    tdAcc.append(wrap);
+
+    const tdCom=document.createElement("td");
+    const bCom=document.createElement("button"); bCom.className="btn btn-ghost btn-xs"; bCom.title="Ver comentarios"; bCom.textContent="💬";
+    bCom.onclick=()=>openDialog(`<h3 style="margin:0 0 8px">Comentarios del pedido ${p.pedido}</h3><div style="opacity:.8">Historial y alta de comentarios (diseño). Lo integramos con YiQi en el próximo paso.</div>`);
+    tdCom.appendChild(bCom);
+
+    tr.append(tdChk,tdBtn,tdPedido,tdCli,tdObs,tdEdad,tdEst,tdAcc,tdCom);
+    frag.appendChild(tr);
+
+    if(open){
+      const trSub=document.createElement("tr"); trSub.className="subrow";
+      const td=document.createElement("td"); td.colSpan=9;
+
+      const subt=document.createElement("table"); subt.className="subtable";
+      const thead=document.createElement("thead");
+      thead.innerHTML=`<tr>
+        <th> </th>
+        <th data-k="sku">SKU <span class="sort-ico hidden">▲</span></th>
+        <th data-k="prod">Producto <span class="sort-ico hidden">▲</span></th>
+        <th data-k="extra">Texto adicional <span class="sort-ico hidden">▲</span></th>
+        <th data-k="cant">Cant. a entregar <span class="sort-ico hidden">▲</span></th>
+        <th data-k="reservado">Reservado <span class="sort-ico hidden">▲</span></th>
+        <th>Disponible</th>
+        <th data-k="faltan">Faltan <span class="sort-ico hidden">▲</span></th>
+        <th data-k="origen">Cant. origen <span class="sort-ico hidden">▲</span></th>
+        <th>Realizar acción</th>
+      </tr>`;
+      subt.appendChild(thead);
+
+      const body=document.createElement("tbody");
+      let k="faltan", d=-1;
+
+      function updateHeadIcons(){
+        thead.querySelectorAll('[data-k] .sort-ico').forEach(sp=>sp.classList.add('hidden'));
+        const th = thead.querySelector(`[data-k="${k}"] .sort-ico`);
+        if(th){ th.textContent = d>0 ? '▲' : '▼'; th.classList.remove('hidden'); }
+      }
+
+      function drawBody(){
+        body.innerHTML="";
+        const items=[...p.items].sort((a,b)=> d*cmp(a[k], b[k]));
+        for(const it of items){
+          const rr=document.createElement("tr");
+          const dot=`<span class="dot ${it.disp==='red'?'red':(it.disp==='blue'?'blue':'gray')}"></span>`;
+          rr.innerHTML=`
+            <td></td>
+            <td>${it.sku||"-"}</td>
+            <td>${it.prod||"-"}</td>
+            <td>${it.extra||"-"}</td>
+            <td>${it.cant}</td>
+            <td>${it.reservado}</td>
+            <td>${dot}</td>
+            <td>${it.faltan}</td>
+            <td>${it.origen}</td>
+            <td>${actionPill(it, p)}</td>
+          `;
+          body.appendChild(rr);
+        }
+        updateHeadIcons();
+      }
+      drawBody();
+      subt.appendChild(body);
+
+      thead.addEventListener("click",(ev)=>{
+        const th=ev.target.closest("[data-k]"); if(!th) return;
+        const nk=th.getAttribute("data-k");
+        if(k===nk) d=-d; else {k=nk; d=1;}
+        drawBody();
+      });
+
+      td.appendChild(subt);
+      trSub.appendChild(td);
+      frag.appendChild(trSub);
+    }
+  }
+  $tbodyPedidos.innerHTML=""; $tbodyPedidos.appendChild(frag);
+}
+
+/* ============ Render Productos ============ */
+function sortAndFilterProductos(arr){
+  const a=[...arr];
+  const k=sortKeyProd, d=sortDirProd;
+  a.sort((x,y)=> d * cmp(x[k], y[k]));
+  return a;
+}
+function renderProductos(){
+  const arr = sortAndFilterProductos(productos);
+  document.querySelectorAll("#ip-sku,#ip-prod,#ip-total,#ip-origen,#ip-saldo,#ip-grupo,#ip-subgrupo,#ip-sub2").forEach(i=>i.classList.add("hidden"));
+  const ii = document.getElementById(`ip-${sortKeyProd}`); if(ii){ ii.textContent=sortDirProd>0?"▲":"▼"; ii.classList.remove("hidden"); }
+
+  // Mostrar/ocultar encabezados según visibilidad
+  const thGrupo = document.querySelector('#viewProductos thead [data-key="grupo"]').closest('th');
+  const thSub   = document.querySelector('#viewProductos thead [data-key="subgrupo"]').closest('th');
+  const thSub2  = document.querySelector('#viewProductos thead [data-key="sub2"]').closest('th');
+  thGrupo.style.display = visCols.grupo ? "" : "none";
+  thSub.style.display   = visCols.subgrupo ? "" : "none";
+  thSub2.style.display  = visCols.sub2 ? "" : "none";
+
+  if($chkExpandProductos){
+    const allOpen = arr.length>0 && arr.every(p=>openSkus.has(p.sku));
+    $chkExpandProductos.checked = allOpen;
+  }
+
+  const frag=document.createDocumentFragment();
+  for(const g of arr){
+    const tr=document.createElement("tr");
+    const td1=document.createElement("td"); td1.textContent="";
+    const td2=document.createElement("td");
+    const open=openSkus.has(g.sku);
+    const btn=document.createElement("button");
+    btn.className="expBtn"+(open?" open":""); btn.textContent=open?"−":"+"; btn.onclick=()=>{ if(open) openSkus.delete(g.sku); else openSkus.add(g.sku); renderProductos(); };
+    td2.appendChild(btn);
+
+    const tdSku=document.createElement("td"); tdSku.textContent=g.sku||"-";
+    const tdProd=document.createElement("td"); tdProd.textContent=g.prod||"-";
+    const tdTot=document.createElement("td"); tdTot.textContent=g.total||0;
+    const tdOrig=document.createElement("td"); tdOrig.textContent=g.origen??0;
+
+    const tdSaldo=document.createElement("td");
+    const s = Number(g.saldo||0);
+    const cls = s>=0 ? "saldo pos" : "saldo neg";
+    tdSaldo.innerHTML = `<span class="${cls}">${s}</span>`;
+
+    const tdGrupo=document.createElement("td"); tdGrupo.textContent=g.grupo||"-";
+    const tdSub=document.createElement("td"); tdSub.textContent=g.subgrupo||"-";
+    const tdSub2=document.createElement("td"); tdSub2.textContent=g.sub2||"-";
+
+    // Visibilidad columnas
+    tdGrupo.style.display = visCols.grupo ? "" : "none";
+    tdSub.style.display   = visCols.subgrupo ? "" : "none";
+    tdSub2.style.display  = visCols.sub2 ? "" : "none";
+
+    tr.append(td1,td2,tdSku,tdProd,tdTot,tdOrig,tdSaldo,tdGrupo,tdSub,tdSub2);
+    frag.appendChild(tr);
+
+    if(open){
+      const trSub=document.createElement("tr"); trSub.className="subrow";
+      const td=document.createElement("td"); td.colSpan=10;
+
+      const subt=document.createElement("table"); subt.className="subtable";
+      const thead=document.createElement("thead");
+      thead.innerHTML=`<tr>
+        <th> </th>
+        <th data-k="pedido">Pedido <span class="sort-ico hidden">▲</span></th>
+        <th data-k="cliente">Cliente <span class="sort-ico hidden">▲</span></th>
+        <th data-k="edad">Antigüedad <span class="sort-ico hidden">▲</span></th>
+        <th data-k="cant">Cant. a entregar <span class="sort-ico hidden">▲</span></th>
+        <th data-k="reservado">Reservado <span class="sort-ico hidden">▲</span></th>
+        <th>Disponible</th>
+        <th data-k="faltan">Faltan <span class="sort-ico hidden">▲</span></th>
+        <th data-k="origen">Cant. origen <span class="sort-ico hidden">▲</span></th>
+        <th>Acción</th>
+      </tr>`;
+      subt.appendChild(thead);
+
+      let k="faltan", d=-1;
+      const body=document.createElement("tbody");
+
+      function updateHeadIcons(){
+        thead.querySelectorAll('[data-k] .sort-ico').forEach(sp=>sp.classList.add('hidden'));
+        const th = thead.querySelector(`[data-k="${k}"] .sort-ico`);
+        if(th){ th.textContent = d>0 ? '▲' : '▼'; th.classList.remove('hidden'); }
+      }
+
+      function drawBody(){
+        body.innerHTML="";
+        const items=[...g.items].sort((a,b)=> d*cmp(a[k], b[k]));
+        for(const it of items){
+          const rr=document.createElement("tr");
+          const dot=`<span class="dot ${it.disp==='red'?'red':(it.disp==='blue'?'blue':'gray')}"></span>`;
+          rr.innerHTML=`
+            <td></td>
+            <td>${it.pedido}</td>
+            <td>${it.cliente}</td>
+            <td>${it.edad}</td>
+            <td>${it.cant}</td>
+            <td>${it.reservado}</td>
+            <td>${dot}</td>
+            <td>${it.faltan}</td>
+            <td>${it.origen}</td>
+            <td>${actionPill(it, {pedido:it.pedido, pedidoId:it.pedidoId, estado:it.estado})}</td>
+          `;
+          body.appendChild(rr);
+        }
+        updateHeadIcons();
+      }
+      drawBody();
+      subt.appendChild(body);
+
+      thead.addEventListener("click",(ev)=>{
+        const th=ev.target.closest("[data-k]"); if(!th) return;
+        const nk=th.getAttribute("data-k");
+        if(k===nk) d=-d; else {k=nk; d=1;}
+        drawBody();
+      });
+
+      td.appendChild(subt);
+      trSub.appendChild(td);
+      frag.appendChild(trSub);
+    }
+  }
+  $tbodyProductos.innerHTML=""; $tbodyProductos.appendChild(frag);
+}
+
+/* ============ Render Clientes ============ */
+function sortAndFilterClientes(arr){
+  const a=[...arr];
+  const k=sortKeyCli, d=sortDirCli;
+  a.sort((x,y)=> d * cmp(x[k], y[k]));
+  return a;
+}
+function renderClientes(){
+  const arr = sortAndFilterClientes(clientes);
+  document.querySelectorAll("#icli-cliente,#icli-pedidos,#icli-total").forEach(i=>i.classList.add("hidden"));
+  const ii = document.getElementById(`icli-${sortKeyCli}`); if(ii){ ii.textContent=sortDirCli>0?"▲":"▼"; ii.classList.remove("hidden"); }
+
+  if($chkExpandClientes){
+    const allOpen = arr.length>0 && arr.every(p=>openClientes.has(p.cliente));
+    $chkExpandClientes.checked = allOpen;
+  }
+
+  const frag=document.createDocumentFragment();
+  for(const c of arr){
+    const tr=document.createElement("tr");
+    const tdBtn=document.createElement("td");
+    const open = openClientes.has(c.cliente);
+    const btn=document.createElement("button");
+    btn.className="expBtn"+(open?" open":""); btn.textContent=open?"−":"+"; btn.onclick=()=>{ if(open) openClientes.delete(c.cliente); else openClientes.add(c.cliente); renderClientes(); };
+    tdBtn.appendChild(btn);
+
+    const tdCli=document.createElement("td"); tdCli.textContent=c.cliente||"-";
+    const tdPed=document.createElement("td"); tdPed.textContent=c.pedidos;
+    const tdTot=document.createElement("td"); tdTot.textContent=c.total;
+
+    const tdEst=document.createElement("td");
+    tdEst.innerHTML = [...c.estadosCount.entries()].map(([st, n])=>`<span class="badge">${st}: ${n}</span>`).join(" ");
+
+    tr.append(tdBtn,tdCli,tdPed,tdTot,tdEst);
+    frag.appendChild(tr);
+
+    if(open){
+      const trSub=document.createElement("tr"); trSub.className="subrow";
+      const td=document.createElement("td"); td.colSpan=5;
+
+      const subt=document.createElement("table"); subt.className="subtable";
+      const thead=document.createElement("thead");
+      const chkId = "chkAllPed_"+btoa(c.cliente).replace(/=/g,"");
+      thead.innerHTML=`<tr>
+        <th class="w48"><input type="checkbox" id="${chkId}" title="Expandir / encoger pedidos del cliente"/></th>
+        <th data-k="pedido">Pedido <span class="sort-ico hidden">▲</span></th>
+        <th data-k="estado">Estado <span class="sort-ico hidden">▲</span></th>
+        <th data-k="edad">Antigüedad <span class="sort-ico hidden">▲</span></th>
+        <th data-k="obs">Observaciones <span class="sort-ico hidden">▲</span></th>
+        <th data-k="total">Faltantes del pedido <span class="sort-ico hidden">▲</span></th>
+        <th>Acciones</th>
+      </tr>`;
+      subt.appendChild(thead);
+
+      const pedKeys = c.pedidosArr.map(p=>p.pedido);
+      const allOpen = pedKeys.length>0 && pedKeys.every(k=>openPedidos.has(k));
+      setTimeout(()=>{ const chk=document.getElementById(chkId); if(chk) chk.checked=allOpen; },0);
+
+      let k="total", d=-1;
+      const body=document.createElement("tbody");
+
+      function updateHeadIcons(){
+        thead.querySelectorAll('[data-k] .sort-ico').forEach(sp=>sp.classList.add('hidden'));
+        const th = thead.querySelector(`[data-k="${k}"] .sort-ico`);
+        if(th){ th.textContent = d>0 ? '▲' : '▼'; th.classList.remove('hidden'); }
+      }
+
+      function drawBody(){
+        body.innerHTML="";
+        const rows=[...c.pedidosArr].sort((a,b)=> d*cmp(a[k], b[k]));
+        for(const p of rows){
+          const r=document.createElement("tr");
+
+          const tdExp=document.createElement("td");
+          const isOpen = openPedidos.has(p.pedido);
+          const b=document.createElement("button");
+          b.className="expBtn"+(isOpen?" open":""); b.textContent=isOpen?"−":"+"; 
+          b.onclick=()=>{ if(isOpen) openPedidos.delete(p.pedido); else openPedidos.add(p.pedido); renderClientes(); };
+          tdExp.appendChild(b);
+
+          const tdPed=document.createElement("td"); tdPed.textContent=p.pedido;
+          const tdEst=document.createElement("td"); tdEst.textContent=p.estado||"-";
+          const tdEdad=document.createElement("td"); tdEdad.textContent=p.edad;
+          const tdObs=document.createElement("td"); tdObs.textContent=p.obs||"-";
+          const tdFalt=document.createElement("td"); tdFalt.textContent=p.total;
+
+          const tdAcc=document.createElement("td");
+          const wrap=document.createElement("div"); wrap.className="col-actions";
+          const disabled=!p.pedidoId;
+
+          const an=document.createElement("button");
+          an.className="btn btn-danger btn-xs"; an.textContent="Anular";
+          an.disabled=disabled; an.onclick=()=>{ if(!disabled) anularFlow(p.pedidoId, p.estado, p.pedido); };
+
+          const re=document.createElement("button");
+          re.className="btn btn-primary btn-xs"; re.textContent="Reiniciar";
+          re.disabled=disabled; re.onclick=()=>{ if(!disabled) reiniciarFlow(p.pedidoId, p.estado, p.pedido); };
+
+          wrap.append(an,re); tdAcc.appendChild(wrap);
+
+          r.append(tdExp,tdPed,tdEst,tdEdad,tdObs,tdFalt,tdAcc);
+          body.appendChild(r);
+
+          if(isOpen){
+            const trSub2=document.createElement("tr"); trSub2.className="subrow";
+            const td2=document.createElement("td"); td2.colSpan=7;
+
+            const subt2=document.createElement("table"); subt2.className="subtable";
+            const thead2=document.createElement("thead");
+            thead2.innerHTML=`<tr>
+              <th> </th>
+              <th data-k="sku">SKU <span class="sort-ico hidden">▲</span></th>
+              <th data-k="prod">Producto <span class="sort-ico hidden">▲</span></th>
+              <th data-k="extra">Texto adicional <span class="sort-ico hidden">▲</span></th>
+              <th data-k="cant">Cant. a entregar <span class="sort-ico hidden">▲</span></th>
+              <th data-k="reservado">Reservado <span class="sort-ico hidden">▲</span></th>
+              <th>Disponible</th>
+              <th data-k="faltan">Faltan <span class="sort-ico hidden">▲</span></th>
+              <th data-k="origen">Cant. origen <span class="sort-ico hidden">▲</span></th>
+              <th>Acción</th>
+            </tr>`;
+            subt2.appendChild(thead2);
+
+            let k2="faltan", d2=-1;
+            const body2=document.createElement("tbody");
+
+            function updateIcons2(){
+              thead2.querySelectorAll('[data-k] .sort-ico').forEach(sp=>sp.classList.add('hidden'));
+              const th = thead2.querySelector(`[data-k="${k2}"] .sort-ico`);
+              if(th){ th.textContent = d2>0 ? '▲' : '▼'; th.classList.remove('hidden'); }
+            }
+
+            function drawBody2(){
+              body2.innerHTML="";
+              const items=[...p.items].sort((a,b)=> d2*cmp(a[k2], b[k2]));
+              for(const it of items){
+                const rr=document.createElement("tr");
+                const dot=`<span class="dot ${it.disp==='red'?'red':(it.disp==='blue'?'blue':'gray')}"></span>`;
+                rr.innerHTML=`
+                  <td></td>
+                  <td>${it.sku||"-"}</td>
+                  <td>${it.prod||"-"}</td>
+                  <td>${it.extra||"-"}</td>
+                  <td>${it.cant}</td>
+                  <td>${it.reservado}</td>
+                  <td>${dot}</td>
+                  <td>${it.faltan}</td>
+                  <td>${it.origen}</td>
+                  <td>${actionPill(it, {pedido:p.pedido, pedidoId:p.pedidoId, estado:p.estado})}</td>
+                `;
+                body2.appendChild(rr);
+              }
+              updateIcons2();
+            }
+            drawBody2();
+            subt2.appendChild(body2);
+
+            thead2.addEventListener("click",(ev)=>{
+              const th=ev.target.closest("[data-k]"); if(!th) return;
+              const nk=th.getAttribute("data-k");
+              if(k2===nk) d2=-d2; else {k2=nk; d2=1;}
+              drawBody2();
+            });
+
+            td2.appendChild(subt2);
+            trSub2.appendChild(td2);
+            body.appendChild(trSub2);
+          }
+        }
+        updateHeadIcons();
+      }
+      drawBody();
+      subt.appendChild(body);
+
+      setTimeout(()=>{
+        const chk=document.getElementById(chkId);
+        if(!chk) return;
+        chk.addEventListener("change",()=>{
+          if(chk.checked){ c.pedidosArr.forEach(p=>openPedidos.add(p.pedido)); }
+          else{ c.pedidosArr.forEach(p=>openPedidos.delete(p.pedido)); }
+          renderClientes();
+        });
+      },0);
+
+      thead.addEventListener("click",(ev)=>{
+        const th=ev.target.closest("[data-k]"); if(!th) return;
+        const nk=th.getAttribute("data-k");
+        if(k===nk) d=-d; else {k=nk; d=1;}
+        drawBody();
+      });
+
+      td.appendChild(subt);
+      trSub.appendChild(td);
+      frag.appendChild(trSub);
+    }
+  }
+  $tbodyClientes.innerHTML=""; $tbodyClientes.appendChild(frag);
+}
+
+/* ============ Acciones ============ */
+function actionPill(it, pedidoRow){
+  if(it.accion==="NINGUNA") return `<span class="pill gray">NINGUNA</span>`;
+  if(it.accion==="REPONER") return `<span class="pill red">REPONER</span>`;
+  const pid=pedidoRow.pedidoId||it.pedidoId||"";
+  const hint=strip(pedidoRow.estado||it.estado||"");
+  const pedNum = (pedidoRow.pedido || it.pedido || "").toString();
+  const disabled = !pid;
+  const attr = disabled
+    ? 'class="pill green" disabled'
+    : 'class="pill green" onclick="reservarFlow(\''+pid+'\', \''+encodeURIComponent(hint)+'\', \''+encodeURIComponent(pedNum)+'\')"';
+  return `<span ${attr}>RESERVAR</span>`;
+}
+
+function normalizarEstado(estadoTexto){
+  const v = normEstado(estadoTexto);
+  if (v.includes("esperando orden de produccion") || v.includes("esperando orden de producción")) return "EOP";
+  if (v.includes("quiebre 2") || v.includes("quiebre2") || v === "q2" || v.includes(" q2 ")) return "Q2";
+  if (v.includes("en espera de pago")) return "AEP";
+  return "OTRO";
+}
+
+async function reservarFlow(pedidoId, estadoEnc, numeroEnc){
+  try{
+    const estadoRaw = decodeURIComponent(estadoEnc||"");
+    const numero = decodeURIComponent(numeroEnc||"");
+    const estado = normalizarEstado(estadoRaw);
+    if(!pedidoId){ setMsg("No se pudo detectar el ID del pedido.","warn"); return; }
+
+    showBusy(`Reservando Pedido Nº ${numero}…`);
+
+    if(estado === "EOP"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_REINICIAR, form:""});
+      await sleep(300);
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_RESERVA, form:""});
+    } else if(estado === "Q2"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_RESERVA_Q2, form:""});
+    } else if(estado === "AEP"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_RESERVA, form:""});
+    } else {
+      setMsg("El estado no permite RESERVAR desde aquí (válidos: En espera de pago / Esperando Orden de Producción / Quiebre 2).","warn");
+      hideBusy(); return;
+    }
+
+    await sleep(400);
+    hideBusy();
+    await cargar();
+    setMsg(`Reserva aplicada en Pedido Nº ${numero}.`);
+  }catch(e){ console.error(e); hideBusy(); setMsg("No se pudo reservar.","warn"); }
+}
+
+async function anularFlow(pedidoId, estadoRaw, numero){
+  try{
+    const estado = normalizarEstado(estadoRaw||"");
+    if(!pedidoId){ setMsg("No se pudo detectar el ID del pedido.","warn"); return; }
+
+    showBusy(`Anulando Pedido Nº ${numero}…`);
+
+    if(estado === "Q2"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_ANULAR_Q2, form:""});
+    } else if(estado === "EOP"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_ANULAR_EOP, form:""});
+    } else if(estado === "AEP"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_ANULAR_AEP, form:""});
+    } else {
+      setMsg("No es posible ANULAR desde el estado actual (válidos: En espera de pago / Esperando Orden de Producción / Quiebre 2).","warn");
+      hideBusy(); return;
+    }
+
+    await sleep(300);
+    hideBusy();
+    await cargar();
+    setMsg(`Pedido Nº ${numero} anulado.`);
+  }catch(e){ console.error(e); hideBusy(); setMsg("No se pudo anular el pedido.","warn"); }
+}
+
+async function reiniciarFlow(pedidoId, estadoRaw, numero){
+  try{
+    const estado = normalizarEstado(estadoRaw||"");
+    if(!pedidoId){ setMsg("No se pudo detectar el ID del pedido.","warn"); return; }
+
+    showBusy(`Reiniciando Pedido Nº ${numero}…`);
+
+    if(estado === "Q2"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_REINICIO_Q2, form:""});
+      await sleep(250);
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_LIBERAR_RESERVAS, form:""});
+    } else if(estado === "EOP"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_REINICIAR, form:""});
+      await sleep(250);
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_LIBERAR_RESERVAS, form:""});
+    } else if(estado === "AEP"){
+      await apiPost(CONFIG.WORKFLOW_EXEC_URL,{schemaId:CONFIG.SCHEMA_ID, ids:[String(pedidoId)], transitionId:CONFIG.TRANSITION_LIBERAR_RESERVAS, form:""});
+    } else {
+      setMsg("No es posible REINICIAR desde el estado actual (válidos: En espera de pago / Esperando Orden de Producción / Quiebre 2).","warn");
+      hideBusy(); return;
+    }
+
+    await sleep(300);
+    hideBusy();
+    await cargar();
+    setMsg(`Pedido Nº ${numero} reiniciado.`);
+  }catch(e){ console.error(e); hideBusy(); setMsg("No se pudo reiniciar el pedido.","warn"); }
+}
+
+/* ============ Export CSV ============ */
+function toCSV(rows){
+  if(!rows.length) return "";
+  const cols=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+  const esc=v=>{const s=(v==null?"":String(v)); return /[",\n;]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
+  const head=cols.join(";");
+  const body=rows.map(r=>cols.map(c=>esc(r[c])).join(";")).join("\n");
+  return head+"\n"+body;
+}
+function download(filename, text){
+  const blob=new Blob([text],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+}
+function buildExportRows(){
+  const items=[];
+  for(const it of dataRaw){ if(applyItemFilters(it)) items.push(it); }
+  const rows = items.map(it=>{
+    const r={
+      Pedido: it.pedido,
+      Cliente: it.cliente,
+      Estado: it.estado,
+      AntiguedadDias: it.edad,
+      SKU: it.sku,
+      Producto: it.prod,
+      "Texto adicional": it.extra,
+      CantAEntregar: it.cant,
+      Reservado: it.reservado,
+      Disponible: it.disp==='red'?'ROJO':(it.disp==='blue'?'AZUL':''),
+      Faltan: it.faltan,
+      CantOrigen: it.origen,
+      Accion: it.accion
+    };
+    if(activeTab==="productos"){
+      if(visCols.grupo) r["Grupo"]=it.grupo;
+      if(visCols.subgrupo) r["Subgrupo"]=it.subgrupo;
+      if(visCols.sub2) r["Segundo Subgrupo"]=it.sub2;
+    }
+    return r;
+  });
+  return rows;
+}
+document.getElementById("btnExport").onclick=()=>{
+  const rows=buildExportRows();
+  if(!rows.length){ setMsg("Nada para exportar."); return; }
+  const csv=toCSV(rows);
+  const ts=new Date().toISOString().slice(0,19).replace(/[T:]/g,"-");
+  const name = activeTab==="pedidos" ? `faltantes_por_pedido_${ts}.csv` :
+               activeTab==="productos" ? `faltantes_por_producto_${ts}.csv` :
+               `faltantes_por_cliente_${ts}.csv`;
+  download(name,csv);
+};
+
+/* ============ Eventos ============ */
+document.getElementById("btnRefrescar").onclick=()=>cargar();
+
+["input","change","keyup"].forEach(ev=> $inpBuscar.addEventListener(ev,()=>{ 
+  searchQuery=strip($inpBuscar.value||""); 
+  rebuildAll(); 
+  setMsg(activeTab==="pedidos" ? `Encontramos ${pedidos.length} pedido(s).` :
+        activeTab==="productos" ? `Encontramos ${productos.length} SKU(s).` :
+        `Encontramos ${clientes.length} cliente(s).`);
+}));
+
+$chkFaltantes.addEventListener("change",()=>{ filtroSoloFaltantes=$chkFaltantes.checked; rebuildAll(); });
+$selAccion.addEventListener("change",()=>{ filtroAccion=$selAccion.value||""; rebuildAll(); });
+$selEstado.addEventListener("change",()=>{ filtroEstado=$selEstado.value||""; rebuildAll(); });
+
+if($chkExpandPedidos){
+  $chkExpandPedidos.addEventListener("change",()=>{
+    if($chkExpandPedidos.checked){ pedidos.forEach(p=>openPedidos.add(p.pedido)); }
+    else { openPedidos.clear(); }
+    renderPedidos();
+  });
+}
+if($chkExpandProductos){
+  $chkExpandProductos.addEventListener("change",()=>{
+    if($chkExpandProductos.checked){ productos.forEach(p=>openSkus.add(p.sku)); }
+    else { openSkus.clear(); }
+    renderProductos();
+  });
+}
+if($chkExpandClientes){
+  $chkExpandClientes.addEventListener("change",()=>{
+    if($chkExpandClientes.checked){ clientes.forEach(c=>openClientes.add(c.cliente)); }
+    else { openClientes.clear(); }
+    renderClientes();
+  });
+}
+
+document.querySelectorAll("#viewPedidos .sortable").forEach(el=>{
+  el.addEventListener("click",()=>{ const k=el.dataset.key; if(sortKey===k){ sortDir=-sortDir; }else{ sortKey=k; sortDir=1; } renderPedidos(); });
+});
+document.querySelectorAll("#viewProductos .sortable").forEach(el=>{
+  el.addEventListener("click",()=>{ const k=el.dataset.key; if(sortKeyProd===k){ sortDirProd=-sortDirProd; }else{ sortKeyProd=k; sortDirProd=1; } renderProductos(); });
+});
+document.querySelectorAll("#viewClientes .sortable").forEach(el=>{
+  el.addEventListener("click",()=>{ const k=el.dataset.key; if(sortKeyCli===k){ sortDirCli=-sortDirCli; }else{ sortKeyCli=k; sortDirCli=1; } renderClientes(); });
+});
+
+const $tabPedidos=document.getElementById("tabPedidos");
+const $tabProductos=document.getElementById("tabProductos");
+const $tabClientes=document.getElementById("tabClientes");
+const $viewPedidos=document.getElementById("viewPedidos");
+const $viewProductos=document.getElementById("viewProductos");
+const $viewClientes=document.getElementById("viewClientes");
+
+$tabPedidos.onclick=()=>{ 
+  activeTab="pedidos"; 
+  $tabPedidos.classList.add("act"); $tabProductos.classList.remove("act"); $tabClientes.classList.remove("act");
+  $viewPedidos.style.display="block"; $viewProductos.style.display="none"; $viewClientes.style.display="none";
+  setMsg(`Encontramos ${pedidos.length} pedido(s).`);
+  updateToolbarPerTab();
+};
+$tabProductos.onclick=()=>{ 
+  activeTab="productos"; 
+  $tabProductos.classList.add("act"); $tabPedidos.classList.remove("act"); $tabClientes.classList.remove("act");
+  $viewProductos.style.display="block"; $viewPedidos.style.display="none"; $viewClientes.style.display="none";
+  setMsg(`Encontramos ${productos.length} SKU(s).`);
+  updateToolbarPerTab();
+};
+$tabClientes.onclick=()=>{ 
+  activeTab="clientes"; 
+  $tabClientes.classList.add("act"); $tabPedidos.classList.remove("act"); $tabProductos.classList.remove("act");
+  $viewClientes.style.display="block"; $viewPedidos.style.display="none"; $viewProductos.style.display="none";
+  setMsg(`Encontramos ${clientes.length} cliente(s).`);
+  updateToolbarPerTab();
+};
+
+/* Mostrar/ocultar controles por pestaña: Columnas solo en Productos */
+function updateToolbarPerTab(){
+  const showCols = activeTab==="productos";
+  $btnCols.style.display = showCols ? "" : "none";
+  $btnEstados.style.display = ""; // Estados siempre
+}
+
+/* Dropdown Columnas (persistencia) */
+function loadColumnsPref(){
+  try{ const j=JSON.parse(localStorage.getItem("prodColsVis")||"{}"); visCols.grupo=!!j.grupo; visCols.subgrupo=!!j.subgrupo; visCols.sub2=!!j.sub2; }catch(_){}
+  $colGrupo.checked = visCols.grupo;
+  $colSubgrupo.checked = visCols.subgrupo;
+  $colSub2.checked = visCols.sub2;
+}
+function saveColumnsPref(){
+  localStorage.setItem("prodColsVis", JSON.stringify(visCols));
+}
+$btnCols.addEventListener("click",(e)=>{ e.stopPropagation(); $menuCols.classList.toggle("show"); });
+document.addEventListener("click",(e)=>{ if(!e.target.closest(".dropdown")) { $menuCols.classList.remove("show"); $menuEstados.classList.remove("show"); }});
+[$colGrupo,$colSubgrupo,$colSub2].forEach(chk=>{
+  chk.addEventListener("change",()=>{
+    visCols.grupo = $colGrupo.checked;
+    visCols.subgrupo = $colSubgrupo.checked;
+    visCols.sub2 = $colSub2.checked;
+    saveColumnsPref();
+    rebuildAll();
+  });
+});
+loadColumnsPref();
+
+/* Dropdown Estados (todas las vistas) */
+function initEstadosMenu(){
+  const ests=[...new Set(dataRaw.map(x=>x.estado).filter(Boolean))].sort((a,b)=>strip(a).localeCompare(strip(b),"es"));
+  estadosDisponibles = ests;
+
+  let stored=null; try{ stored=JSON.parse(localStorage.getItem("clientesEstadosSel")||"[]"); }catch(_){}
+  if(stored && stored.length){
+    allowedStates = new Set(ests.filter(e=>stored.includes(e)));
+  }else{
+    allowedStates = new Set(ests); // todos por defecto
+  }
+
+  $estadosContainer.innerHTML="";
+  ests.forEach(st=>{
+    const id = "est_"+Math.random().toString(36).slice(2,8);
+    const label=document.createElement("label");
+    label.innerHTML=`<input type="checkbox" id="${id}" ${allowedStates.has(st)?'checked':''}/> ${st}`;
+    $estadosContainer.appendChild(label);
+    const chk=label.querySelector("input");
+    chk.addEventListener("change",()=>{
+      if(chk.checked) allowedStates.add(st); else allowedStates.delete(st);
+      saveEstadosPref();
+      rebuildAll();
+    });
+  });
+
+  $btnEstadosTodos.onclick=(e)=>{ e.preventDefault(); allowedStates = new Set(estadosDisponibles); saveEstadosPref(); initEstadosMenu(); rebuildAll(); };
+  $btnEstadosPend.onclick=(e)=>{ 
+    e.preventDefault(); 
+    allowedStates = new Set(estadosDisponibles.filter(e=>normEstado(e)!=="entregado"));
+    saveEstadosPref(); initEstadosMenu(); rebuildAll(); 
+  };
+}
+function saveEstadosPref(){ localStorage.setItem("clientesEstadosSel", JSON.stringify([...allowedStates])); }
+$btnEstados.addEventListener("click",(e)=>{ e.stopPropagation(); $menuEstados.classList.toggle("show"); });
+
+/* ============ Init ============ */
+(async function init(){
+  try{
+    setEstado("Conectando…",false);
+    await loginYiQi();
+    await cargar();
+  }catch(_){}
+})();
+</script>
+</body>
+</html>

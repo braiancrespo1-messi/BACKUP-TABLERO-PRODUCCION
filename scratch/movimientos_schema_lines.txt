@@ -1,0 +1,2100 @@
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        }
+      }
+    },
+    "/IMPRESION_MULTIPLE/smartie": {
+      "get": {
+        "tags": [
+          "Reportes / Impresión Múltiple"
+        ],
+        "description": "Get a page of a smartie",
+        "parameters": [
+          {
+            "name": "smartieId",
+            "in": "query",
+            "description": "Smartie id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": " Schema identificator",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": " Page number (1-based)",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": " Search term",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        }
+      }
+    },
+    "/IMPRESION_MULTIPLE/query": {
+      "post": {
+        "tags": [
+          "Reportes / Impresión Múltiple"
+        ],
+        "summary": "Execute dynamic query without persisted smartie",
+        "description": "Performs a dynamic query on Impresión Múltiple instances with custom columns, filters, sorting, aggregations, and configurable pagination. Use this endpoint for production-grade listings that require predictable performance, payload control, and advanced filtering. Unlike /search, /query allows explicit column selection and page size configuration, making it the preferred option for list screens, integrations, and high-volume data retrieval scenarios. This endpoint allows ad-hoc queries without requiring a saved smartie configuration.",
+        "parameters": [
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Schema identificator",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Dynamic query parameters including pagination, columns, filters, and search criteria",
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "page"
+                ],
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "minimum": 1,
+                    "type": "integer",
+                    "description": "Page number (1-based)",
+                    "default": 1
+                  },
+                  "pageSize": {
+                    "maximum": 1000,
+                    "minimum": 1,
+                    "type": "integer",
+                    "description": "Number of records per page",
+                    "default": 50
+                  },
+                  "search": {
+                    "type": "string",
+                    "description": "Fast search term to filter across all columns",
+                    "nullable": true
+                  },
+                  "columns": {
+                    "type": "array",
+                    "items": {
+                      "required": [
+                        "field"
+                      ],
+                      "type": "object",
+                      "properties": {
+                        "field": {
+                          "enum": [
+                            "IMMU_DESDE",
+                            "IMMU_HASTA",
+                            "IMMU_FACTURAS",
+                            "id",
+                            "DESC_ESTADO",
+                            "AUDI_USUA_ALTA",
+                            "AUDI_USUA_MODIF",
+                            "AUDI_FECHA_ALTA",
+                            "AUDI_FECHA_MODIF"
+                          ],
+                          "type": "string",
+                          "description": "Physical column name (required). Available columns from entity view."
+                        },
+                        "title": {
+                          "type": "string",
+                          "description": "Custom column title (optional)",
+                          "nullable": true
+                        },
+                        "sortDirection": {
+                          "enum": [
+                            "ASC",
+                            "DESC"
+                          ],
+                          "type": "string",
+                          "description": "Sort direction",
+                          "nullable": true
+                        },
+                        "order": {
+                          "type": "integer",
+                          "description": "Column display order (optional)",
+                          "nullable": true
+                        },
+                        "sortOrder": {
+                          "type": "integer",
+                          "description": "Sort priority order (optional)",
+                          "nullable": true
+                        },
+                        "aggregation": {
+                          "enum": [
+                            "SUM",
+                            "COUNT",
+                            "AVG",
+                            "MIN",
+                            "MAX"
+                          ],
+                          "type": "string",
+                          "description": "Aggregation function",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "description": "Column specifications. If null or empty, default header columns will be used",
+                    "nullable": true
+                  },
+                  "filters": {
+                    "type": "array",
+                    "items": {
+                      "required": [
+                        "columnName",
+                        "operator",
+                        "value"
+                      ],
+                      "type": "object",
+                      "properties": {
+                        "columnName": {
+                          "enum": [
+                            "IMMU_DESDE",
+                            "IMMU_HASTA",
+                            "IMMU_FACTURAS",
+                            "id",
+                            "DESC_ESTADO",
+                            "AUDI_USUA_ALTA",
+                            "AUDI_USUA_MODIF",
+                            "AUDI_FECHA_ALTA",
+                            "AUDI_FECHA_MODIF"
+                          ],
+                          "type": "string",
+                          "description": "Column name to filter (required). Available columns from entity view."
+                        },
+                        "operator": {
+                          "enum": [
+                            "=",
+                            "!=",
+                            ">",
+                            "<",
+                            ">=",
+                            "<=",
+                            "LIKE"
+                          ],
+                          "type": "string",
+                          "description": "Comparison operator"
+                        },
+                        "value": {
+                          "description": "Value to compare. Type should match column data type",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "description": "Filter specifications",
+                    "nullable": true
+                  }
+                }
+              },
+              "example": {
+                "page": 1,
+                "pageSize": 10,
+                "search": "",
+                "columns": [
+                  {
+                    "field": "COLUMN_NAME",
+                    "title": "Column Title",
+                    "sortDirection": "ASC",
+                    "sortOrder": 1
+                  }
+                ],
+                "filters": [
+                  {
+                    "columnName": "COLUMN_NAME",
+                    "operator": "=",
+                    "value": "value"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Query executed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      },
+                      "description": "Array of records matching the query"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total number of records (without pagination)"
+                    },
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      },
+                      "description": "Column definitions"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters or column names"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "User does not have permission to view this entity"
+          },
+          "404": {
+            "description": "Entity not found"
+          }
+        }
+      }
+    },
+    "/IMPRESION_MULTIPLE/file": {
+      "get": {
+        "tags": [
+          "Reportes / Impresión Múltiple"
+        ],
+        "summary": "Descarga un archivo de una entidad",
+        "description": "Devuelve el archivo cargado en un atributo de tipo archivo de una instancia de entidad.",
+        "parameters": [
+          {
+            "name": "attributeName",
+            "in": "query",
+            "description": "Nombre del atributo de tipo archivo",
+            "required": true,
+            "schema": {
+              "enum": [
+                "FACTURAS"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instanceId",
+            "in": "query",
+            "description": "Id de la instancia",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Id del esquema",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo encontrado",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fileName": {
+                      "type": "string",
+                      "description": "Nombre del archivo"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Contenido binario (base64)",
+                      "format": "byte"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No existe una Entidad con ese nombre / No existe una instancia en Entidad con ese Id / No existe un Atributo con ese nombre en la entidad / El atributo no es de tipo archivo"
+          },
+          "403": {
+            "description": "El usuario no tiene permisos"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Reportes / Impresión Múltiple"
+        ],
+        "summary": "Carga o reemplaza un archivo en una entidad",
+        "description": "Guarda el archivo en el atributo de tipo archivo de una instancia de entidad. Soporta dos formatos: multipart/form-data o binary directo (application/octet-stream, application/pdf, etc.).",
+        "parameters": [
+          {
+            "name": "attributeName",
+            "in": "query",
+            "description": "Nombre del atributo de tipo archivo",
+            "required": true,
+            "schema": {
+              "enum": [
+                "FACTURAS"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instanceId",
+            "in": "query",
+            "description": "Id de la instancia",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Id del esquema",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "contentType",
+            "in": "query",
+            "description": "Tipo de contenido (MIME) del archivo (ej: application/pdf, image/png)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "query",
+            "description": "Nombre del archivo (opcional, se puede inferir del multipart)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Archivo a cargar. Puede enviarse como multipart/form-data o como binary directo.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "Contenido del archivo",
+                    "format": "binary"
+                  }
+                }
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "description": "Contenido binario del archivo enviado directamente",
+                "format": "binary"
+              }
+            },
+            "application/pdf": {
+              "schema": {
+                "type": "string",
+                "description": "Contenido PDF enviado directamente",
+                "format": "binary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Archivo guardado correctamente"
+          },
+          "400": {
+            "description": "No existe una Entidad con ese nombre / No existe una instancia en Entidad con ese Id / No existe un Atributo con ese nombre en la entidad / El atributo no es de tipo archivo"
+          },
+          "403": {
+            "description": "El usuario no tiene permisos"
+          }
+        }
+      }
+    },
+    "/IMPRESION_MULTIPLE/report": {
+      "get": {
+        "tags": [
+          "Reportes / Impresión Múltiple"
+        ],
+        "summary": "Descarga un reporte asociado a una entidad",
+        "description": "Devuelve el reporte solicitado (nombre y contenido en binario) para una instancia de entidad.",
+        "parameters": [
+          {
+            "name": "reportName",
+            "in": "query",
+            "description": "Nombre del reporte",
+            "required": true,
+            "schema": {
+              "enum": [
+                "MULTIPLE_FACTURA_PDF",
+                "IMP_MULTIPLE_REC_PDF"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instanceId",
+            "in": "query",
+            "description": "Id de la instancia",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Id del esquema",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte encontrado",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fileName": {
+                      "type": "string",
+                      "description": "Nombre del archivo de reporte"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Contenido binario (base64)",
+                      "format": "byte"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No existe una Entidad con ese nombre / No existe una instancia en Entidad con ese Id / No existe un reporte con ese nombre en la entidad"
+          },
+          "403": {
+            "description": "El usuario no tiene permisos"
+          }
+        }
+      }
+    },
+    "/MOVIMIENTOS_CLIENTES": {
+      "post": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "summary": "Create a Movimientos de clientes.",
+        "description": "Creates a new instance of Movimientos de clientes.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "schemaId",
+                  "data"
+                ],
+                "type": "object",
+                "properties": {
+                  "schemaId": {
+                    "title": "Schema Id",
+                    "type": "integer"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "CLIE_NOMBRE": {
+                        "title": "Nombre",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_RAZON_SOCIAL": {
+                        "title": "Razón Social",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_CUIT": {
+                        "title": "CUIT",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_DOMICILIO": {
+                        "title": "Domicilio",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "FECHA": {
+                        "title": "Fecha",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "FECHA_VTO": {
+                        "title": "Fecha Vto.",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "COMPROBANTE": {
+                        "title": "Comprobante",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "ORDEN": {
+                        "title": "Orden",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "REPORTE_FECHA_DESDE": {
+                        "title": "Fecha Desde",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "REPORTE_FECHA_HASTA": {
+                        "title": "Fecha Hasta",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "ESTADO": {
+                        "title": "Estado",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "COBRADOR": {
+                        "title": "Cobrador",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "MONEDA": {
+                        "title": "Moneda",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "COTIZACION": {
+                        "title": "Tipo de cambio",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "MONTO_ORIGEN": {
+                        "title": "Monto en Origen",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "VENDEDOR": {
+                        "title": "Vendedor",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "LINK": {
+                        "title": "Link",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_ID_CLIE": {
+                        "title": "Cliente - Identificador",
+                        "type": "integer",
+                        "nullable": true
+                      },
+                      "TIDC_DESCUENTO": {
+                        "title": "Cliente - Descuento",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "TIDC_NOMBRE": {
+                        "title": "Cliente - Tipo",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_SALDO_CLIENTE": {
+                        "title": "Cliente - Saldo",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "PENDIENTE_PAGO": {
+                        "title": "Pendiente de Pago",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "DEBE": {
+                        "title": "Debe",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "HABER": {
+                        "title": "Haber",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "CONTABLE": {
+                        "title": "Contable",
+                        "type": "boolean",
+                        "nullable": true
+                      },
+                      "IMPORTE": {
+                        "title": "Importe",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "CUENTA_NOMBRE": {
+                        "title": "Cliente - Cuenta contable",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CONDICION_IMP_DESC": {
+                        "title": "Condición IVA - Descripción",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "description": "Instance data"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Instance created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID of the newly created instance"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid data or missing required fields"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "User does not have permission to create instances of this entity"
+          },
+          "409": {
+            "description": "Conflict - Duplicate instance detected"
+          }
+        }
+      }
+    },
+    "/MOVIMIENTOS_CLIENTES/{id}": {
+      "get": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "description": "Get a Movimientos de clientes by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Movimientos de clientes id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": " Schema identificator",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "includeChildren",
+            "in": "query",
+            "description": "Whether to include child entities in the response (default: true)",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instance found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "title": "Instance unique identifier",
+                      "type": "integer"
+                    },
+                    "ESTA_NOMBRE": {
+                      "title": "State name",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "ESTA_CODIGO": {
+                      "title": "State code",
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "AUDI_FECHA_ALTA": {
+                      "title": "Creation date",
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "AUDI_FECHA_MODIF": {
+                      "title": "Last modification date",
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "CLIE_NOMBRE": {
+                      "title": "Nombre",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "CLIE_RAZON_SOCIAL": {
+                      "title": "Razón Social",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "CLIE_CUIT": {
+                      "title": "CUIT",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "CLIE_DOMICILIO": {
+                      "title": "Domicilio",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "FECHA": {
+                      "title": "Fecha",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "FECHA_VTO": {
+                      "title": "Fecha Vto.",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "COMPROBANTE": {
+                      "title": "Comprobante",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "ORDEN": {
+                      "title": "Orden",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "REPORTE_FECHA_DESDE": {
+                      "title": "Fecha Desde",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "REPORTE_FECHA_HASTA": {
+                      "title": "Fecha Hasta",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "ESTADO": {
+                      "title": "Estado",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "COBRADOR": {
+                      "title": "Cobrador",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "MONEDA": {
+                      "title": "Moneda",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "COTIZACION": {
+                      "title": "Tipo de cambio",
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "MONTO_ORIGEN": {
+                      "title": "Monto en Origen",
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "VENDEDOR": {
+                      "title": "Vendedor",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "LINK": {
+                      "title": "Link",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "CLIE_ID_CLIE": {
+                      "title": "Cliente - Identificador",
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "TIDC_DESCUENTO": {
+                      "title": "Cliente - Descuento",
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "TIDC_NOMBRE": {
+                      "title": "Cliente - Tipo",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "CLIE_SALDO_CLIENTE": {
+                      "title": "Cliente - Saldo",
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "PENDIENTE_PAGO": {
+                      "title": "Pendiente de Pago",
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "DEBE": {
+                      "title": "Debe",
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "HABER": {
+                      "title": "Haber",
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "CONTABLE": {
+                      "title": "Contable",
+                      "type": "boolean",
+                      "nullable": true
+                    },
+                    "IMPORTE": {
+                      "title": "Importe",
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "CUENTA_NOMBRE": {
+                      "title": "Cliente - Cuenta contable",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "CONDICION_IMP_DESC": {
+                      "title": "Condición IVA - Descripción",
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "User does not have permission to access this resource"
+          },
+          "404": {
+            "description": "Entity or instance not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "summary": "Update a Movimientos de clientes by id.",
+        "description": "Update a Movimientos de clientes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Movimientos de clientes id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "schemaId",
+                  "data"
+                ],
+                "type": "object",
+                "properties": {
+                  "schemaId": {
+                    "title": "Schema Id",
+                    "type": "integer"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "CLIE_NOMBRE": {
+                        "title": "Nombre",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_RAZON_SOCIAL": {
+                        "title": "Razón Social",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_CUIT": {
+                        "title": "CUIT",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_DOMICILIO": {
+                        "title": "Domicilio",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "FECHA": {
+                        "title": "Fecha",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "FECHA_VTO": {
+                        "title": "Fecha Vto.",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "COMPROBANTE": {
+                        "title": "Comprobante",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "ORDEN": {
+                        "title": "Orden",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "REPORTE_FECHA_DESDE": {
+                        "title": "Fecha Desde",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "REPORTE_FECHA_HASTA": {
+                        "title": "Fecha Hasta",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "ESTADO": {
+                        "title": "Estado",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "COBRADOR": {
+                        "title": "Cobrador",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "MONEDA": {
+                        "title": "Moneda",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "COTIZACION": {
+                        "title": "Tipo de cambio",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "MONTO_ORIGEN": {
+                        "title": "Monto en Origen",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "VENDEDOR": {
+                        "title": "Vendedor",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "LINK": {
+                        "title": "Link",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_ID_CLIE": {
+                        "title": "Cliente - Identificador",
+                        "type": "integer",
+                        "nullable": true
+                      },
+                      "TIDC_DESCUENTO": {
+                        "title": "Cliente - Descuento",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "TIDC_NOMBRE": {
+                        "title": "Cliente - Tipo",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CLIE_SALDO_CLIENTE": {
+                        "title": "Cliente - Saldo",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "PENDIENTE_PAGO": {
+                        "title": "Pendiente de Pago",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "DEBE": {
+                        "title": "Debe",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "HABER": {
+                        "title": "Haber",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "CONTABLE": {
+                        "title": "Contable",
+                        "type": "boolean",
+                        "nullable": true
+                      },
+                      "IMPORTE": {
+                        "title": "Importe",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "CUENTA_NOMBRE": {
+                        "title": "Cliente - Cuenta contable",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "CONDICION_IMP_DESC": {
+                        "title": "Condición IVA - Descripción",
+                        "maxLength": 100,
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "summary": "Delete a Movimientos de clientes by id.",
+        "description": "Delete a Movimientos de clientes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Movimientos de clientes id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": " Schema identificator",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instance deleted successfully"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "description": "Entity or instance not found"
+          }
+        }
+      }
+    },
+    "/MOVIMIENTOS_CLIENTES/search": {
+      "get": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "summary": "Fast search endpoint. Returns up to 50 Movimientos de clientes records; prefer /query for controlled, production-grade listings.",
+        "description": "Performs a lightweight search over Movimientos de clientes instances. This endpoint is intended for fast lookup scenarios and may return a limited result set with the default response shape, including all available columns. Use /search when simplicity and quick retrieval are more important than payload optimization or query flexibility. For production listings that require configurable pagination, explicit column selection, or advanced filters, prefer /query.",
+        "parameters": [
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Schema identificator",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "CLIE_NOMBRE",
+            "in": "query",
+            "description": "Nombre",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "CLIE_RAZON_SOCIAL",
+            "in": "query",
+            "description": "Razón Social",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "CLIE_CUIT",
+            "in": "query",
+            "description": "CUIT",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "CLIE_DOMICILIO",
+            "in": "query",
+            "description": "Domicilio",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "FECHA",
+            "in": "query",
+            "description": "Fecha",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "FECHA_VTO",
+            "in": "query",
+            "description": "Fecha Vto.",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "COMPROBANTE",
+            "in": "query",
+            "description": "Comprobante",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ORDEN",
+            "in": "query",
+            "description": "Orden",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "REPORTE_FECHA_DESDE",
+            "in": "query",
+            "description": "Fecha Desde",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "REPORTE_FECHA_HASTA",
+            "in": "query",
+            "description": "Fecha Hasta",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ESTADO",
+            "in": "query",
+            "description": "Estado",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "COBRADOR",
+            "in": "query",
+            "description": "Cobrador",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "VENDEDOR",
+            "in": "query",
+            "description": "Vendedor",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "CLIE_ID_CLIE",
+            "in": "query",
+            "description": "Cliente - Identificador",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "CLIE_SALDO_CLIENTE",
+            "in": "query",
+            "description": "Cliente - Saldo",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "PENDIENTE_PAGO",
+            "in": "query",
+            "description": "Pendiente de Pago",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "DEBE",
+            "in": "query",
+            "description": "Debe",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "HABER",
+            "in": "query",
+            "description": "Haber",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "CONTABLE",
+            "in": "query",
+            "description": "Contable",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "IMPORTE",
+            "in": "query",
+            "description": "Importe",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        }
+      }
+    },
+    "/MOVIMIENTOS_CLIENTES/smartie": {
+      "get": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "description": "Get a page of a smartie",
+        "parameters": [
+          {
+            "name": "smartieId",
+            "in": "query",
+            "description": "Smartie id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": " Schema identificator",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": " Page number (1-based)",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": " Search term",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        }
+      }
+    },
+    "/MOVIMIENTOS_CLIENTES/query": {
+      "post": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "summary": "Execute dynamic query without persisted smartie",
+        "description": "Performs a dynamic query on Movimientos de clientes instances with custom columns, filters, sorting, aggregations, and configurable pagination. Use this endpoint for production-grade listings that require predictable performance, payload control, and advanced filtering. Unlike /search, /query allows explicit column selection and page size configuration, making it the preferred option for list screens, integrations, and high-volume data retrieval scenarios. This endpoint allows ad-hoc queries without requiring a saved smartie configuration.",
+        "parameters": [
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Schema identificator",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Dynamic query parameters including pagination, columns, filters, and search criteria",
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "page"
+                ],
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "minimum": 1,
+                    "type": "integer",
+                    "description": "Page number (1-based)",
+                    "default": 1
+                  },
+                  "pageSize": {
+                    "maximum": 1000,
+                    "minimum": 1,
+                    "type": "integer",
+                    "description": "Number of records per page",
+                    "default": 50
+                  },
+                  "search": {
+                    "type": "string",
+                    "description": "Fast search term to filter across all columns",
+                    "nullable": true
+                  },
+                  "columns": {
+                    "type": "array",
+                    "items": {
+                      "required": [
+                        "field"
+                      ],
+                      "type": "object",
+                      "properties": {
+                        "field": {
+                          "enum": [
+                            "CLIE_NOMBRE",
+                            "CLIE_RAZON_SOCIAL",
+                            "CLIE_CUIT",
+                            "CLIE_DOMICILIO",
+                            "FECHA",
+                            "FECHA_VTO",
+                            "COMPROBANTE",
+                            "ORDEN",
+                            "REPORTE_FECHA_DESDE",
+                            "REPORTE_FECHA_HASTA",
+                            "ESTADO",
+                            "COBRADOR",
+                            "MONEDA",
+                            "COTIZACION",
+                            "MONTO_ORIGEN",
+                            "VENDEDOR",
+                            "LINK",
+                            "CLIE_ID_CLIE",
+                            "TIDC_DESCUENTO",
+                            "TIDC_NOMBRE",
+                            "CLIE_SALDO_CLIENTE",
+                            "PENDIENTE_PAGO",
+                            "DEBE",
+                            "HABER",
+                            "CONTABLE",
+                            "IMPORTE",
+                            "CUENTA_NOMBRE",
+                            "CONDICION_IMP_DESC",
+                            "id",
+                            "DESC_ESTADO",
+                            "AUDI_USUA_ALTA",
+                            "AUDI_USUA_MODIF",
+                            "AUDI_FECHA_ALTA",
+                            "AUDI_FECHA_MODIF"
+                          ],
+                          "type": "string",
+                          "description": "Physical column name (required). Available columns from entity view."
+                        },
+                        "title": {
+                          "type": "string",
+                          "description": "Custom column title (optional)",
+                          "nullable": true
+                        },
+                        "sortDirection": {
+                          "enum": [
+                            "ASC",
+                            "DESC"
+                          ],
+                          "type": "string",
+                          "description": "Sort direction",
+                          "nullable": true
+                        },
+                        "order": {
+                          "type": "integer",
+                          "description": "Column display order (optional)",
+                          "nullable": true
+                        },
+                        "sortOrder": {
+                          "type": "integer",
+                          "description": "Sort priority order (optional)",
+                          "nullable": true
+                        },
+                        "aggregation": {
+                          "enum": [
+                            "SUM",
+                            "COUNT",
+                            "AVG",
+                            "MIN",
+                            "MAX"
+                          ],
+                          "type": "string",
+                          "description": "Aggregation function",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "description": "Column specifications. If null or empty, default header columns will be used",
+                    "nullable": true
+                  },
+                  "filters": {
+                    "type": "array",
+                    "items": {
+                      "required": [
+                        "columnName",
+                        "operator",
+                        "value"
+                      ],
+                      "type": "object",
+                      "properties": {
+                        "columnName": {
+                          "enum": [
+                            "CLIE_NOMBRE",
+                            "CLIE_RAZON_SOCIAL",
+                            "CLIE_CUIT",
+                            "CLIE_DOMICILIO",
+                            "FECHA",
+                            "FECHA_VTO",
+                            "COMPROBANTE",
+                            "ORDEN",
+                            "REPORTE_FECHA_DESDE",
+                            "REPORTE_FECHA_HASTA",
+                            "ESTADO",
+                            "COBRADOR",
+                            "MONEDA",
+                            "COTIZACION",
+                            "MONTO_ORIGEN",
+                            "VENDEDOR",
+                            "LINK",
+                            "CLIE_ID_CLIE",
+                            "TIDC_DESCUENTO",
+                            "TIDC_NOMBRE",
+                            "CLIE_SALDO_CLIENTE",
+                            "PENDIENTE_PAGO",
+                            "DEBE",
+                            "HABER",
+                            "CONTABLE",
+                            "IMPORTE",
+                            "CUENTA_NOMBRE",
+                            "CONDICION_IMP_DESC",
+                            "id",
+                            "DESC_ESTADO",
+                            "AUDI_USUA_ALTA",
+                            "AUDI_USUA_MODIF",
+                            "AUDI_FECHA_ALTA",
+                            "AUDI_FECHA_MODIF"
+                          ],
+                          "type": "string",
+                          "description": "Column name to filter (required). Available columns from entity view."
+                        },
+                        "operator": {
+                          "enum": [
+                            "=",
+                            "!=",
+                            ">",
+                            "<",
+                            ">=",
+                            "<=",
+                            "LIKE"
+                          ],
+                          "type": "string",
+                          "description": "Comparison operator"
+                        },
+                        "value": {
+                          "description": "Value to compare. Type should match column data type",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "description": "Filter specifications",
+                    "nullable": true
+                  }
+                }
+              },
+              "example": {
+                "page": 1,
+                "pageSize": 10,
+                "search": "",
+                "columns": [
+                  {
+                    "field": "COLUMN_NAME",
+                    "title": "Column Title",
+                    "sortDirection": "ASC",
+                    "sortOrder": 1
+                  }
+                ],
+                "filters": [
+                  {
+                    "columnName": "COLUMN_NAME",
+                    "operator": "=",
+                    "value": "value"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Query executed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      },
+                      "description": "Array of records matching the query"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total number of records (without pagination)"
+                    },
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      },
+                      "description": "Column definitions"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters or column names"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "User does not have permission to view this entity"
+          },
+          "404": {
+            "description": "Entity not found"
+          }
+        }
+      }
+    },
+    "/MOVIMIENTOS_CLIENTES/file": {
+      "get": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "summary": "Descarga un archivo de una entidad",
+        "description": "Devuelve el archivo cargado en un atributo de tipo archivo de una instancia de entidad.",
+        "parameters": [
+          {
+            "name": "attributeName",
+            "in": "query",
+            "description": "Nombre del atributo de tipo archivo",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instanceId",
+            "in": "query",
+            "description": "Id de la instancia",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Id del esquema",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo encontrado",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fileName": {
+                      "type": "string",
+                      "description": "Nombre del archivo"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Contenido binario (base64)",
+                      "format": "byte"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No existe una Entidad con ese nombre / No existe una instancia en Entidad con ese Id / No existe un Atributo con ese nombre en la entidad / El atributo no es de tipo archivo"
+          },
+          "403": {
+            "description": "El usuario no tiene permisos"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "summary": "Carga o reemplaza un archivo en una entidad",
+        "description": "Guarda el archivo en el atributo de tipo archivo de una instancia de entidad. Soporta dos formatos: multipart/form-data o binary directo (application/octet-stream, application/pdf, etc.).",
+        "parameters": [
+          {
+            "name": "attributeName",
+            "in": "query",
+            "description": "Nombre del atributo de tipo archivo",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instanceId",
+            "in": "query",
+            "description": "Id de la instancia",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Id del esquema",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "contentType",
+            "in": "query",
+            "description": "Tipo de contenido (MIME) del archivo (ej: application/pdf, image/png)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "query",
+            "description": "Nombre del archivo (opcional, se puede inferir del multipart)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Archivo a cargar. Puede enviarse como multipart/form-data o como binary directo.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "Contenido del archivo",
+                    "format": "binary"
+                  }
+                }
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "description": "Contenido binario del archivo enviado directamente",
+                "format": "binary"
+              }
+            },
+            "application/pdf": {
+              "schema": {
+                "type": "string",
+                "description": "Contenido PDF enviado directamente",
+                "format": "binary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Archivo guardado correctamente"
+          },
+          "400": {
+            "description": "No existe una Entidad con ese nombre / No existe una instancia en Entidad con ese Id / No existe un Atributo con ese nombre en la entidad / El atributo no es de tipo archivo"
+          },
+          "403": {
+            "description": "El usuario no tiene permisos"
+          }
+        }
+      }
+    },
+    "/MOVIMIENTOS_CLIENTES/report": {
+      "get": {
+        "tags": [
+          "Reportes / Movimientos de clientes"
+        ],
+        "summary": "Descarga un reporte asociado a una entidad",
+        "description": "Devuelve el reporte solicitado (nombre y contenido en binario) para una instancia de entidad.",
+        "parameters": [
+          {
+            "name": "reportName",
+            "in": "query",
+            "description": "Nombre del reporte",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instanceId",
+            "in": "query",
+            "description": "Id de la instancia",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schemaId",
+            "in": "query",
+            "description": "Id del esquema",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte encontrado",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fileName": {
+                      "type": "string",
+                      "description": "Nombre del archivo de reporte"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Contenido binario (base64)",
+                      "format": "byte"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No existe una Entidad con ese nombre / No existe una instancia en Entidad con ese Id / No existe un reporte con ese nombre en la entidad"
+          },
+          "403": {
+            "description": "El usuario no tiene permisos"
+          }
+        }
+      }
+    },
+    "/PAGO_MIS_CUENTAS": {
+      "post": {
+        "tags": [
+          "Reportes / Exportar Pago Mis Cuentas"
+        ],
+        "summary": "Create a Exportar Pago Mis Cuentas.",
+        "description": "Creates a new instance of Exportar Pago Mis Cuentas.\n\n**Key Attributes (Unique):** `PAMC_DIA` (Día)\n\nThese attributes form the entity's unique key. If you attempt to create an instance with key values that already exist, the API will return HTTP 409 Conflict.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "schemaId",
+                  "data"
+                ],
+                "type": "object",
+                "properties": {
+                  "schemaId": {
+                    "title": "Schema Id",
+                    "type": "integer"
+                  },
+                  "data": {
+                    "required": [
+                      "PAMC_DIA"
+                    ],
+                    "type": "object",
+                    "properties": {
+                      "PAMC_DIA": {
+                        "title": "Día",
+                        "type": "string"
+                      },
+                      "PAMC_MENSAJE_TICKET": {
+                        "title": "Mensaje Ticket",
+                        "maxLength": 100,
+                        "type": "string",
+                        "description": "Datos a informar en el ticket de pago. \nEs el mensaje  que se imprimirá en el comprobante de pago que se refiere al concepto abonado por el cliente. Ej: Cuota Noviembre.\nHasta 40 caracteres.",
+                        "nullable": true
+                      },
+                      "PAMC_MENSAJE_PANTALLA": {
+                        "title": "Mensaje Pantalla",
+                        "maxLength": 100,
+                        "type": "string",
+                        "description": "Datos a informar en la pantalla de selección de la factura a pagar.\nEs el mensaje que verá el cliente en pantalla antes de confirmar el pago. Se refiere al mismo concepto que el campo \"Mensaje Ticket\", pero con menos caracteres.\nHasta 15 caracteres.",
+                        "nullable": true
+                      },
+                      "PAMC_MONTO_MAXIMO": {
+                        "title": "Monto Máximo",
+                        "type": "number",
+                        "description": "Las facturas mayores a este monto no se agregan al archivo.",
+                        "nullable": true
+                      },
+                      "PAMC_INCLUIR_CODIGO_DE_BA": {
+                        "title": "Incluir código de barras",
+                        "type": "boolean",
+                        "default": "S",
+                        "nullable": true
+                      }
+                    },
+                    "description": "Instance data. Key attributes (PAMC_DIA) must be unique across all instances."
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Instance created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID of the newly created instance"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid data or missing required fields"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "User does not have permission to create instances of this entity"
+          },
+          "409": {
+            "description": "Conflict - An instance with the same key values already exists. Key attributes: PAMC_DIA"
+          }
+        }
+      }
+    },
+    "/PAGO_MIS_CUENTAS/{id}": {
+      "get": {
+        "tags": [
+          "Reportes / Exportar Pago Mis Cuentas"
+        ],
+        "description": "Get a Exportar Pago Mis Cuentas by id",
+        "parameters": [

@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pendientes de Fábrica — TMC</title>
+<style>
+  :root{
+    --bg1:#0d1424; --bg2:#0f162b;
+    --card:#111827; --chip:#0b1222; --muted:#9aa3af; --text:#f8fafc; --line:#1f2a3d;
+    --accent:#7c3aed; --ok:#22c55e; --danger:#ef4444; --warn:#f59e0b; --info:#38bdf8;
+    --alta:#166534; --alta-b:#064e3b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; overflow: hidden;} /* Evita el scroll del body */
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text); display: flex; flex-direction: column;}
+  .wrap{max-width:1680px;margin:0 auto}
+  .topbar{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,rgba(13,20,36,.98),rgba(15,22,43,.82));backdrop-filter:saturate(160%) blur(6px);border-bottom:1px solid var(--line)}
+  .head{max-width:1680px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 16px}
+  .views{display:flex;gap:8px}
+  .viewtab{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:#dbe3f0;font-weight:700;cursor:pointer}
+  .viewtab[aria-selected="true"]{box-shadow:0 0 0 2px var(--accent) inset}
+  .connbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .status{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;color:#cbd5e1}
+  .status.ok{background:#11331c;border-color:#14532d;color:#a7f3d0}
+  .status.err{background:#2a1212;border-color:#7f1d1d;color:#fecaca}
+  .badge{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:#aab4c3}
+
+  #main-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    position: relative;
+  }
+  .wrap-main{padding:16px}
+  h1{margin:0 0 6px;font-size:22px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 10px}
+
+  .boardbar{position:sticky;top:0;z-index:35;background:linear-gradient(180deg,rgba(13,20,36,.96),rgba(15,22,43,.85));border-bottom:1px solid var(--line)}
+  .boardbar .inner{max-width:1680px;margin:0 auto;padding:10px 16px;display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center}
+  .sectors{display:flex;gap:8px;flex-wrap:wrap}
+  .sectab{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:#dbe3f0;font-weight:600;cursor:pointer}
+  .sectab[aria-selected="true"]{box-shadow:0 0 0 2px var(--info) inset}
+  .search{display:flex;align-items:center;background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:10px}
+  .search input{background:transparent;border:0;color:#e5e7eb;outline:none;font-size:14px;width:320px}
+  .btn{border:1px solid var(--line);background:linear-gradient(180deg,#1a2237,#121a2b);color:#fff;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer;white-space:nowrap; display: inline-flex; align-items: center; gap: 6px;}
+  .btn-refresh{background:var(--info);border-color:#2ea4d5}
+  .btn-csv{background:#374151}
+  .btn-plan{background:var(--accent);border-color:#6d28d9}
+  .btn-alta{background:var(--alta);border-color:var(--alta-b)}
+  .btn-ghost{background:transparent}
+  .btn-xs{padding:6px 10px;font-size:12px;border-radius:8px}
+
+  .dropdown{position:relative}
+  .menu{position:absolute;right:0;top:calc(100% + 6px);background:#0b1222;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);padding:8px;display:none;min-width:260px;z-index:60}
+  .menu.show{display:block}
+  .menu h4{margin:4px 8px 8px;font-size:12px;color:#cbd5e1;opacity:.9}
+  .menu label{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px}
+  .menu label:hover{background:#0f162b}
+  .menu .row{display:flex;gap:8px;padding:6px 8px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .table-wrap{width:100%;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:1400px}
+  th,td{padding:8px;border-bottom:1px solid var(--line);font-size:14px;text-align:left;vertical-align:top;}
+  th{color:#b7c0cf;user-select:none;cursor:pointer;white-space:nowrap}
+  tr:hover{background:#0f1b33}
+  .qty{font-variant-numeric:tabular-nums; text-align: right; padding-right: 15px;}
+  .actions-col{width:140px; vertical-align: middle;}
+  .actions-wrap{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+
+  .col-prod{min-width:360px;max-width:480px}
+  .col-cli{min-width:300px;max-width:380px}
+  .col-ped{width:90px}
+  .col-edad{width:70px}
+  .col-cod{min-width:120px}
+  
+  .plan-tabs{display:flex;gap:8px;margin:8px 0 4px}
+  .plan-tab{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip);cursor:pointer}
+  .plan-tab[aria-selected="true"]{box-shadow:0 0 0 2px var(--info) inset}
+
+  .toast{position:fixed;bottom:16px;right:16px;background:#0b1221;border:1px solid var(--line);padding:12px 14px;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.35);opacity:0;transform:translateY(10px);transition:all .25s;color:#fff;max-width:70vw;z-index: 110;}
+  .toast.show{opacity:1;transform:translateY(0)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:100}
+  .modal .box{background:#0b1222;border:1px solid var(--line);padding:18px 20px;border-radius:12px;min-width:360px;max-width:90vw}
+  .modal .box h3{margin:0 0 10px}
+  .modal .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .inp, select.inp{background:#0b1222;border:1px solid var(--line);border-radius:10px;color:#e5e7eb;padding:10px 12px;width:100%}
+  .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+  .big{font-size:18px;font-weight:800}
+
+  #altaPend{background:#0e1626;border-color:#26344a;color:#9aa3af}
+  
+  .loader-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.7);
+    display:none; align-items:center; justify-content:center;
+    z-index:200;
+    color:white; text-align:center;
+  }
+  .loader-spinner{
+    border: 4px solid #f3f3f340;
+    border-top: 4px solid var(--accent);
+    border-radius: 50%;
+    width: 40px; height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  #scrollToTopBtn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 99;
+    border: none;
+    outline: none;
+    background-color: var(--accent);
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: none;
+    transition: opacity 0.3s, visibility 0.3s;
+    opacity: 0;
+    visibility: hidden;
+  }
+  #scrollToTopBtn.show {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+  }
+
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="head">
+      <div class="views" id="viewTabs">
+        <button class="viewtab" data-view="pendientes" aria-selected="true">Pendientes</button>
+        <button class="viewtab" data-view="repo">Reposición</button>
+        <button class="viewtab" data-view="plan">Plan Fábrica <span id="planCount" style="margin-left:6px" class="btn btn-ghost btn-xs">0</span></button>
+        <button class="viewtab" data-view="altas">Altas de Producción</button>
+      </div>
+      <div></div>
+      <div class="connbar">
+        <span id="conn" class="status">YiQi: Desconectado</span>
+        <button id="btnRefrescarTodo" class="btn btn-refresh btn-xs">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L20.5 10"/></svg>
+          Refrescar Todo
+        </button>
+        <span id="badgeF"   class="badge" title="">F: 0</span>
+        <span id="badgeS"   class="badge" title="">S: 0</span>
+        <span id="badgeFAC" class="badge" title="">FAC: 0</span>
+        <span id="badgeART" class="badge" title="">A: 0</span>
+      </div>
+    </div>
+  </div>
+
+  <main id="main-content">
+    <div class="wrap wrap-main">
+      <h1>Pendientes de Fábrica</h1>
+      <div class="sub" id="subtitle"></div>
+
+      <div class="boardbar">
+        <div class="inner">
+          <div class="sectors" id="sectorTabs">
+            <button class="sectab" data-sector="Todos" aria-selected="true">Todos</button>
+            <button class="sectab" data-sector="Carros">Carros</button>
+            <button class="sectab" data-sector="Bagueteras">Bagueteras</button>
+            <button class="sectab" data-sector="Bandejas">Bandejas</button>
+            <button class="sectab" data-sector="Moldes/Lactales">Moldes/Lactales</button>
+          </div>
+
+          <div class="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3" stroke="#9aa3af" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="11" r="7" stroke="#9aa3af" stroke-width="2"/></svg>
+            <input id="q" placeholder="Buscar (producto, código, cliente, pedido…)" autocomplete="off" spellcheck="false"/>
+          </div>
+
+          <div class="dropdown">
+            <button id="btnGrupos" class="btn">Grupos ▾</button>
+            <div id="menuGrupos" class="menu">
+              <h4>Grupos</h4>
+              <div id="gruposContainer"></div>
+              <div class="row">
+                <button id="btnGruposTodos" class="btn btn-ghost btn-xs">Todos</button>
+                <button id="btnGruposLimpiar" class="btn btn-ghost btn-xs">Limpiar</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button id="btnRefrescarVista" class="btn btn-refresh">Refrescar Vista</button>
+            <button id="btnCSV" class="btn btn-csv">Exportar CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <section id="viewPendientes" class="card" style="margin-top:12px">
+        <div class="table-wrap">
+          <table id="tblPend">
+            <thead>
+              <tr>
+                <th data-k="sector">Sector</th>
+                <th data-k="_edad" class="col-edad">Antigüedad</th>
+                <th data-k="_pedido" class="col-ped">Pedido</th>
+                <th data-k="_cliente" class="col-cli">Cliente</th>
+                <th data-k="_codigoDisp" class="col-cod">Código</th>
+                <th data-k="_prod" class="col-prod">Producto</th>
+                <th data-k="_extra">Texto adicional</th>
+                <th data-k="_cant" class="qty">Cant. a entregar</th>
+                <th data-k="_origen" class="qty">Cant. origen</th>
+                <th data-k="_faltan" class="qty">Faltan</th>
+                <th class="actions-col">Acción</th>
+                <th data-k="grupo">Grupo</th>
+                <th data-k="subgrupo">Subgrupo</th>
+                <th data-k="segundo">2º Subgrupo</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="viewRepo" class="card" style="display:none;margin-top:12px">
+        <h2 style="margin:0 0 6px">Reposición</h2>
+        <div class="table-wrap">
+          <table id="tblRepo">
+            <thead>
+              <tr>
+                <th data-k="_sku">SKU</th>
+                <th data-k="_prod" class="col-prod">Producto</th>
+                <th data-k="_stockDisp" class="qty">Stock disponible</th>
+                <th data-k="_fact" class="qty">Factibilidad</th>
+                <th data-k="_seg" class="qty">Stock seg.</th>
+                <th data-k="_repo" class="qty">A reponer</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="viewPlan" class="card" style="display:none;margin-top:12px">
+        <h2 style="margin:0 0 6px">Planificación Fábrica</h2>
+        <div class="plan-tabs" id="planTabs">
+          <button class="plan-tab" data-period="HOY" aria-selected="true">HOY</button>
+          <button class="plan-tab" data-period="SEMANA" aria-selected="false">SEMANA ACTUAL</button>
+        </div>
+        <div class="table-wrap">
+          <table id="tblPlan">
+            <thead>
+              <tr>
+                <th data-k="sector">Sector</th>
+                <th data-k="codigo">Código</th>
+                <th data-k="prod" class="col-prod">Producto</th>
+                <th data-k="extra">Texto adicional</th>
+                <th data-k="qty" class="qty">Cantidad</th>
+                <th class="actions-col">Acción</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <span id="planTotal" class="btn btn-ghost btn-xs">Total: 0</span>
+          <button id="btnCSVPlan" class="btn btn-csv">Exportar CSV</button>
+          <button id="btnVaciarPlan" class="btn btn-ghost">Vaciar plan</button>
+        </div>
+      </section>
+
+      <section id="viewAltas" class="card" style="display:none;margin-top:12px">
+        <h2 style="margin:0 0 10px">Altas de Producción (manual)</h2>
+        
+        <div class="row" style="grid-template-columns:1fr 1fr">
+          <label>Grupo
+            <select id="altaGrupoSel" class="inp"></select>
+          </label>
+          <label>Buscar Artículo (por SKU o Producto)
+            <input id="altaArtInput" class="inp" list="altaArtDL" placeholder="Escriba para buscar…"/>
+            <datalist id="altaArtDL"></datalist>
+          </label>
+        </div>
+
+        <div class="row" style="grid-template-columns:1fr 1fr">
+          <label>Cantidad terminada
+            <input id="altaQtyMan" type="number" min="1" step="1" class="inp"/>
+          </label>
+          <label>Observaciones (opcional)
+            <input id="altaObsMan" type="text" class="inp" placeholder="Texto libre…"/>
+          </label>
+        </div>
+
+        <div class="row" style="grid-template-columns:1fr 1fr">
+          <label>Ubicación alterna (visual)
+            <input id="altaUbicAlt" type="text" class="inp" placeholder="(luego enviamos att)"/>
+          </label>
+          <div></div>
+        </div>
+
+        <div class="actions" style="margin-top:10px; justify-content: flex-start;">
+          <button class="btn btn-alta" id="altaManualSend">Crear Alta</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0 8px;">
+          <h3 style="margin:0;">Altas de Producción recientes (YiQi)</h3>
+          <div style="display: flex; gap: 8px; align-items: center;">
+              <div class="search">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3" stroke="#9aa3af" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="11" r="7" stroke="#9aa3af" stroke-width="2"/></svg>
+                  <input id="altasRemotasSearch" placeholder="Buscar en altas…" autocomplete="off" spellcheck="false" style="width: 220px;"/>
+              </div>
+              <button id="btnRefrescarAltas" class="btn btn-refresh btn-xs">Refrescar</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="max-height: 450px; overflow-y: auto;">
+          <table id="altasRemotasTbl">
+            <thead>
+              <tr>
+                <th data-k="fecha">Fecha</th>
+                <th data-k="sku">SKU</th>
+                <th data-k="nombre">Producto</th>
+                <th data-k="extra">Texto adicional</th>
+                <th data-k="cant" class="qty">Cantidad</th>
+                <th data-k="obs">Observaciones</th>
+                <th data-k="estado">Estado</th>
+                <th data-k="grupo">Grupo</th>
+                <th data-k="depo">Depósito</th>
+              </tr>
+            </thead>
+            <tbody id="altasRemotasBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <button id="scrollToTopBtn" title="Volver arriba">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+  </main>
+  
+  <div id="modalAlta" class="modal">
+    <div class="box">
+      <h3>Alta de producción</h3>
+      <div id="altaInfo" style="font-size:13px;color:#cbd5e1;margin-bottom:10px"></div>
+      <div class="row">
+        <label>Cantidad terminada
+          <input id="altaQty" type="number" min="0" step="1" class="inp" />
+        </label>
+        <label>Pendiente (ref.)
+          <input id="altaPend" type="number" class="inp" disabled/>
+        </label>
+      </div>
+      <div style="margin-top:8px">
+        <label>Observaciones (opcional)
+          <input id="altaObs" type="text" class="inp" placeholder="Notas internas… (se envían tras Pedido y Cliente)"/>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="altaCancel">Cancelar</button>
+        <button class="btn btn-alta" id="altaOk">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAltaConf" class="modal">
+    <div class="box">
+      <h3>Confirmar alta de producción</h3>
+      <div id="confInfo" style="margin:6px 0 12px">
+        <div class="big" id="confProd"></div>
+        <div><strong>Código:</strong> <span id="confCod"></span></div>
+        <div><strong>Cantidad:</strong> <span id="confQty"></span></div>
+        <div><strong>Grupo:</strong> <span id="confGrupo"></span></div>
+        <div><strong>Cliente:</strong> <span id="confCliente"></span></div>
+        <div><strong>Obs. a enviar:</strong> <span id="confObs"></span></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="confBack">Volver</button>
+        <button class="btn btn-alta" id="confSend">Confirmar y enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loader-overlay" id="loaderOverlay">
+    <div>
+      <div class="loader-spinner"></div>
+      <span id="loaderText">Cargando...</span>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Ok.</div>
+
+<script>
+/* ==================== CONFIG (YiQi) ==================== */
+const CONFIG = {
+  USERNAME: "XXXXXXXXXXXX",
+  PASSWORD: "XXXXXXXXXXXXXXX",
+  API_BASE: "https://api.yiqi.com.ar",
+  TOKEN_URLS: [
+    "https://me.yiqi.com.ar/connect/token",
+    "https://api.yiqi.com.ar/connect/token",
+    "https://api.yiqi.com.ar/token"
+  ],
+  OAUTH: { client_id:"", client_secret:"", scope:"", grant_type:"password" },
+  GETLIST_BASE: "https://api.yiqi.com.ar/api/instancesApi/GetList",
+  SCHEMA_ID: 1491,
+  SMARTIES: {
+    FALTANTES: { entityId: 1231, smartieId: 2592, label: "F" },
+    STOCKSEG:  { entityId:  794, smartieId: 2247, label: "S" },
+    GRUPOS:    { entityId:  763, smartieId: 2594, label: "G" },
+    FACT:      { entityId:  794, smartieId: 2595, label: "FAC" },
+    ARTICULOS: { entityId:  782, smartieId: 2596, label: "A" },
+    ALTAS_SM:  { entityId: 1389, smartieId: 2593, label: "ALTAS" }
+  },
+  ALTA_PROD: {
+    entityId: 1389,
+    SAVE_URLS: [
+      "https://me.yiqi.com.ar/api/instancesApi/Save",
+      "https://api.yiqi.com.ar/api/instancesApi/Save"
+    ]
+  }
+};
+
+/* ==================== UTILS ==================== */
+const $ = s=>document.querySelector(s);
+const $$ = s=>Array.from(document.querySelectorAll(s));
+const fmt = n=> new Intl.NumberFormat('es-AR').format(n);
+const todayStr = ()=> new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+function toast(msg,ms=1800){ const t=$('#toast'); t.textContent=msg||'Ok.'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),ms); }
+function strip(s){return String(s??"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase().trim();}
+function cmp(a,b){ const na=Number(a), nb=Number(b); const aN=!Number.isNaN(na), bN=!Number.isNaN(nb); if(aN&&bN) return na-nb; const sa=strip(a), sb=strip(b); return sa.localeCompare(sb,"es"); }
+const normCode = s => String(s||"").trim().toUpperCase();
+function detectSector(grupo){
+  if(/muebles\s*para\s*elaboraci[oó]n\s*en\s*planta/i.test(grupo||"")) return 'Carros';
+  const map = [
+    {re:/(carro|latero|pizzero|seca\s*pan)/i, s:'Carros'},
+    {re:/(baguet|bagueter)/i, s:'Bagueteras'},
+    {re:/(bandeja|enlozada|plana|lata)/i, s:'Bandejas'},
+    {re:/(molde|lactal|miga)/i, s:'Moldes/Lactales'}
+  ];
+  if(!grupo) return 'Todos';
+  for(const m of map){ if(m.re.test(grupo)) return m.s; }
+  return 'Todos';
+}
+function toNum(x){ const n=Number(x); return Number.isFinite(n) ? n : NaN; }
+function fmtDateTime(d){ if(!d) return ""; try { return new Date(d).toLocaleString("es-AR",{dateStyle:'short', timeStyle:'short', hour12:false}); } catch { return String(d); }}
+function showLoader(text = 'Cargando...') {
+    $('#loaderText').textContent = text;
+    $('#loaderOverlay').style.display = 'flex';
+}
+function hideLoader() {
+    $('#loaderOverlay').style.display = 'none';
+}
+
+/* ===== Conexión ===== */
+let token=null, tokenVenceMs=0;
+function setConn(ok){ const el=$("#conn"); el.className = "status"+(ok?" ok":" err"); el.textContent = "YiQi: "+(ok?"Conectado":"Desconectado"); }
+async function loginYiQi(){
+  const payload=new URLSearchParams({
+    username:CONFIG.USERNAME, password:CONFIG.PASSWORD,
+    grant_type: CONFIG.OAUTH?.grant_type || "password",
+    ...(CONFIG.OAUTH?.client_id?{client_id:CONFIG.OAUTH.client_id}:{}),
+    ...(CONFIG.OAUTH?.client_secret?{client_secret:CONFIG.OAUTH.client_secret}:{}),
+    ...(CONFIG.OAUTH?.scope?{scope:CONFIG.OAUTH.scope}:{})
+  });
+  let lastErr=null;
+  for(const url of CONFIG.TOKEN_URLS){
+    try{
+      const r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/x-www-form-urlencoded" },body:payload});
+      if(!r.ok) throw new Error("Login "+url+" → "+r.status);
+      const j=await r.json();
+      token=j.access_token; tokenVenceMs=Date.now()+((j.expires_in?j.expires_in-60:3000)*1000);
+      setConn(true); return true;
+    }catch(e){ lastErr=e; }
+  }
+  console.warn("YiQi login failed", lastErr); setConn(false); return false;
+}
+async function ensureToken(){ if(!token || Date.now()>tokenVenceMs) return loginYiQi(); return true; }
+async function apiPost(url, body){
+  await ensureToken();
+  let r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})});
+  if(r.status===401){ await loginYiQi(); r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})}); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+function getRows(resp){
+  if(!resp) return [];
+  if(Array.isArray(resp.rows)) return resp.rows;
+  if(Array.isArray(resp.data?.rows)) return resp.data.rows;
+  if(Array.isArray(resp.data)) return resp.data;
+  if(Array.isArray(resp.instances)) return resp.instances;
+  if(Array.isArray(resp.items)) return resp.items;
+  if(Array.isArray(resp.columns) && Array.isArray(resp.data)){
+    const cols=resp.columns.map(c=>c?.name??c);
+    return resp.data.map(arr=>{const o={}; cols.forEach((cn,i)=>o[cn]=arr[i]); return o;});
+  }
+  return [];
+}
+async function fetchAllSmartieRows({entityId, schemaId, smartieId, pageSize = 50, maxPages = 10000}) {
+    const base = `${CONFIG.GETLIST_BASE}?entityId=${entityId}&schemaId=${schemaId || CONFIG.SCHEMA_ID}&smartieId=${smartieId}`;
+    let page = 1;
+    let allRows = [];
+    const seen = new Set();
+    while (page <= maxPages) {
+        try {
+            const resp = await apiPost(base, { page, pageSize });
+            const rows = getRows(resp) || [];
+            if (rows.length === 0) break;
+            let newRowsAdded = 0;
+            for (const r of rows) {
+                const key = (r?.ID ?? r?.Id ?? r?.id ?? JSON.stringify(r));
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    allRows.push(r);
+                    newRowsAdded++;
+                }
+            }
+            if (newRowsAdded === 0 && rows.length > 0) {
+                 console.warn(`Paginación detenida para ${smartieId}: Se detectó una página repetida.`);
+                break;
+            }
+            page++;
+        } catch (error) {
+            console.error(`Error al traer la página ${page} para la smartie ${smartieId}:`, error);
+            break;
+        }
+    }
+    return { rows: allRows, pages: page - 1, url: base };
+}
+
+/* ===== Mapeos ===== */
+function mapPendienteRow(row){
+  const pedido   = (row["NUMERO"] ?? "").toString().trim();
+  const pedidoId = (row["ID"] ?? "").toString().trim();
+  const edad     = Number(row["ANTIGUEDAD"] ?? 0) || 0;
+  const cliente  = (row["CLIENTE"] ?? "").toString().trim();
+  const cant     = Number(row["CANT_A_ENTREGAR"] ?? 0) || 0;
+  const origen   = Number(row["CANTIDAD_ORIGEN"] ?? 0) || 0;
+  const prod     = (row["PRODUCTO"] ?? "").toString().trim();
+  const sku      = (row["SKU"] ?? "").toString().trim();
+  const extra    = (row["TEXTO_ADICIONAL"] ?? "").toString().trim();
+  const grupo    = (row["GRUPO_ART"] ?? "").toString().trim();
+  const subgrupo = (row["SUBGRUPO_ART"] ?? "").toString().trim();
+  const segundo  = (row["SEGUNDO_SUBGRUPO_ART"] ?? "").toString().trim();
+  const faltan = Math.max(0, cant - origen);
+  const mateId  = Number(row["MATE_ID"] ?? 0) || null;
+  return {sector: detectSector(grupo),
+    _edad: edad, _pedido: pedido, _pedidoId: pedidoId, _cliente: cliente,
+    _sku: sku, _prod: prod, _extra: extra, _mateId: mateId,
+    _cant: cant, _origen: origen, _faltan: faltan,
+    grupo, subgrupo, segundo};
+}
+function mapStockSegRow(row){
+  const skuStock = (row["STOC_SKU"] ?? "").toString().trim();
+  const codigo   = (row["MATE_CODIGO"] ?? "").toString().trim();
+  const segNum = toNum(row["MATE_STOCK_SEGURIDAD"]);
+  const stock_seguridad_num  = Number.isFinite(segNum) && segNum>0 ? segNum : 0;
+  const stock_seguridad_disp = (Number.isFinite(segNum) && segNum>0) ? String(segNum) : "–";
+  const dispNum = toNum(row["STOC_CANTIDAD"]);
+  const stock_disp_num = Number.isFinite(dispNum) ? dispNum : 0;
+  return { codigo, skuStock, _segnum: stock_seguridad_num, _segdisp: stock_seguridad_disp, _stockDispNum: stock_disp_num };
+}
+function mapFactRow(row){
+  const codigo = (row["MATE_CODIGO"] ?? "").toString().trim();
+  const f = toNum(row["STOC_FACTIBILIDAD_PRODUCC"]);
+  return { codigo, fact: Number.isFinite(f) ? f : 0 };
+}
+
+/* ===== Métricas / badges ===== */
+const METRICS = { falt:{rows:0}, seg:{rows:0}, fac:{rows:0}, art:{rows:0} };
+function setBadges(){
+  $("#badgeF").textContent   = `${CONFIG.SMARTIES.FALTANTES.label}: ${METRICS.falt.rows}`;
+  $("#badgeS").textContent   = `${CONFIG.SMARTIES.STOCKSEG.label}: ${METRICS.seg.rows}`;
+  $("#badgeFAC").textContent = `${CONFIG.SMARTIES.FACT.label}: ${METRICS.fac.rows}`;
+  $("#badgeART").textContent = `${CONFIG.SMARTIES.ARTICULOS.label}: ${METRICS.art.rows}`;
+}
+
+/* ===== Data providers ===== */
+async function fetchFaltantes(){
+  try{
+    const meta = await fetchAllSmartieRows({
+      entityId: CONFIG.SMARTIES.FALTANTES.entityId,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.SMARTIES.FALTANTES.smartieId
+    });
+    METRICS.falt = {rows:meta.rows.length}; setBadges();
+    return meta.rows.map(mapPendienteRow).filter(r=>r._faltan>0);
+  }catch(e){ console.error("Faltantes error",e); toast("No se pudo cargar Pendientes"); return []; }
+}
+async function fetchStockSeg(){
+  try{
+    const meta = await fetchAllSmartieRows({
+      entityId: CONFIG.SMARTIES.STOCKSEG.entityId,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.SMARTIES.STOCKSEG.smartieId
+    });
+    METRICS.seg = {rows:meta.rows.length}; setBadges();
+    return meta.rows.map(mapStockSegRow);
+  }catch(e){ console.error("StockSeg error",e); toast("No se pudo cargar Stock/Seguridad"); return []; }
+}
+let GRUPOS_LIST=[], GRUPOS_BY_ID=new Map();
+async function fetchGrupos(){
+  try{
+    const meta = await fetchAllSmartieRows({
+      entityId: CONFIG.SMARTIES.GRUPOS.entityId,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.SMARTIES.GRUPOS.smartieId
+    });
+    GRUPOS_LIST = meta.rows.map(r => ({ id:Number(r["ID"]||0)||null, name:String(r["GRMA_DESCRIPCION"]||"").trim() }))
+                         .filter(g=>g.id && g.name);
+    GRUPOS_BY_ID = new Map(GRUPOS_LIST.map(g=>[g.id,g]));
+    const sel = $("#altaGrupoSel");
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">Seleccione un grupo...</option>' + GRUPOS_LIST.slice().sort((a,b)=>a.name.localeCompare(b.name,"es"))
+      .map(g=>`<option value="${g.id}">${g.name.toUpperCase()}</option>`).join("");
+    sel.value = currentVal;
+    sel.onchange = ()=> populateArticulosForGrupoId(Number(sel.value||0));
+  }catch(e){ console.error("Grupos error",e); toast("No se pudo cargar Grupos"); }
+}
+async function fetchFactibilidad(){
+  try{
+    const meta = await fetchAllSmartieRows({
+      entityId: CONFIG.SMARTIES.FACT.entityId,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.SMARTIES.FACT.smartieId
+    });
+    METRICS.fac = {rows:meta.rows.length}; setBadges();
+    return meta.rows.map(mapFactRow);
+  }catch(e){ console.error("Factibilidad error",e); toast("No se pudo cargar Factibilidad"); return []; }
+}
+let ART_ALL = [];
+async function fetchArticulosAll(){
+  try{
+    const meta = await fetchAllSmartieRows({
+      entityId: CONFIG.SMARTIES.ARTICULOS.entityId,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.SMARTIES.ARTICULOS.smartieId
+    });
+    METRICS.art = {rows:meta.rows.length}; setBadges();
+    ART_ALL = meta.rows.map(row=>{
+      const id = Number(row["ID"]||0) || null;
+      const sku = (row["MATE_CODIGO"]||"").toString().trim();
+      const name = (row["MATE_DESCRIPCION"] ?? row["MATE_NOMBRE"] ?? row["PRODUCTO"] ?? "").toString().trim();
+      const gName = String(row["GRMA_DESCRIPCION"]||"").trim();
+      return {id, sku, name, gName, mateId: id}; 
+    }).filter(x=>x.id && x.sku);
+  }catch(e){ console.error("Artículos error",e); toast("No se pudo cargar Artículos"); ART_ALL=[]; }
+}
+
+/* ===== State / filtros ===== */
+const state = {
+  activeView:"pendientes",
+  sector:"Todos", q:"", sortK:"_edad", sortD:-1,
+  rows:[],
+  plan:[], planPeriod:"HOY",
+  allowedGroups:new Set(),
+  repoSortK:"_repo", repoSortD:-1,
+  factMap:new Map(), stockDispMap:new Map(),
+  altasRemotasSortK:"fecha", altasRemotasSortD:-1,
+  altasRemotas:[],
+  altasRemotasQuery: ""
+};
+function savePlan(){ localStorage.setItem("plan_hoy_v2", JSON.stringify(state.plan)); updatePlanCount(); }
+function loadPlan(){ try{ state.plan = JSON.parse(localStorage.getItem("plan_hoy_v2")||"[]"); }catch{ state.plan=[]; } updatePlanCount(); }
+function updatePlanCount(){ $("#planCount").textContent = state.plan.filter(r=>r.period===state.planPeriod).reduce((s,r)=>s+(Number(r.qty)||0),0); }
+
+function applyFilters(rows){
+  const term = strip(state.q);
+  return rows.filter(r=>{
+    if(state.sector!=="Todos" && r.sector!==state.sector) return false;
+    if(state.allowedGroups.size && !state.allowedGroups.has(r.grupo||"")) return false;
+    if(term){
+      const blob = strip([r._codigoDisp,r._prod,r._extra,r._cliente,r._pedido,r.grupo,r.subgrupo,r.segundo].join(" "));
+      if(!blob.includes(term)) return false;
+    }
+    return true;
+  });
+}
+
+/* ===== Sugerido ===== */
+function sugerido(row){
+  if(row.sector==="Carros") return Math.max(5, Number(row._faltan)||0);
+  return Number(row._faltan)||0;
+}
+
+/* ===== Grupos dropdown ===== */
+function initGruposMenu(){
+  const grupos=[...new Set(state.rows.map(r=>r.grupo).filter(Boolean))].sort((a,b)=>strip(a).localeCompare(strip(b),"es"));
+  const cont=$("#gruposContainer"); cont.innerHTML="";
+  
+  // AJUSTE: Iniciar siempre con todos los grupos seleccionados.
+  state.allowedGroups = new Set(grupos);
+  saveGruposPref();
+
+  grupos.forEach(g=>{
+    const id="g_"+btoa(g).replace(/=/g,"");
+    const label=document.createElement("label");
+    label.innerHTML=`<input type="checkbox" id="${id}" checked> ${g}`;
+    cont.appendChild(label);
+    const chk=label.querySelector("input");
+    chk.addEventListener("change",()=>{ 
+        if(chk.checked) state.allowedGroups.add(g); 
+        else state.allowedGroups.delete(g); 
+        saveGruposPref(); 
+        renderPendientes(); 
+        renderRepo(); 
+    });
+  });
+  $("#btnGruposTodos").onclick=(e)=>{ e.preventDefault(); state.allowedGroups=new Set(grupos); saveGruposPref(); initGruposMenu(); renderPendientes(); renderRepo(); };
+  $("#btnGruposLimpiar").onclick=(e)=>{ e.preventDefault(); state.allowedGroups=new Set(); saveGruposPref(); initGruposMenu(); renderPendientes(); renderRepo(); };
+}
+function saveGruposPref(){ localStorage.setItem("gruposSel_v1", JSON.stringify([...state.allowedGroups])); }
+$("#btnGrupos").addEventListener("click",(e)=>{ e.stopPropagation(); $("#menuGrupos").classList.toggle("show"); });
+document.addEventListener("click",(e)=>{ if(!e.target.closest(".dropdown")) $("#menuGrupos").classList.remove("show"); });
+
+/* ===== Render Pendientes ===== */
+function renderPendientes(){
+  const arr = applyFilters(state.rows).slice().sort((a,b)=> state.sortD*cmp(a[state.sortK], b[state.sortK]));
+  const tb = $("#tblPend tbody"); tb.innerHTML="";
+  const frag = document.createDocumentFragment();
+  for(const r of arr){
+    const tr=document.createElement("tr");
+    function td(v, cls){ const d=document.createElement("td"); if(cls) d.className=cls; d.textContent=v??""; return d; }
+    const sug = r._sugerido;
+
+    const wrap=document.createElement("div"); wrap.className="actions-wrap";
+    const bPlan=document.createElement("button"); bPlan.className="btn btn-plan btn-xs"; bPlan.textContent="+ Plan";
+    bPlan.onclick=()=>{ addToPlan({period:state.planPeriod,sector:r.sector,codigo:r._codigoDisp,prod:r._prod,extra:r._extra,qty:sug}); toast(`Agregado al plan: ${r._prod} (${fmt(sug)})`); };
+    const bAlta=document.createElement("button"); bAlta.className="btn btn-alta btn-xs"; bAlta.textContent="+ Alta";
+    bAlta.onclick=()=>openAltaModal(r);
+    wrap.append(bPlan,bAlta);
+    const tdAct=document.createElement("td"); tdAct.className="actions-col"; tdAct.appendChild(wrap);
+
+    tr.append(
+      td(r.sector),
+      td(r._edad,"qty col-edad"),
+      td(r._pedido,"col-ped"),
+      td(r._cliente),
+      td(r._codigoDisp || "–","col-cod"),
+      td(r._prod),
+      td(r._extra),
+      td(r._cant,"qty"),
+      td(r._origen,"qty"),
+      td(r._faltan,"qty"),
+      tdAct,
+      td(r.grupo||""),
+      td(r.subgrupo||""),
+      td(r.segundo||"")
+    );
+    frag.appendChild(tr);
+  }
+  tb.appendChild(frag);
+}
+
+/* ===== Reposición ===== */
+function buildRepoMap(){
+  const acc = new Map();
+  for(const r of applyFilters(state.rows)){
+    const key = r._codigoDisp || r._sku || "(sin sku)";
+    if(!acc.has(key)){
+      acc.set(key,{_sku:key,_prod:r._prod,_seg:r._segnum||0,_stockDisp:0,_fact:0,_pend:0,_repo:0,details:[]});
+    }
+    const o = acc.get(key);
+    o.details.push(r);
+    o._pend += Number(r._faltan)||0;
+  }
+  for(const v of acc.values()){
+    const k = normCode(v._sku);
+    v._stockDisp = state.stockDispMap.get(k) || 0;
+    v._fact       = state.factMap.get(k)      || 0;
+    const repo = (v._seg||0) + (v._pend||0) - ((v._stockDisp||0) + (v._fact||0));
+    v._repo = Math.max(0, Math.round(repo));
+  }
+  return [...acc.values()];
+}
+function renderRepo(){
+  const rows = buildRepoMap().sort((a,b)=> state.repoSortD*cmp(a[state.repoSortK], b[state.repoSortK]));
+  const tb = $("#tblRepo tbody"); tb.innerHTML="";
+  const frag=document.createDocumentFragment();
+
+  rows.forEach(rec=>{
+    const tr=document.createElement("tr");
+    const hasDet = (rec.details||[]).length>0;
+    tr.innerHTML = `
+      <td>${rec._sku}</td>
+      <td class="col-prod">${rec._prod||""}</td>
+      <td class="qty">${fmt(rec._stockDisp||0)}</td>
+      <td class="qty">${fmt(rec._fact||0)}</td>
+      <td class="qty">${fmt(rec._seg||0)}</td>
+      <td class="qty">${fmt(rec._repo||0)}</td>
+      <td>${hasDet?'<button class="btn btn-ghost btn-xs detBtn">Detalles ▾</button>':'—'}</td>`;
+    if(hasDet){
+      const btn = tr.querySelector(".detBtn");
+      btn.addEventListener("click",()=>{
+        const open = tr.nextSibling && tr.nextSibling.classList?.contains("detail");
+        if(open){ tr.nextSibling.remove(); btn.textContent="Detalles ▾"; return; }
+        btn.textContent="Detalles ▴";
+        const dtr=document.createElement("tr"); dtr.className="detail";
+        const tdd=document.createElement("td"); tdd.colSpan=7;
+        const sub=document.createElement("div"); sub.className="table-wrap";
+        const subTbl=document.createElement("table");
+        subTbl.innerHTML=`
+          <thead><tr>
+            <th data-k="_edad">Antigüedad</th><th data-k="_pedido">Pedido</th><th data-k="_cliente">Cliente</th><th class="col-prod">Producto</th>
+            <th class="qty" data-k="_faltan">Faltan</th><th class="actions-col">Acción</th>
+          </tr></thead><tbody></tbody>`;
+        const sbody=subTbl.querySelector("tbody");
+        let k="_edad", d=1;
+        const renderSub=()=>{
+          sbody.innerHTML="";
+          const data=rec.details.slice().sort((a,b)=> d*cmp(a[k],b[k]));
+          for(const r of data){
+            const tr2=document.createElement("tr");
+            const wrap=document.createElement("div"); wrap.className="actions-wrap";
+            const bPlan=document.createElement("button"); bPlan.className="btn btn-plan btn-xs"; bPlan.textContent="+ Plan";
+            bPlan.onclick=()=>{ addToPlan({period:state.planPeriod,sector:r.sector,codigo:r._codigoDisp,prod:r._prod,extra:r._extra,qty:sugerido(r)}); toast(`Agregado al plan: ${r._prod} (${fmt(sugerido(r))})`); };
+            const bAlta=document.createElement("button"); bAlta.className="btn btn-alta btn-xs"; bAlta.textContent="+ Alta";
+            bAlta.onclick=()=>openAltaModal(r);
+            wrap.append(bPlan,bAlta);
+            const tdTxt=(v,cls)=>{const d=document.createElement("td"); if(cls) d.className=cls; d.textContent=v??""; return d;};
+            const tdAct=document.createElement("td"); tdAct.className="actions-col"; tdAct.appendChild(wrap);
+            tr2.append(
+              tdTxt(r._edad,"qty"),
+              tdTxt(r._pedido),
+              tdTxt(r._cliente),
+              tdTxt(r._prod),
+              tdTxt(r._faltan,"qty"),
+              tdAct
+            );
+            sbody.appendChild(tr2);
+          }
+        };
+        subTbl.querySelectorAll("th[data-k]").forEach(th=>{
+          th.addEventListener("click",()=>{
+            const nk=th.getAttribute("data-k");
+            if(k===nk) d=-d; else { k=nk; d=1; }
+            renderSub();
+          });
+        });
+        renderSub();
+        sub.appendChild(subTbl); tdd.appendChild(sub); dtr.appendChild(tdd); tr.after(dtr);
+      });
+    }
+    frag.appendChild(tr);
+  });
+  tb.appendChild(frag);
+}
+$("#tblRepo thead").addEventListener("click",(ev)=>{
+  const th=ev.target.closest("[data-k]"); if(!th) return;
+  const k=th.getAttribute("data-k");
+  if(state.repoSortK===k) state.repoSortD=-state.repoSortD; else { state.repoSortK=k; state.repoSortD=1; }
+  renderRepo();
+});
+
+/* ===== Alta (2 pasos) + POST ===== */
+let altaCtx=null, altaQty=0, altaObsManual="";
+function openAltaModal(row){
+  altaCtx = row;
+  $("#altaInfo").innerHTML = `
+    <div><strong>Pedido:</strong> ${row._pedido} · <strong>Código:</strong> ${row._codigoDisp||"–"}</div>
+    <div style="margin-top:4px"><strong>Producto:</strong> ${row._prod}</div>
+    <div style="margin-top:4px"><strong>Cliente:</strong> ${row._cliente||"–"} · <strong>Grupo:</strong> ${row.grupo||"–"}</div>`;
+  $("#altaQty").value = row._faltan || 0;
+  $("#altaPend").value = row._faltan || 0;
+  $("#altaObs").value = "";
+  $("#modalAlta").style.display="flex";
+}
+$("#altaCancel").onclick=()=>{ $("#modalAlta").style.display="none"; altaCtx=null; };
+$("#altaOk").onclick=()=>{
+  altaQty = Math.max(0, Math.floor(Number($("#altaQty").value)||0));
+  altaObsManual = ($("#altaObs").value||"").trim();
+  if(!altaCtx){ $("#modalAlta").style.display="none"; return; }
+  const pedPart = altaCtx._pedido ? `PED ${altaCtx._pedido}` : "";
+  const obsFinal = [pedPart, altaCtx._cliente||"", altaObsManual].filter(Boolean).join(" - ");
+  $("#modalAlta").style.display="none";
+  $("#confProd").textContent = altaCtx._prod || "";
+  $("#confCod").textContent  = altaCtx._codigoDisp || altaCtx._sku || "–";
+  $("#confQty").textContent  = fmt(altaQty);
+  $("#confGrupo").textContent = altaCtx.grupo || "–";
+  $("#confCliente").textContent = altaCtx._cliente || "–";
+  $("#confObs").textContent = obsFinal || "—";
+  $("#modalAltaConf").style.display="flex";
+};
+$("#confBack").onclick=()=>{ $("#modalAltaConf").style.display="none"; if(altaCtx && altaCtx._pedido) $("#modalAlta").style.display="flex"; };
+async function postAltaProduccion({grupoId, mateId, qty, obsText}){
+  if(!Number.isInteger(qty) || qty<=0) throw new Error("Cantidad inválida");
+  if(!mateId) throw new Error("MATE_ID inexistente");
+  if(!grupoId) throw new Error("Grupo inválido");
+  const formString = `12369=${grupoId}&12370=${mateId}&12371=${qty}&12377=&12372=${encodeURIComponent(obsText||"")}`;
+  const body = { schemaId: CONFIG.SCHEMA_ID, form: formString, uploads: "", parentId: null, childId: null, entityId: String(CONFIG.ALTA_PROD.entityId) };
+  let lastErr=null;
+  for(const url of CONFIG.ALTA_PROD.SAVE_URLS){
+    try{ const res = await apiPost(url, body); if(res?.ok) return res; lastErr = new Error(res?.error || "Save sin ok"); }
+    catch(e){ lastErr=e; }
+  }
+  throw lastErr || new Error("Fallo Save");
+}
+$("#confSend").onclick=async ()=>{
+  showLoader('Enviando alta de producción...');
+  try{
+    if(!altaCtx) return;
+    const gEntry = Array.from(GRUPOS_BY_ID.values()).find(g=> strip(g.name)===strip(altaCtx.grupo||""));
+    const gid = gEntry?.id || null;
+    const pedPart = altaCtx._pedido ? `PED ${altaCtx._pedido}` : "";
+    const obsFinal = [pedPart, altaCtx._cliente||"", altaObsManual].filter(Boolean).join(" - ");
+    const res = await postAltaProduccion({ grupoId: gid, mateId: altaCtx._mateId, qty: altaQty, obsText: obsFinal });
+    $("#modalAltaConf").style.display="none";
+    // AJUSTE: Aumentar la duración del mensaje a 5 segundos (5000 ms).
+    toast(`✅ Alta cargada con éxito (ID ${res?.newId ?? "?"})`, 5000);
+    await fetchAltasRemotas();
+    renderAltasRemotas(); 
+  }catch(err){
+    console.error("Alta error", err);
+    $("#modalAltaConf").style.display="none";
+    toast("❌ No se pudo enviar el Alta: " + (err?.message||"Error"));
+  }finally{
+    hideLoader();
+    altaCtx=null; altaQty=0; altaObsManual="";
+  }
+};
+
+/* ===== Altas manual — buscador unificado ===== */
+let altaManualArticuloSeleccionado = null;
+function populateArticulosForGrupoId(gid){
+  const gName = GRUPOS_BY_ID.get(gid)?.name || "";
+  const normGName = strip(gName);
+  const list = ART_ALL.filter(a => strip(a.gName) === normGName).sort((a,b)=>a.sku.localeCompare(b.sku,"es"));
+
+  const dl = $("#altaArtDL");
+  dl.innerHTML = list.map(a => `<option value="${a.sku}">${a.name}</option>`).join("");
+  
+  $("#altaArtInput").value = ""; 
+  altaManualArticuloSeleccionado = null;
+}
+$("#altaArtInput").addEventListener("input", (e) => {
+    const inputVal = e.target.value.toUpperCase().trim();
+    const gId = Number($("#altaGrupoSel").value || 0);
+    if (!gId) { altaManualArticuloSeleccionado = null; return; }
+    
+    const gName = GRUPOS_BY_ID.get(gId)?.name || "";
+    const list = ART_ALL.filter(a => strip(a.gName) === strip(gName));
+    const found = list.find(a => a.sku.toUpperCase() === inputVal);
+    
+    altaManualArticuloSeleccionado = found || null;
+});
+
+$("#altaManualSend").addEventListener("click", async () => {
+    const grupoId = Number($("#altaGrupoSel").value || 0);
+    const qty = Number($("#altaQtyMan").value || 0);
+    const obs = ($("#altaObsMan").value || "").trim();
+
+    if (!grupoId) { toast("Por favor, seleccione un grupo.", 2000); return; }
+    if (!altaManualArticuloSeleccionado) { toast("Artículo no válido. Escriba el SKU y selecciónelo de la lista.", 2500); return; }
+    if (!qty || qty <= 0) { toast("La cantidad debe ser mayor a cero.", 2000); return; }
+
+    const { mateId, name, sku } = altaManualArticuloSeleccionado;
+    
+    altaCtx = {
+        _prod: name,
+        _codigoDisp: sku,
+        grupo: GRUPOS_BY_ID.get(grupoId)?.name,
+        _cliente: "Manual",
+        _pedido: "",
+        _mateId: mateId
+    };
+    altaQty = qty;
+    altaObsManual = obs;
+    
+    const obsFinal = ["Alta Manual", obs].filter(Boolean).join(" - ");
+    
+    $("#confProd").textContent = altaCtx._prod || "";
+    $("#confCod").textContent  = altaCtx._codigoDisp || "–";
+    $("#confQty").textContent  = fmt(altaQty);
+    $("#confGrupo").textContent = altaCtx.grupo || "–";
+    $("#confCliente").textContent = "Manual";
+    $("#confObs").textContent = obsFinal || "—";
+    $("#modalAltaConf").style.display="flex";
+});
+
+
+/* ===== Altas recientes (smartie) ===== */
+async function fetchAltasRemotas(){
+  try{
+    const meta = await fetchAllSmartieRows({
+      entityId: CONFIG.SMARTIES.ALTAS_SM.entityId,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.SMARTIES.ALTAS_SM.smartieId
+    });
+    state.altasRemotas = meta.rows.map(r=>{
+      const fecha = r["AUDI_FECHA_ALTA"] || r["FECHA_ALTA"] || "";
+      return {
+        fecha,
+        sku: (r["MATE_CODIGO"]||"").toString().trim(),
+        nombre: (r["MATE_NOMBRE"] ?? r["MATE_DESCRIPCION"] ?? "").toString().trim(),
+        extra: (r["MATE_TEXTO_ADICIONAL"]||"").toString().trim(),
+        cant: Number(r["ALDP_CANTIDAD"]||0) || 0,
+        obs: (r["ALDP_OBSERVACIONES"]||"").toString().trim(),
+        estado: (r["DESC_ESTADO"]||"").toString().trim(),
+        grupo: (r["GRMA_DESCRIPCION"]||"").toString().trim(),
+        depo: ((r["CEDI_NOMBRE"]||"")? String(r["CEDI_NOMBRE"]).trim() : "DEPO")
+      };
+    });
+  }catch(e){ console.error(e); toast("No se pudo cargar Altas recientes"); state.altasRemotas=[]; }
+}
+function renderAltasRemotas(){
+  const tb=$("#altasRemotasBody"); tb.innerHTML="";
+  const term = strip(state.altasRemotasQuery);
+  const rows = state.altasRemotas
+    .filter(r => {
+        if (!term) return true;
+        const blob = strip([r.sku, r.nombre, r.obs, r.grupo, r.estado].join(" "));
+        return blob.includes(term);
+    })
+    .slice()
+    .sort((a,b)=> state.altasRemotasSortD*cmp(a[state.altasRemotasSortK], b[state.altasRemotasSortK]));
+
+  for(const r of rows){
+    const tr=document.createElement("tr");
+    const td=(v,cls)=>{const d=document.createElement("td"); if(cls) d.className=cls; d.textContent=v??""; return d;};
+    tr.append(
+      td(r.fecha? fmtDateTime(r.fecha):""),
+      td(r.sku),
+      td(r.nombre),
+      td(r.extra),
+      td(r.cant, "qty"),
+      td(r.obs),
+      td(r.estado),
+      td(r.grupo),
+      td(r.depo)
+    );
+    tb.appendChild(tr);
+  }
+}
+$("#altasRemotasTbl thead").addEventListener("click",(e)=>{
+  const th=e.target.closest("[data-k]"); if(!th) return;
+  const k=th.getAttribute("data-k");
+  if(state.altasRemotasSortK===k) state.altasRemotasSortD=-state.altasRemotasSortD; else { state.altasRemotasSortK=k; state.altasRemotasSortD=1; }
+  renderAltasRemotas();
+});
+$("#altasRemotasSearch").addEventListener("input", e => {
+    state.altasRemotasQuery = e.target.value;
+    renderAltasRemotas();
+});
+
+/* ===== Plan ===== */
+function renderPlan(){
+  const rows = state.plan.filter(r=>r.period===state.planPeriod)
+                         .filter(r=> state.sector==="Todos" || r.sector===state.sector);
+  const tb = $("#tblPlan tbody"); tb.innerHTML="";
+  const frag=document.createDocumentFragment();
+  let total=0;
+  for(const r of rows){
+    const tr=document.createElement("tr");
+    function td(v,cls){ const d=document.createElement("td"); if(cls) d.className=cls; d.textContent=v??""; return d; }
+    const wrap=document.createElement("div"); wrap.className="actions-wrap";
+    const menos=document.createElement("button"); menos.className="btn btn-ghost btn-xs"; menos.textContent="−"; menos.onclick=()=>{ r.qty=Math.max(0,(Number(r.qty)||0)-1); savePlan(); renderPlan(); };
+    const mas=document.createElement("button"); mas.className="btn btn-ghost btn-xs"; mas.textContent="+"; mas.onclick=()=>{ r.qty=(Number(r.qty)||0)+1; savePlan(); renderPlan(); };
+    const del=document.createElement("button"); del.className="btn btn-ghost btn-xs"; del.textContent="🗑"; del.onclick=()=>{ state.plan=state.plan.filter(x=>x!==r); savePlan(); renderPlan(); };
+    wrap.append(menos,mas,del);
+    const tdAct=document.createElement("td"); tdAct.className="actions-col"; tdAct.appendChild(wrap);
+
+    tr.append(
+      td(r.sector),
+      td(r.codigo||"–"),
+      td(r.prod||"–"),
+      td(r.extra||""),
+      td(r.qty,"qty"),
+      tdAct
+    );
+    total += Number(r.qty)||0;
+    frag.appendChild(tr);
+  }
+  tb.appendChild(frag);
+  $("#planTotal").textContent = "Total: "+fmt(total);
+  updatePlanCount();
+}
+function addToPlan(item){
+  const key = (item.codigo||"")+"|"+item.sector+"|"+state.planPeriod;
+  const found = state.plan.find(x => (x.codigo||"")+"|"+x.sector+"|"+x.period === key);
+  if(found){ found.qty = (Number(found.qty)||0) + (Number(item.qty)||0); }
+  else { state.plan.push({...item, period: state.planPeriod}); }
+  savePlan(); renderPlan();
+}
+
+/* ===== CSV ===== */
+function toCSVPend(rows){
+  const cols=["Sector","Antiguedad","Pedido","Cliente","Codigo","Producto","TextoAdic","CantEntregar","CantOrigen","Faltan","Grupo","Subgrupo","SegundoSubgrupo"];
+  const esc=v=>{const s=(v==null?"":String(v)); return /[",\n;]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
+  const head=cols.join(";");
+  const body=rows.map(r=>[
+    r.sector, r._edad, r._pedido, r._cliente, (r._codigoDisp||"–"), r._prod, r._extra,
+    r._cant, r._origen, r._faltan, r.grupo||"", r.subgrupo||"", r.segundo||""
+  ].map(esc).join(";")).join("\n");
+  return head+"\n"+body;
+}
+function toCSVPlan(rows){
+  const cols=["Periodo","Sector","Codigo","Producto","TextoAdic","Cantidad"];
+  const esc=v=>{const s=(v==null?"":String(v)); return /[",\n;]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
+  const head=cols.join(";");
+  const body=rows.map(r=>[r.period,r.sector,r.codigo||"–",r.prod||"",r.extra||"",r.qty||0].map(esc).join(";")).join("\n");
+  return head+"\n"+body;
+}
+function download(name, text){
+  const blob=new Blob([text],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+}
+function ts(){ return new Date().toISOString().slice(0,19).replace(/[T:]/g,"-"); }
+
+/* ===== Refresh Logic ===== */
+async function refreshPendientesData() {
+    showLoader('Refrescando vista...');
+    const btn = $("#btnRefrescarVista"); btn.disabled = true;
+    try {
+        await loginYiQi();
+        const [falt, seg, fac] = await Promise.all([fetchFaltantes(), fetchStockSeg(), fetchFactibilidad()]);
+        
+        const segByCodigo = new Map(seg.filter(x=>x.codigo).map(x=>[x.codigo, x]));
+        const segBySku    = new Map(seg.filter(x=>x.skuStock).map(x=>[x.skuStock, x]));
+
+        state.rows = falt.map(r=>{
+          const m = segByCodigo.get(r._sku) || segBySku.get(r._sku) || null;
+          return {...r, 
+            _segnum: m ? m._segnum : 0, 
+            _segdisp: m ? m._segdisp : "–", 
+            _codigoDisp: m ? (m.codigo || r._sku) : r._sku, 
+            _sugerido: sugerido(r)};
+        });
+
+        state.stockDispMap = new Map(seg.filter(x=>x.codigo || x.skuStock).map(x => [ normCode(x.codigo || x.skuStock), x._stockDispNum || 0 ]));
+        state.factMap      = new Map(fac.filter(x=>x.codigo).map(x => [ normCode(x.codigo), x.fact || 0 ]));
+        
+        initGruposMenu();
+        renderPendientes();
+        renderRepo();
+        toast('Vista actualizada.');
+    } catch (e) {
+        console.error("Error refrescando vista", e);
+        toast("Error al actualizar la vista.");
+    } finally {
+        hideLoader();
+        btn.disabled = false;
+    }
+}
+async function refreshAltasData() {
+    showLoader('Refrescando altas...');
+    const btn = $("#btnRefrescarAltas"); btn.disabled = true;
+    try {
+        await loginYiQi();
+        await Promise.all([
+            fetchGrupos(),
+            fetchArticulosAll(),
+            fetchAltasRemotas()
+        ]);
+        populateArticulosForGrupoId(Number($("#altaGrupoSel").value||0));
+        renderAltasRemotas();
+        toast('Datos de altas actualizados.');
+    } catch (e) {
+        console.error("Error refrescando altas", e);
+        toast("Error al actualizar altas.");
+    } finally {
+        hideLoader();
+        btn.disabled = false;
+    }
+}
+
+
+/* ===== Events ===== */
+$("#viewTabs").addEventListener("click",(e)=>{
+  const b=e.target.closest(".viewtab"); if(!b) return;
+  state.activeView = b.dataset.view;
+  $$(".viewtab").forEach(x=>x.setAttribute("aria-selected", String(x===b)));
+  $("#viewPendientes").style.display = "none";
+  $("#viewRepo").style.display       = "none";
+  $("#viewPlan").style.display       = "none";
+  $("#viewAltas").style.display      = "none";
+  $("#btnRefrescarVista").style.display = "none";
+  
+  if (state.activeView === "pendientes") {
+    $("#viewPendientes").style.display = "";
+    $("#btnRefrescarVista").style.display = "inline-flex";
+  } else if (state.activeView === "repo") {
+    $("#viewRepo").style.display = "";
+    $("#btnRefrescarVista").style.display = "inline-flex";
+    renderRepo();
+  } else if (state.activeView === "plan") {
+    $("#viewPlan").style.display = "";
+    renderPlan();
+  } else if (state.activeView === "altas") {
+    $("#viewAltas").style.display = "";
+    renderAltasRemotas();
+  }
+});
+$("#sectorTabs").addEventListener("click",(e)=>{
+  const b=e.target.closest(".sectab"); if(!b) return;
+  $$(".sectab").forEach(x=>x.setAttribute("aria-selected", String(x===b)));
+  state.sector=b.dataset.sector; renderPendientes(); renderPlan(); renderRepo();
+});
+$("#planTabs").addEventListener("click",(e)=>{
+  const b=e.target.closest(".plan-tab"); if(!b) return;
+  $$(".plan-tab").forEach(x=>x.setAttribute("aria-selected", String(x===b)));
+  state.planPeriod = b.dataset.period; renderPlan(); updatePlanCount();
+});
+$("#q").addEventListener("input",(e)=>{ state.q=e.target.value; renderPendientes(); renderRepo(); });
+
+$("#btnRefrescarTodo").addEventListener("click", init);
+$("#btnRefrescarVista").addEventListener("click", refreshPendientesData);
+$("#btnRefrescarAltas").addEventListener("click", refreshAltasData);
+
+$("#btnCSV").addEventListener("click", ()=>{
+  const rows=applyFilters(state.rows);
+  if(!rows.length){ toast("Nada para exportar"); return; }
+  download(`pendientes_${ts()}.csv`, toCSVPend(rows));
+});
+$("#btnCSVPlan").addEventListener("click", ()=>{
+  const rows=state.plan.filter(r=>r.period===state.planPeriod);
+  if(!rows.length){ toast("Nada para exportar"); return; }
+  download(`plan_fabrica_${state.planPeriod.toLowerCase()}_${ts()}.csv`, toCSVPlan(rows));
+});
+$("#btnVaciarPlan").addEventListener("click", ()=>{
+  const has = state.plan.some(p=>p.period===state.planPeriod);
+  if(!has) return;
+  if(confirm(`¿Vaciar plan de ${state.planPeriod}?`)){
+    state.plan = state.plan.filter(p=>p.period!==state.planPeriod);
+    savePlan(); renderPlan(); toast("Plan vacío.");
+  }
+});
+$("#tblPend thead").addEventListener("click",(ev)=>{
+  const th=ev.target.closest("[data-k]"); if(!th) return;
+  const k=th.getAttribute("data-k");
+  if(state.sortK===k) state.sortD=-state.sortD; else { state.sortK=k; state.sortD=1; }
+  renderPendientes();
+});
+
+const mainContent = $('#main-content');
+const scrollToTopBtn = $('#scrollToTopBtn');
+mainContent.addEventListener('scroll', () => {
+    if (mainContent.scrollTop > 200) {
+        scrollToTopBtn.classList.add('show');
+    } else {
+        scrollToTopBtn.classList.remove('show');
+    }
+});
+scrollToTopBtn.addEventListener('click', () => {
+    mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+/* ===== Init ===== */
+async function init(){
+  showLoader('Cargando datos iniciales...');
+  const btn = $("#btnRefrescarTodo"); btn.disabled = true;
+  $("#subtitle").textContent = `Hoy es ${todayStr()}.`;
+  loadPlan();
+  
+  try {
+    const ok = await loginYiQi();
+    setConn(ok);
+
+    const [falt, seg, fac, _art, _altas, _grupos] = await Promise.all([
+        fetchFaltantes(), fetchStockSeg(), fetchFactibilidad(),
+        fetchArticulosAll(), fetchAltasRemotas(), fetchGrupos()
+    ]);
+    
+    const segByCodigo = new Map(seg.filter(x=>x.codigo).map(x=>[x.codigo, x]));
+    const segBySku    = new Map(seg.filter(x=>x.skuStock).map(x=>[x.skuStock, x]));
+
+    const joined = falt.map(r=>{
+      const m = segByCodigo.get(r._sku) || segBySku.get(r._sku) || null;
+      return {...r, 
+        _segnum: m ? m._segnum : 0, _segdisp: m ? m._segdisp : "–", 
+        _codigoDisp: m ? (m.codigo || r._sku) : r._sku, _sugerido: sugerido(r)
+      };
+    });
+
+    state.stockDispMap = new Map(seg.filter(x=>x.codigo || x.skuStock).map(x => [ normCode(x.codigo || x.skuStock), x._stockDispNum || 0 ]));
+    state.factMap      = new Map(fac.filter(x=>x.codigo).map(x => [ normCode(x.codigo), x.fact || 0 ]));
+    state.rows = joined;
+    
+    initGruposMenu();
+    renderPendientes();
+    renderPlan();
+    renderRepo();
+    renderAltasRemotas();
+    populateArticulosForGrupoId(Number($("#altaGrupoSel").value||0));
+  } catch (error) {
+      console.error("Error durante la inicialización:", error);
+      toast("Error al cargar datos. Revise la consola.");
+  } finally {
+      hideLoader();
+      btn.disabled = false;
+  }
+}
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
+

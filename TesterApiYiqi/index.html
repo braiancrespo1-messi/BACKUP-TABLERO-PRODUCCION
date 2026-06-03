@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TesterApiYiqi — Panel de Testeo API</title>
+    <meta name="description" content="Panel profesional de testeo de comandos API YiQi para TMC">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ═══ HEADER ═══ -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="header-logo">Y</div>
+                <div class="header-title">Tester<span>Api</span>Yiqi</div>
+                <span class="header-badge">v1.0</span>
+            </div>
+            <div class="header-actions">
+                <div class="header-status">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-text">Desconectado</span>
+                </div>
+                <button class="btn-icon" onclick="connectToken()" title="Obtener Token">🔑</button>
+                <button class="btn-icon" onclick="clearAll()" title="Limpiar Todo">🗑️</button>
+            </div>
+        </header>
+
+        <!-- ═══ MAIN CONTENT (3 Panels) ═══ -->
+        <div class="main-content">
+            
+            <!-- ══ PANEL 1: Config & History ══ -->
+            <div class="panel panel-config">
+                <div class="panel-header">
+                    <div class="panel-header-title"><span class="icon">⚙️</span> Config</div>
+                    <button class="btn-icon btn-sm" onclick="toggleSection('history')" title="Historial">📋</button>
+                </div>
+                <div class="panel-body">
+                    <!-- Auth Section -->
+                    <div class="section">
+                        <div class="section-title">🔐 Autenticación</div>
+                        <div class="form-group">
+                            <label class="form-label">Usuario</label>
+                            <input type="text" class="form-control form-control-mono" id="auth-user" 
+                                   value="mercadolibre@tmcrespo.com.ar" placeholder="usuario@empresa.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control form-control-mono" id="auth-pass"
+                                   value="AdministracionMessi" placeholder="contraseña">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Token Endpoint</label>
+                            <select class="form-control" id="auth-endpoint">
+                                <option value="https://api.yiqi.com.ar/connect/token">api.yiqi.com.ar (Principal)</option>
+                                <option value="https://me.yiqi.com.ar/connect/token">me.yiqi.com.ar (Respaldo)</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="connectToken()" style="width:100%">
+                            🔑 Obtener Token
+                        </button>
+                        <div id="token-info" style="margin-top:10px; font-size:11px; color:var(--text-muted); word-break:break-all;"></div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Quick Presets -->
+                    <div class="section">
+                        <div class="section-title">⚡ Comandos Rápidos</div>
+                        <div class="preset-chips" id="preset-chips">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Templates Section -->
+                    <div class="section" id="section-templates">
+                        <div class="section-title">📑 Templates Guardados</div>
+                        <div id="templates-list">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button class="kv-add" onclick="saveCurrentAsTemplate()">+ Guardar Request Actual</button>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- History Section -->
+                    <div class="section" id="section-history">
+                        <div class="section-title">📋 Historial</div>
+                        <div id="history-list">
+                            <div class="empty-state" style="padding:20px;">
+                                <div style="font-size:24px; margin-bottom:8px;">📭</div>
+                                <div style="font-size:11px;">Sin historial aún</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ PANEL 2: Request Builder ══ -->
+            <div class="panel panel-request">
+                <div class="panel-header">
+                    <div class="panel-header-title"><span class="icon">📤</span> Request</div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-icon btn-sm" onclick="formatBody()" title="Formatear JSON">✨</button>
+                        <button class="btn-icon btn-sm" onclick="copyRequest()" title="Copiar Request">📋</button>
+                    </div>
+                </div>
+
+                <!-- Method + URL -->
+                <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-panel);">
+                    <div class="method-select" style="margin-bottom:10px;">
+                        <button class="method-btn active" data-method="GET" onclick="setMethod('GET')">GET</button>
+                        <button class="method-btn" data-method="POST" onclick="setMethod('POST')">POST</button>
+                        <button class="method-btn" data-method="PUT" onclick="setMethod('PUT')">PUT</button>
+                        <button class="method-btn" data-method="DELETE" onclick="setMethod('DELETE')">DEL</button>
+                    </div>
+                    <div class="url-bar">
+                        <div class="url-prefix" id="url-prefix">https://api.yiqi.com.ar</div>
+                        <input type="text" class="url-input" id="url-path" 
+                               placeholder="/api/instancesApi/GetList?entityId=794&schemaId=1491&smartieId=2668"
+                               value="/api/instancesApi/GetList?entityId=794&schemaId=1491&smartieId=2668">
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <select class="form-control" id="base-url-select" onchange="changeBaseUrl()" style="flex:1; font-size:11px; padding:6px 8px;">
+                            <option value="https://api.yiqi.com.ar">api.yiqi.com.ar</option>
+                            <option value="https://me.yiqi.com.ar">me.yiqi.com.ar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tabs: Constructor / Params / Headers / Body -->
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchRequestTab('builder')" style="color:var(--accent);">🔨 Constructor</button>
+                    <button class="tab-btn" onclick="switchRequestTab('params')">Params</button>
+                    <button class="tab-btn" onclick="switchRequestTab('headers')">Headers</button>
+                    <button class="tab-btn" onclick="switchRequestTab('body')">Body</button>
+                    <button class="tab-btn" onclick="switchRequestTab('notes')">📝 Notas</button>
+                </div>
+
+                <div class="panel-body" style="flex:1;">
+                    <!-- CONSTRUCTOR Tab (NEW - Guided Builder) -->
+                    <div class="tab-content active" id="tab-builder">
+                        <div class="section-title">🔨 Armá tu consulta paso a paso</div>
+
+                        <!-- PASO 1: Acción -->
+                        <div class="form-group">
+                            <label class="form-label">1. ¿Qué querés hacer?</label>
+                            <select class="form-control" id="builder-action" onchange="builderUpdate()">
+                                <option value="">-- Elegí una acción --</option>
+                                <optgroup label="Lectura (Seguras / Testeadas)">
+                                    <option value="GetList">📋 LISTAR registros (GetList)</option>
+                                    <option value="GetInstance">🔍 VER un registro específico (GetInstance)</option>
+                                    <option value="GetChildList">📦 VER ITEMS dentro de un documento (GetChildList)</option>
+                                    <option value="Search">🔎 BUSCAR un artículo por nombre/código (Search)</option>
+                                </optgroup>
+                                <optgroup label="Mutación / Escritura (Avanzado)" id="builder-action-advanced-group" disabled>
+                                    <option value="Save">💾 CREAR un registro nuevo (Save)</option>
+                                    <option value="ExecuteTransition">⚡ CAMBIAR ESTADO de un documento (Transición)</option>
+                                    <option value="Delete">🗑️ ELIMINAR un registro (Delete)</option>
+                                    <option value="SaveChild">📦 AGREGAR ITEMS a un documento (SaveChild)</option>
+                                </optgroup>
+                            </select>
+                            <div style="margin-top: 8px;">
+                                <label style="font-size:11px; display:inline-flex; align-items:center; gap:6px; color:var(--text-muted); cursor:pointer;">
+                                    <input type="checkbox" id="enable-advanced-actions" onchange="toggleAdvancedActions()" style="margin:0;">
+                                    ⚠️ Habilitar acciones avanzadas de escritura
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- PASO 2: Campos dinámicos -->
+                        <div id="builder-fields" style="margin-top:12px;">
+                            <div style="color:var(--text-muted); font-size:12px; padding:20px; text-align:center;">
+                                👆 Elegí una acción arriba para ver los campos
+                            </div>
+                        </div>
+
+                        <!-- Explicación de la acción -->
+                        <div id="builder-help" style="margin-top:12px; padding:10px; background:var(--bg-input); border-radius:8px; border-left:3px solid var(--accent); font-size:11px; color:var(--text-secondary); display:none;">
+                        </div>
+
+                        <!-- Botón Aplicar -->
+                        <button class="btn btn-primary btn-sm" onclick="builderApply()" style="width:100%; margin-top:14px;" id="builder-apply-btn" disabled>
+                            ⚡ Aplicar al Request
+                        </button>
+                    </div>
+
+                    <!-- Params Tab -->
+                    <div class="tab-content" id="tab-params">
+                        <div class="section-title">Parámetros URL</div>
+                        <div class="kv-list" id="params-list"></div>
+                        <button class="kv-add" onclick="addParam()">+ Agregar Parámetro</button>
+                    </div>
+
+                    <!-- Headers Tab -->
+                    <div class="tab-content" id="tab-headers">
+                        <div class="section-title">Headers de la Petición</div>
+                        <div class="kv-list" id="headers-list"></div>
+                        <button class="kv-add" onclick="addHeader()">+ Agregar Header</button>
+                    </div>
+
+                    <!-- Body Tab -->
+                    <div class="tab-content" id="tab-body">
+                        <div class="section-title">Request Body (JSON)</div>
+                        <textarea class="form-control form-control-mono" id="request-body" 
+                                  placeholder='{"page": 1, "pageSize": 50}'>{"page": 1, "pageSize": 50}</textarea>
+                    </div>
+
+                    <!-- Notes Tab -->
+                    <div class="tab-content" id="tab-notes">
+                        <div class="section-title">📝 Notas de Investigación</div>
+                        <textarea class="form-control" id="request-notes" 
+                                  placeholder="Anotá aquí lo que vas descubriendo sobre este endpoint..."
+                                  style="min-height:200px; font-family: var(--font-sans); font-size:13px;"></textarea>
+                    </div>
+                </div>
+
+                <!-- Send Button -->
+                <div style="padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg-panel);">
+                    <button class="btn btn-primary btn-send" id="btn-send" onclick="sendRequest()">
+                        🚀 Enviar Request
+                    </button>
+                </div>
+            </div>
+
+            <!-- ══ PANEL 3: Response Viewer ══ -->
+            <div class="panel panel-response">
+                <div class="panel-header">
+                    <div class="panel-header-title"><span class="icon">📥</span> Response</div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-icon btn-sm" onclick="copyResponse()" title="Copiar Response">📋</button>
+                        <button class="btn-icon btn-sm" onclick="downloadResponse()" title="Descargar JSON">💾</button>
+                        <button class="btn-icon btn-sm" onclick="toggleWrap()" title="Toggle Wrap">↔️</button>
+                    </div>
+                </div>
+
+                <!-- Response Meta -->
+                <div class="response-meta" id="response-meta" style="display:none;">
+                    <span class="response-badge" id="resp-status">200</span>
+                    <span class="response-stat">⏱️ <strong id="resp-time">0ms</strong></span>
+                    <span class="response-stat">📦 <strong id="resp-size">0 B</strong></span>
+                    <span class="response-stat" id="resp-rows-stat" style="display:none;">📊 <strong id="resp-rows">0</strong> filas</span>
+                </div>
+
+                <!-- Response Tabs -->
+                <div class="tabs" id="response-tabs">
+                    <button class="tab-btn active" onclick="switchResponseTab('pretty')">Pretty</button>
+                    <button class="tab-btn" onclick="switchResponseTab('raw')">Raw</button>
+                    <button class="tab-btn" onclick="switchResponseTab('table')">Tabla</button>
+                </div>
+
+                <!-- Response Body -->
+                <div class="response-body" id="response-body" style="position:relative;">
+                    <div id="resp-tab-pretty" class="tab-content active">
+                        <div class="empty-state">
+                            <div class="icon">🔬</div>
+                            <div class="title">Esperando Request</div>
+                            <div class="desc">Configurá tu petición a la izquierda y presioná "Enviar Request" para ver el resultado aquí.</div>
+                        </div>
+                    </div>
+                    <div id="resp-tab-raw" class="tab-content">
+                        <pre class="response-json" id="raw-output" style="white-space: pre-wrap;"></pre>
+                    </div>
+                    <div id="resp-tab-table" class="tab-content">
+                        <div id="table-output" style="overflow:auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ FOOTER ═══ -->
+        <footer class="app-footer">
+            <span id="footer-status">Listo</span>
+            <span>TesterApiYiqi v1.0 — TMC × Antigravity</span>
+        </footer>
+    </div>
+
+    <script src="logica.js"></script>
+</body>
+</html>

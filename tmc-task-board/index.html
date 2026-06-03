@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Best Practices -->
+    <title>TMC Task Board - Panel de Tareas y Logística Interna</title>
+    <meta name="description" content="Panel de control interno de TMC para coordinar insumos de Fábrica, compras y cobranzas de Administración, y sincronizar envíos con el aplicativo de reparto CALLE.">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Typography: Modern font Google Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet Link -->
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <header class="main-header" id="header-taskboard">
+        <div class="header-container">
+            <div class="brand-section">
+                <!-- Using local image if available, fallback to CSS stylized circle -->
+                <div class="brand-logo-container">
+                    <span class="logo-text">TMC</span>
+                </div>
+                <div class="brand-titles">
+                    <h1 class="brand-title">TMC Task Board</h1>
+                    <p class="brand-subtitle">Coordinación de Logística & Insumos</p>
+                </div>
+            </div>
+
+            <!-- Stats & Quick Actions -->
+            <div class="header-actions">
+                <div class="stats-summary" id="stats-summary-panel">
+                    <div class="stat-badge" id="badge-total-tasks" title="Total de tareas activas">
+                        <span class="stat-count" id="count-total">0</span> <span class="stat-label">Tareas</span>
+                    </div>
+                    <div class="stat-badge" id="badge-ready-tasks" title="Tareas listas para ser retiradas por choferes">
+                        <span class="stat-count" id="count-ready">0</span> <span class="stat-label">Listas</span>
+                    </div>
+                    <div class="stat-badge" id="badge-completed-tasks" title="Tareas completadas hoy">
+                        <span class="stat-count" id="count-completed">0</span> <span class="stat-label">Hechas</span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-create-task" onclick="openCreateModal()">
+                    <span class="btn-icon">✚</span> Nueva Tarea
+                </button>
+                <button type="button" class="btn btn-icon-only" id="btn-refresh-tasks" onclick="refreshBoard()" title="Actualizar Datos">
+                    <span class="btn-icon">🔄</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Board Area -->
+    <main class="board-wrapper" id="board-container">
+        
+        <!-- Column 1: Solicitado -->
+        <section class="board-column" id="col-solicitado" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Solicitado')">
+            <div class="column-header status-solicitado">
+                <div class="status-indicator"></div>
+                <h2 class="column-title">Solicitado</h2>
+                <span class="column-badge" id="badge-solicitado">0</span>
+            </div>
+            <div class="cards-container" id="tasks-solicitado">
+                <!-- Cards injected dynamically -->
+            </div>
+        </section>
+
+        <!-- Column 2: En Proceso -->
+        <section class="board-column" id="col-en-proceso" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'En Proceso')">
+            <div class="column-header status-en-proceso">
+                <div class="status-indicator"></div>
+                <h2 class="column-title">En Proceso</h2>
+                <span class="column-badge" id="badge-en-proceso">0</span>
+            </div>
+            <div class="cards-container" id="tasks-en-proceso">
+                <!-- Cards injected dynamically -->
+            </div>
+        </section>
+
+        <!-- Column 3: Listo para Retirar -->
+        <section class="board-column" id="col-listo-retirar" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Listo para Retirar')">
+            <div class="column-header status-listo-retirar">
+                <div class="status-indicator"></div>
+                <h2 class="column-title">Listo para Retirar</h2>
+                <span class="column-badge" id="badge-listo-retirar">0</span>
+            </div>
+            <div class="cards-container" id="tasks-listo-retirar">
+                <!-- Cards injected dynamically -->
+            </div>
+        </section>
+
+        <!-- Column 4: En Reparto -->
+        <section class="board-column" id="col-en-reparto" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'En Reparto')">
+            <div class="column-header status-en-reparto">
+                <div class="status-indicator"></div>
+                <h2 class="column-title">En Reparto</h2>
+                <span class="column-badge" id="badge-en-reparto">0</span>
+            </div>
+            <div class="cards-container" id="tasks-en-reparto">
+                <!-- Cards injected dynamically -->
+            </div>
+        </section>
+
+        <!-- Column 5: Completado -->
+        <section class="board-column" id="col-completado" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Completado')">
+            <div class="column-header status-completado">
+                <div class="status-indicator"></div>
+                <h2 class="column-title">Completado</h2>
+                <span class="column-badge" id="badge-completado">0</span>
+            </div>
+            <div class="cards-container" id="tasks-completado">
+                <!-- Cards injected dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Create Task Modal -->
+    <div class="modal-overlay" id="task-modal" style="display: none;">
+        <div class="modal-card" id="modal-card-form">
+            <header class="modal-header">
+                <h3 class="modal-title" id="modal-form-title">Nueva Tarea de Coordinación</h3>
+                <button type="button" class="btn-close" id="btn-close-modal" onclick="closeCreateModal()">×</button>
+            </header>
+            
+            <form id="create-task-form" onsubmit="saveTask(event)">
+                <div class="modal-body">
+                    
+                    <!-- Task Type Selection -->
+                    <div class="form-group">
+                        <label for="task-type" class="form-label">Tipo de Tarea</label>
+                        <select id="task-type" class="form-control" required onchange="handleTypeChange(this.value)">
+                            <option value="Insumo">🏭 Insumo de Fábrica</option>
+                            <option value="Cobranza">💵 Cobranza de Administración</option>
+                            <option value="Trámite">📄 Trámite de Administración</option>
+                        </select>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label for="task-description" class="form-label">Descripción</label>
+                        <textarea id="task-description" class="form-control" rows="3" placeholder="Detalle qué se debe hacer, retirar o recolectar..." required></textarea>
+                    </div>
+
+                    <!-- Origin Sector -->
+                    <div class="form-group">
+                        <label for="task-origin" class="form-label">Origen / Solicitante</label>
+                        <input type="text" id="task-origin" class="form-control" placeholder="Ej: Fábrica - Depósito 191, Administración Compras" required>
+                    </div>
+
+                    <!-- Destination / Address -->
+                    <div class="form-group">
+                        <label for="task-address" class="form-label">Dirección de la Tarea</label>
+                        <input type="text" id="task-address" class="form-control" placeholder="Ej: Av. Rivadavia 10500, CABA" required>
+                    </div>
+
+                    <!-- Location Lat/Lng (Optional / Helper) -->
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="task-lat" class="form-label">Latitud (GPS)</label>
+                            <input type="number" step="any" id="task-lat" class="form-control" placeholder="-34.6037">
+                        </div>
+                        <div class="form-group col">
+                            <label for="task-lng" class="form-label">Longitud (GPS)</label>
+                            <input type="number" step="any" id="task-lng" class="form-control" placeholder="-58.3816">
+                        </div>
+                        <div class="form-group col-auto" style="display:flex; align-items:flex-end;">
+                            <button type="button" class="btn btn-secondary" id="btn-geolocate" onclick="fillGeocodingMock()" title="Estimar Coordenadas desde Dirección">
+                                📍 Georreferenciar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Link to YiQi ERP Instance (Dynamic Autocomplete search) -->
+                    <div class="form-group">
+                        <label for="task-yiqi-id" class="form-label">Vincular con Solicitud de YiQi ERP</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="task-yiqi-id" class="form-control" placeholder="Buscar por Nro Remito / Orden de Compra..." oninput="searchYiqiInstances(this.value)">
+                            <div class="autocomplete-suggestions" id="yiqi-suggestions" style="display: none;">
+                                <!-- Suggestions injected here -->
+                            </div>
+                        </div>
+                        <small class="form-help">Vincular la tarea con un Remito (Jaula/Venta) o documento de YiQi para registrar stock automáticamente.</small>
+                    </div>
+
+                    <!-- Driver Assignment (Only applicable for Listo para Retirar / En Reparto) -->
+                    <div class="form-group" id="driver-group" style="display: none;">
+                        <label for="task-driver" class="form-label">Chofer Asignado</label>
+                        <select id="task-driver" class="form-control">
+                            <option value="">-- Sin Asignar (Disponible) --</option>
+                            <option value="carlos_calle">Carlos Pérez (Chofer 1)</option>
+                            <option value="marcelo_calle">Marcelo Gómez (Chofer 2)</option>
+                            <option value="juan_calle">Juan Rodríguez (Chofer 3)</option>
+                        </select>
+                    </div>
+
+                </div>
+                <footer class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-task" onclick="closeCreateModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-task">Guardar Tarea</button>
+                </footer>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Detail Modal (Shows uploads, signatures & statuses) -->
+    <div class="modal-overlay" id="detail-modal" style="display: none;">
+        <div class="modal-card" id="modal-card-detail">
+            <header class="modal-header">
+                <h3 class="modal-title" id="detail-title">Detalle de Tarea</h3>
+                <button type="button" class="btn-close" onclick="closeDetailModal()">×</button>
+            </header>
+            <div class="modal-body" id="detail-body-content">
+                <!-- Dynamically populated detail data -->
+            </div>
+            <footer class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDetailModal()">Cerrar</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="logica.js"></script>
+</body>
+</html>

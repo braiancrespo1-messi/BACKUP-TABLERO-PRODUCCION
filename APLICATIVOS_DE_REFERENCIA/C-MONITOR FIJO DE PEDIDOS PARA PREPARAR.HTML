@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Pedidos para Preparar</title>
+<style>
+  :root{
+    /* tema oscuro por defecto */
+    --bg1:#0d1424; --bg2:#0f162b;
+    --card:#0e1526; --chip:#0b1222; --muted:#9aa3af; --text:#f8fafc; --line:#1f2a3d;
+    --grpA: rgba(255,255,255,.04);
+    --grpB: rgba(255,255,255,.08);
+  }
+  /* tema claro */
+  :root[data-theme="light"]{
+    --bg1:#edf2f7; --bg2:#ffffff;
+    --card:#ffffff; --chip:#edf2f7; --muted:#4a5568; --text:#1a202c; --line:#d0d7e2;
+    --grpA: rgba(0,0,0,.015);
+    --grpB: rgba(0,0,0,.04);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+    background:linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:var(--text);
+  }
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(13,20,36,.98),rgba(15,22,43,.85));
+    backdrop-filter:saturate(160%) blur(6px);
+  }
+  :root[data-theme="light"] .topbar{
+    background:rgba(255,255,255,.92);
+    backdrop-filter:saturate(160%) blur(6px);
+  }
+  .head{
+    max-width:1920px;margin:0 auto;
+    display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
+    padding:10px 14px;
+  }
+  h1{margin:0;font-size:24px;letter-spacing:.2px}
+  .status{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:13px;font-weight:700;color:#cbd5e1}
+  .status.ok{background:#0e2b16;border-color:#14532d;color:#bbf7d0}
+  :root[data-theme="light"] .status{color:#2d3748}
+  .badge{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:13px;color:#aab4c3}
+  :root[data-theme="light"] .badge{color:#4a5568}
+
+  .search{
+    display:flex;align-items:center;gap:8px;
+    background:var(--chip);border:1px solid var(--line);padding:8px 12px;border-radius:10px;
+  }
+  .search input{
+    background:transparent;border:0;outline:none;color:var(--text);font-size:16px;width:460px;
+  }
+
+  .wrap{max-width:1920px;margin:0 auto;padding:10px 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .table-wrap{height:calc(100vh - 120px);overflow:auto;border-radius:12px}
+  table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+  thead th{
+    position:sticky;top:0;z-index:5;background:#0f1b33;
+    font-size:13px;color:#c9d2e3;border-bottom:1px solid var(--line);
+    padding:6px 7px;white-space:nowrap;cursor:pointer;user-select:none;
+  }
+  :root[data-theme="light"] thead th{
+    background:#edf2f7;
+    color:#1a202c;
+  }
+  tbody td{
+    font-size:15px;
+    padding:6px 7px; border-bottom:1px solid var(--line);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  td.wrap{
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    line-height:1.25;
+    word-break:break-word;
+  }
+
+  tbody tr.grp0{ background: var(--grpA); }
+  tbody tr.grp1{ background: var(--grpB); }
+  tbody tr:hover{ filter: brightness(1.08); }
+
+  .right{text-align:right}
+  .toast{
+    position:fixed;bottom:16px;right:16px;background:#0b1221;border:1px solid var(--line);
+    padding:10px 12px;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.35);
+    color:#fff;opacity:0;transform:translateY(10px);transition:all .25s
+  }
+  :root[data-theme="light"] .toast{
+    background:#2d3748;
+  }
+  .toast.show{opacity:1;transform:translateY(0)}
+
+  .top-actions{display:flex;gap:8px;align-items:center}
+  .theme-btn{
+    background:var(--chip);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 10px;
+    font-size:13px;
+    color:var(--text);
+    cursor:pointer;
+  }
+  .theme-btn:active{transform:translateY(1px)}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="head">
+      <h1>Pedidos para Preparar</h1>
+      <div class="search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3" stroke="#9aa3af" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="11" r="7" stroke="#9aa3af" stroke-width="2"/></svg>
+        <input id="q" placeholder="Buscar en todas las columnas…" autocomplete="off" spellcheck="false"/>
+      </div>
+      <div class="top-actions">
+        <button id="themeToggle" class="theme-btn" type="button">🌙</button>
+        <span id="conn" class="status">YiQi: Desconectado</span>
+        <span id="badge" class="badge">Smartie 2597: 0 filas · p:0 (~0/pág) · act: --:--:-- · prox: 00s</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card table-wrap" id="scrollbox">
+      <table id="tbl">
+        <colgroup id="colgroup"></colgroup>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Ok.</div>
+
+<script>
+/* ==================== CONFIG ==================== */
+const CONFIG = {
+  USERNAME: "XXXXXXXXXX",
+  PASSWORD: "XXXXXXXXXX",
+  SCHEMA_ID: 1491,
+  SMARTIE:   { entityId: 1231, smartieId: 2597 },
+  TOKEN_URLS: [
+    "https://api.yiqi.com.ar/token",
+    "https://api.yiqi.com.ar/connect/token"
+  ],
+  GETLIST_BASE: "https://api.yiqi.com.ar/api/instancesApi/GetList",
+  REFRESH_MS: 30000
+};
+
+/* ==================== UTILS ==================== */
+const $ = s=>document.querySelector(s);
+const fmt = n=> new Intl.NumberFormat('es-AR').format(n);
+function toast(msg){ const t=$('#toast'); t.textContent=msg||'Ok.'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+function strip(s){return String(s??"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase().trim();}
+function cmp(a,b){ const na=Number(a), nb=Number(b); const aN=!Number.isNaN(na), bN=!Number.isNaN(nb); if(aN&&bN) return na-nb; const sa=strip(a), sb=strip(b); return sa.localeCompare(sb,"es"); }
+
+/* helpers columnas */
+function colLabel(c){ return typeof c==='string' ? c : (c?.title ?? c?.name ?? c?.headerText ?? c?.caption ?? 'COL'); }
+function colKey(c){   return typeof c==='string' ? c : (c?.field ?? c?.columnName ?? c?.dataField ?? c?.name ?? c?.key ?? c?.id ?? colLabel(c)); }
+
+/* ==================== AUTH ==================== */
+let token=null, tokenVenceMs=0;
+function setConn(ok){ const el=$("#conn"); el.className="status"+(ok?" ok":""); el.textContent="YiQi: "+(ok?"Conectado":"Desconectado"); }
+async function loginYiQi(){
+  const payload=new URLSearchParams({ username:CONFIG.USERNAME, password:CONFIG.PASSWORD, grant_type:"password" });
+  let lastErr=null;
+  for(const url of CONFIG.TOKEN_URLS){
+    try{
+      const r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/x-www-form-urlencoded" },body:payload});
+      if(!r.ok) throw new Error("Login "+url+" → "+r.status);
+      const j=await r.json();
+      token=j.access_token; tokenVenceMs=Date.now()+((j.expires_in?j.expires_in-60:3000)*1000);
+      setConn(true); return true;
+    }catch(e){ lastErr=e; }
+  }
+  console.warn("YiQi login failed", lastErr); setConn(false); return false;
+}
+async function ensureToken(){ if(!token || Date.now()>tokenVenceMs) return loginYiQi(); return true; }
+async function apiPost(url, body){
+  await ensureToken();
+  let r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})});
+  if(r.status===401){ await loginYiQi(); r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+token },body:JSON.stringify(body||{})}); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+/* ==================== SMARTIE ==================== */
+function pickRowsContainer(resp){
+  if(Array.isArray(resp?.rows)) return { rows: resp.rows, container: resp };
+  if(Array.isArray(resp?.data?.rows)) return { rows: resp.data.rows, container: resp.data };
+  if(Array.isArray(resp?.data)) return { rows: resp.data, container: resp };
+  if(Array.isArray(resp?.instances)) return { rows: resp.instances, container: resp };
+  if(Array.isArray(resp?.items)) return { rows: resp.items, container: resp };
+  return { rows: [], container: resp };
+}
+function buildObjectsFromArrays(colsDef, rowsArr){
+  const keys = colsDef.map(colKey);
+  return rowsArr.map(arr=>{
+    const o={};
+    for(let i=0;i<keys.length;i++) o[keys[i]] = arr?.[i];
+    return o;
+  });
+}
+function normalizeResponse(resp){
+  const { rows, container } = pickRowsContainer(resp);
+  const colsDef = Array.isArray(container?.columns) ? container.columns : null;
+
+  if(rows.length && typeof rows[0] === 'object' && !Array.isArray(rows[0])){
+    const labels = colsDef ? colsDef.map(colLabel) : Object.keys(rows[0]);
+    const keys   = colsDef ? colsDef.map(colKey)   : labels;
+    return { rows, columns: labels, keys };
+  }
+  if(rows.length && Array.isArray(rows[0]) && colsDef){
+    const objs = buildObjectsFromArrays(colsDef, rows);
+    return { rows: objs, columns: colsDef.map(colLabel), keys: colsDef.map(colKey) };
+  }
+  return { rows: [], columns: [], keys: [] };
+}
+async function fetchSmartieAll({entityId, schemaId, smartieId, pageSize=50, maxPages=1000}){
+  const base = `${CONFIG.GETLIST_BASE}?entityId=${entityId}&schemaId=${schemaId}&smartieId=${smartieId}`;
+  let page=1, all=[], pages=0, eff=0, columns=[], keys=[];
+  while(page<=maxPages){
+    const resp = await apiPost(base,{page,pageSize});
+    const norm = normalizeResponse(resp);
+    if(page===1){
+      eff = norm.rows.length||0;
+      columns = norm.columns;
+      keys = norm.keys;
+    }
+    if(!norm.rows.length) break;
+    all.push(...norm.rows);
+    pages++;
+    if(norm.rows.length<pageSize) break;
+    page++;
+  }
+  return {rows:all, columns, keys, pages, eff};
+}
+
+/* ==================== TABLA ==================== */
+const state = { rows:[], cols:[], keys:[], sortK:null, sortD:1, q:"" };
+let lastUpdateTs = 0;
+let nextRefreshTs = 0;
+let totals = {total:0,pages:0,eff:0};
+
+function setBadge(){
+  const hh = lastUpdateTs ? new Date(lastUpdateTs).toLocaleTimeString('es-AR',{hour12:false}) : "--:--:--";
+  const remain = Math.max(0, Math.ceil((nextRefreshTs - Date.now())/1000));
+  $("#badge").textContent = `Smartie 2597: ${totals.total} filas · p:${totals.pages} (~${totals.eff}/pág) · act: ${hh} · prox: ${String(remain).padStart(2,'0')}s`;
+}
+
+const COL_WEIGHTS_HINTS = {
+  OBSERVACIONES:3.0, TEXTO_ADICIONAL:2.4, PRODUCTO:2.4, CLIENTE:1.6,
+  CONDICION_VENTA:1.6, METODO_ENVIO:1.6, "METODO DE ENVIO":1.6, TIPO_DE_LOGISTICA:1.6,
+  ANTIGUEDAD:0.8, NUMERO:0.9, SKU:1.0, CANT_A_ENTREGAR:0.9
+};
+const LONG_COLS = new Set(["OBSERVACIONES","TEXTO_ADICIONAL","PRODUCTO"]);
+
+function isMostlyNumeric(key, rows){
+  let n=0, seen=0;
+  for(let i=0;i<Math.min(rows.length,50);i++){
+    const v=rows[i]?.[key];
+    if(v==null||v==="") continue;
+    seen++; if(!Number.isNaN(Number(v))) n++;
+  }
+  return seen>0 && n/seen>0.8;
+}
+function buildColgroup(){
+  const cg=$("#colgroup"); cg.innerHTML="";
+  let weights=[], total=0;
+  for(let i=0;i<state.cols.length;i++){
+    const key = state.keys[i] ?? state.cols[i];
+    let w = COL_WEIGHTS_HINTS[key] ?? (isMostlyNumeric(key,state.rows) ? 0.9 : 1.3);
+    weights.push(w); total+=w;
+  }
+  for(const w of weights){
+    const col=document.createElement("col");
+    const pct = (w/total)*100;
+    col.style.width = Math.max(5, pct)+"%";
+    cg.appendChild(col);
+  }
+}
+function buildThead(){
+  const tr=$("#thead"); tr.innerHTML="";
+  for(let i=0;i<state.cols.length;i++){
+    const label = state.cols[i];
+    const key   = state.keys[i] ?? label;
+    const th=document.createElement("th");
+    th.textContent=label;
+    th.dataset.k=key;
+    th.onclick=()=>{
+      if(state.sortK===key) state.sortD=-state.sortD; else { state.sortK=key; state.sortD=1; }
+      renderBody();
+    };
+    tr.appendChild(th);
+  }
+}
+function cleanMetodoEnvio(val){
+  if(val==null) return "";
+  return String(val).replace(/^\s*Manual\s*-\s*/i,"");
+}
+function findOrderKey(){
+  const keys = state.keys.length ? state.keys : state.cols;
+  return keys.find(k => strip(k)==="numero")
+      || keys.find(k => strip(k)==="pedido")
+      || keys.find(k => /^nro/.test(strip(k)))
+      || "NUMERO";
+}
+function renderBody(){
+  const tb=$("#tbody"); tb.innerHTML="";
+  const term=strip(state.q);
+
+  let rows = state.rows;
+  if(term){
+    rows = rows.filter(r => state.keys.some((k,i) => strip(r[k]).includes(term)));
+  }
+  if(state.sortK){
+    const k=state.sortK, d=state.sortD;
+    rows = rows.slice().sort((a,b)=> d*cmp(a[k], b[k]));
+  }
+
+  const orderKey = findOrderKey();
+  let lastOrderVal = null;
+  let groupIndex = 0;
+
+  const frag=document.createDocumentFragment();
+  for(const r of rows){
+    const curOrderVal = r[orderKey];
+    if(lastOrderVal !== curOrderVal){
+      if(lastOrderVal !== null) groupIndex ^= 1;
+      lastOrderVal = curOrderVal;
+    }
+
+    const tr=document.createElement("tr");
+    tr.className = groupIndex ? "grp1" : "grp0";
+
+    for(let i=0;i<state.cols.length;i++){
+      const key = state.keys[i] ?? state.cols[i];
+      let v = r[key];
+      if(key==="METODO_ENVIO" || key==="METODO DE ENVIO") v = cleanMetodoEnvio(v);
+
+      const td=document.createElement("td");
+      if(LONG_COLS.has(key)) td.className="wrap";
+
+      const num = Number(v);
+      if(!LONG_COLS.has(key) && !Number.isNaN(num) && v!=="" && v!==null && v!==undefined){
+        td.className = (td.className?"wrap ":"") + "right";
+        td.textContent = Number.isInteger(num) ? fmt(num) : String(v);
+      }else{
+        td.textContent = v==null ? "" : String(v);
+      }
+      tr.appendChild(td);
+    }
+    frag.appendChild(tr);
+  }
+  tb.appendChild(frag);
+}
+
+/* ==================== CARGA + AUTOREFRESH + COUNTDOWN ==================== */
+let refreshing=false, refreshTimer=null, countdownTimer=null;
+
+async function loadAndRender(opts={silent:true}){
+  if(refreshing) return;
+  refreshing=true;
+  const scrollBox = $("#scrollbox");
+  const keepScrollTop = scrollBox.scrollTop;
+  const keepQ = $("#q").value;
+  const keepSortK = state.sortK, keepSortD = state.sortD;
+
+  try{
+    const meta = await fetchSmartieAll({
+      entityId: CONFIG.SMARTIE.entityId,
+      schemaId: CONFIG.SCHEMA_ID,
+      smartieId: CONFIG.SMARTIE.smartieId,
+      pageSize:50
+    });
+
+    let cols = (meta.columns || []).map(String);
+    const keys = (meta.keys || []).map(String);
+    const out = [];
+    const outKeys = [];
+    for(let i=0;i<cols.length;i++){
+      const lbl = cols[i], key = keys[i] ?? lbl;
+      if(/^\s*c?k?e?c?k?\s*$/i.test(lbl) || strip(lbl)==="check" || strip(lbl)==="ckeck") continue;
+      out.push(lbl); outKeys.push(key);
+    }
+
+    state.rows = meta.rows;
+    state.cols = out;
+    state.keys = outKeys;
+
+    state.q = keepQ; $("#q").value = keepQ;
+    state.sortK = (keepSortK && state.keys.includes(keepSortK))
+      ? keepSortK
+      : (state.keys.includes("ANTIGUEDAD") ? "ANTIGUEDAD" : null);
+    state.sortD = keepSortD || 1;
+
+    totals = { total: meta.rows.length, pages: meta.pages, eff: meta.eff };
+    lastUpdateTs = Date.now();
+    nextRefreshTs = lastUpdateTs + CONFIG.REFRESH_MS;
+
+    buildColgroup();
+    buildThead();
+    renderBody();
+    setBadge();
+
+    scrollBox.scrollTop = keepScrollTop;
+    if(!opts.silent) toast("Datos actualizados");
+  }catch(e){
+    console.error(e);
+    if(!opts.silent) toast("No se pudo actualizar");
+  }finally{
+    refreshing=false;
+  }
+}
+function startTimers(){
+  refreshTimer = setInterval(()=>loadAndRender({silent:true}), CONFIG.REFRESH_MS);
+  countdownTimer = setInterval(setBadge, 1000);
+}
+
+/* ==================== TEMA ==================== */
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = $("#themeToggle");
+  if(theme === 'light'){
+    btn.textContent = "🌙";
+  }else{
+    btn.textContent = "☀️";
+  }
+  localStorage.setItem('monitor-theme', theme);
+}
+function initTheme(){
+  const saved = localStorage.getItem('monitor-theme');
+  applyTheme(saved || 'dark');
+}
+
+/* ==================== INIT ==================== */
+async function init(){
+  initTheme();
+  const ok = await loginYiQi(); setConn(ok);
+  await loadAndRender({silent:true});
+  startTimers();
+}
+$("#q").addEventListener("input",(e)=>{ state.q=e.target.value; renderBody(); });
+$("#themeToggle").addEventListener("click", ()=>{
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
