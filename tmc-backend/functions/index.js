@@ -442,14 +442,26 @@ exports.obtenerDetalleComprobante = onRequest({ cors: true }, async (req, res) =
     const cookies = await getYiQiCookies();
     
     // 1. Consultar candidatos de comprobante buscando por numero exacto
+    let clientFilterCol = null;
+    if (parsed.entity === 'FACTURA') {
+      clientFilterCol = 'FACT_ID_CLIENTE';
+    } else if (parsed.entity === 'NOTA_DEBITO') {
+      clientFilterCol = 'CLIE_CODIGO';
+    }
+
+    const filters = [
+      { columnName: parsed.filterField, operator: '=', value: parsed.number }
+    ];
+    if (clientFilterCol) {
+      filters.push({ columnName: clientFilterCol, operator: '=', value: String(clientCode) });
+    }
+
     const queryUrl = `https://me.yiqi.com.ar/api/public/${parsed.entity}/query?schemaId=1491`;
     const queryBody = {
       page: 1,
       pageSize: 10,
       columns: [{ field: 'id' }],
-      filters: [
-        { columnName: parsed.filterField, operator: '=', value: parsed.number }
-      ]
+      filters: filters
     };
 
     const queryResp = await fetch(queryUrl, {
@@ -1314,12 +1326,26 @@ exports.imputarSaldoCliente = onRequest({ cors: true }, async (req, res) => {
         try {
           const parsedInv = parseComprobante(invoiceNumber);
           if (parsedInv.number !== null) {
+            let clientFilterCol = null;
+            if (parsedInv.entity === 'FACTURA') {
+              clientFilterCol = 'FACT_ID_CLIENTE';
+            } else if (parsedInv.entity === 'NOTA_DEBITO') {
+              clientFilterCol = 'CLIE_CODIGO';
+            }
+
+            const filters = [
+              { columnName: parsedInv.filterField, operator: '=', value: parsedInv.number }
+            ];
+            if (clientFilterCol) {
+              filters.push({ columnName: clientFilterCol, operator: '=', value: String(clientCode) });
+            }
+
             const queryUrl = `https://me.yiqi.com.ar/api/public/${parsedInv.entity}/query?schemaId=1491`;
             const queryBody = {
               page: 1,
               pageSize: 5,
               columns: [{ field: 'id' }],
-              filters: [{ columnName: parsedInv.filterField, operator: '=', value: parsedInv.number }]
+              filters: filters
             };
             const resp = await fetch(queryUrl, {
               method: 'POST',
@@ -1626,12 +1652,26 @@ exports.crearReciboManual = onRequest({ cors: true }, async (req, res) => {
           try {
             const parsedInv = parseComprobante(invoiceNumber);
             if (parsedInv.number !== null) {
+              let clientFilterCol = null;
+              if (parsedInv.entity === 'FACTURA') {
+                clientFilterCol = 'FACT_ID_CLIENTE';
+              } else if (parsedInv.entity === 'NOTA_DEBITO') {
+                clientFilterCol = 'CLIE_CODIGO';
+              }
+
+              const filters = [
+                { columnName: parsedInv.filterField, operator: '=', value: parsedInv.number }
+              ];
+              if (clientFilterCol) {
+                filters.push({ columnName: clientFilterCol, operator: '=', value: String(clientCode) });
+              }
+
               const queryUrl = `https://me.yiqi.com.ar/api/public/${parsedInv.entity}/query?schemaId=1491`;
               const queryBody = {
                 page: 1,
                 pageSize: 5,
                 columns: [{ field: 'id' }],
-                filters: [{ columnName: parsedInv.filterField, operator: '=', value: parsedInv.number }]
+                filters: filters
               };
               const resp = await fetch(queryUrl, {
                 method: 'POST',
@@ -1859,6 +1899,1386 @@ exports.crearReciboManual = onRequest({ cors: true }, async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * Cloud Function que consulta de forma segura los pedidos pendientes de un cliente.
+ * URL pública: https://<region>-<project-id>.cloudfunctions.net/obtenerPedidosPendientes?clientCode=7550
+ */
+exports.obtenerPedidosPendientes = onRequest({ cors: true }, async (req, res) => {
+  const clientCode = req.query.clientCode;
+  const noStock = req.query.noStock === "true";
+  if (!clientCode) {
+    return res.status(400).json({ error: "Falta el parametro clientCode" });
+  }
+
+  try {
+    const cookies = await getYiQiCookies();
+    
+    // 1. Obtener detalles del cliente para conseguir su CUIT y Razón Social
+    const clientQueryUrl = `https://me.yiqi.com.ar/api/public/CLIENTE/${clientCode}?schemaId=1491`;
+    const clientResponse = await fetch(clientQueryUrl, {
+      method: "GET",
+      headers: { "Cookie": cookies }
+    });
+
+    if (!clientResponse.ok) {
+      const errText = await clientResponse.text();
+      console.error("Error consultando cliente:", errText);
+      return res.status(clientResponse.status).json({ error: "Error al consultar detalles del cliente", details: errText });
+    }
+
+    const clientData = await clientResponse.json();
+    const clientObj = clientData.data || clientData.rows || clientData;
+    if (!clientObj) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    const cuit = clientObj.CLIE_CUIT;
+    const razonSocial = clientObj.CLIE_RAZON_SOCIAL;
+    const nombre = clientObj.CLIE_NOMBRE;
+
+    if (!cuit && !razonSocial && !nombre) {
+      return res.json({ success: true, clientCode, data: [] });
+    }
+
+    // 2. Query de pedidos
+    const queryUrl = "https://me.yiqi.com.ar/api/public/PEDIDO/query?schemaId=1491";
+    
+    const filters = [];
+    if (razonSocial) {
+      filters.push({
+        columnName: "CLIE_RAZON_SOCIAL",
+        operator: "=",
+        value: String(razonSocial)
+      });
+    } else if (cuit) {
+      filters.push({
+        columnName: "PEDI_CUIT",
+        operator: "=",
+        value: String(cuit)
+      });
+    } else if (nombre) {
+      filters.push({
+        columnName: "CLIE_NOMBRE",
+        operator: "=",
+        value: String(nombre)
+      });
+    }
+
+    const queryBody = {
+      page: 1,
+      pageSize: 50,
+      columns: [
+        { field: "PEDI_NUMERO" },
+        { field: "PEDI_FECHA", sortDirection: "DESC", sortOrder: 1 },
+        { field: "PEDI_TOTAL" },
+        { field: "PEDI_PORCENTAJE_DE_ENTREG" },
+        { field: "PEDI_CUIT" },
+        { field: "CLIE_RAZON_SOCIAL" },
+        { field: "CLIE_NOMBRE" },
+        { field: "PEDI_NRO_PEDIDO" },
+        { field: "id" }
+      ],
+      filters: filters
+    };
+
+    const qResp = await fetch(queryUrl, {
+      method: "POST",
+      headers: {
+        "Cookie": cookies,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(queryBody)
+    });
+
+    if (!qResp.ok) {
+      const errText = await qResp.text();
+      console.error("Error consultando pedidos:", errText);
+      return res.status(qResp.status).json({ error: "Error al consultar pedidos", details: errText });
+    }
+
+    const qData = await qResp.json();
+    const rows = qData.data || qData.rows || [];
+    
+    // Calcular métricas comerciales sobre los 50 pedidos históricos
+    const totalPedidos = rows.length;
+    const anuladosPedidos = rows.filter(r => {
+      const cod = Number(r.ESTA_CODIGO || 0);
+      return cod === 442 || cod === 443 || cod === 444; // 442 is Anulado
+    }).length;
+    const ratioAnulados = totalPedidos > 0 ? (anuladosPedidos / totalPedidos) * 100 : 0;
+
+    // Filtrar pedidos no entregados al 100% (incluye anulados y pendientes)
+    const pendingRows = rows.filter(r => {
+      const pct = r.PEDI_PORCENTAJE_DE_ENTREG !== undefined && r.PEDI_PORCENTAJE_DE_ENTREG !== null ? parseFloat(r.PEDI_PORCENTAJE_DE_ENTREG) : 0;
+      return pct < 100;
+    });
+
+    // Filtrar pedidos entregados al 100% (excluyendo anulados para la solapa de entregados)
+    const deliveredRows = rows.filter(r => {
+      const pct = r.PEDI_PORCENTAJE_DE_ENTREG !== undefined && r.PEDI_PORCENTAJE_DE_ENTREG !== null ? parseFloat(r.PEDI_PORCENTAJE_DE_ENTREG) : 0;
+      const cod = Number(r.ESTA_CODIGO || 0);
+      const isAnnulled = cod === 442 || cod === 443 || cod === 444;
+      return pct >= 100 && !isAnnulled;
+    });
+
+    // Limitar detalles paralelos para evitar rate limiting (máximo 12 pendientes, 8 entregados)
+    const limitedPendingRows = pendingRows.slice(0, 12);
+    const limitedDeliveredRows = deliveredRows.slice(0, 8);
+
+    const fetchDetailedOrder = async (order) => {
+      try {
+        const detailUrl = `https://me.yiqi.com.ar/api/public/PEDIDO/${order.id}?schemaId=1491`;
+        const dResp = await fetch(detailUrl, {
+          headers: { "Cookie": cookies }
+        });
+        if (dResp.ok) {
+          const dData = await dResp.json();
+          const orderDetailObj = dData.data || dData;
+          
+          // Excluir si el ID de cliente no coincide (evita colisión por CUIT repetido)
+          const orderClientCode = orderDetailObj.CLIE_ID_CLIE || orderDetailObj.CLIE_CODIGO || "";
+          if (String(orderClientCode) !== String(clientCode)) {
+            return null;
+          }
+
+          const estado = orderDetailObj.ESTA_NOMBRE || order.ESTA_NOMBRE || "";
+
+          // Mapear ítems (MÁRGENES)
+          const margins = orderDetailObj.MÁRGENES || [];
+          const items = margins.map(item => ({
+            producto: item.PRODUCTO || "",
+            sku: item.SKU || "",
+            cantidadPedida: item.CANTIDAD ? parseFloat(item.CANTIDAD) : 0,
+            cantidadAEntregar: item.CANT_A_ENTREGAR !== undefined && item.CANT_A_ENTREGAR !== null ? parseFloat(item.CANT_A_ENTREGAR) : 0,
+            estadoItem: item.ESTADO_DETALLE || "",
+            stockDepo: item.STOCK_DEPO !== undefined && item.STOCK_DEPO !== null ? parseFloat(item.STOCK_DEPO) : 0,
+            stockDepor: item.STOCK_DEPOR !== undefined && item.STOCK_DEPOR !== null ? parseFloat(item.STOCK_DEPOR) : 0,
+            disponible: item.DISPONIBLE || "",
+            reservadoCant: item.RESERVADO_CANT !== undefined && item.RESERVADO_CANT !== null ? parseFloat(item.RESERVADO_CANT) : 0,
+            stockFaltante: item.STOCK_FALTANTE !== undefined && item.STOCK_FALTANTE !== null ? parseFloat(item.STOCK_FALTANTE) : 0
+          }));
+
+          // Obtener lista de facturas (excluyendo solo proyectadas/borradores)
+          const facturas = (orderDetailObj.FACTURAS || [])
+            .filter(f => {
+              const est = (f.ESTA_NOMBRE || "").toLowerCase();
+              const nro = f.FACT_NUMERO;
+              const isProjected = est === "proyectada" || est === "borrador" || !nro || nro === 0 || String(nro) === "0";
+              return !isProjected;
+            })
+            .map(f => {
+              let tipo = "Factura";
+              if (f.TIFA_ID_TIFA === 1) tipo = "Factura A";
+              else if (f.TIFA_ID_TIFA === 2) tipo = "Factura B";
+              else if (f.TIFA_ID_TIFA === 3) tipo = "Factura C";
+              
+              const ptoVta = f.FACT_PUVE_NOMBRE || "0";
+              const nro = f.FACT_NUMERO || "0";
+              
+              return {
+                id: f.id,
+                numero: `${tipo} ${ptoVta}-${nro}`,
+                tifaId: f.TIFA_ID_TIFA || 1,
+                puveId: f.PUVE_ID_PUVE || 1,
+                total: f.FACT_TOTAL || 0,
+                estado: f.ESTA_NOMBRE || ""
+              };
+            });
+
+          return {
+            id: order.id,
+            numero: order.PEDI_NUMERO || "",
+            nroPedido: order.PEDI_NRO_PEDIDO || "",
+            fecha: order.PEDI_FECHA || null,
+            porcentajeEntrega: order.PEDI_PORCENTAJE_DE_ENTREG !== undefined && order.PEDI_PORCENTAJE_DE_ENTREG !== null ? parseFloat(order.PEDI_PORCENTAJE_DE_ENTREG) : 0,
+            total: order.PEDI_TOTAL !== undefined && order.PEDI_TOTAL !== null ? parseFloat(order.PEDI_TOTAL) : 0,
+            estado: estado,
+            facturas: facturas,
+            items: items
+          };
+        }
+      } catch (detailErr) {
+        console.error(`Error consultando detalle para pedido ${order.id}:`, detailErr);
+      }
+      return null;
+    };
+
+    // Obtener detalles completos de cada pedido en paralelo
+    const detailedPendingPromise = Promise.all(limitedPendingRows.map(fetchDetailedOrder));
+    const detailedDeliveredPromise = Promise.all(limitedDeliveredRows.map(fetchDetailedOrder));
+
+    const [detailedPending, detailedDelivered] = await Promise.all([detailedPendingPromise, detailedDeliveredPromise]);
+
+    const activePending = detailedPending.filter(o => o !== null);
+    const activeDelivered = detailedDelivered.filter(o => o !== null);
+
+    // Recopilar todos los SKUs únicos de los ítems de pedidos
+    const uniqueSkus = [];
+    const collectSkus = (orders) => {
+      orders.forEach(o => {
+        if (o && o.items) {
+          o.items.forEach(item => {
+            if (item.sku && !uniqueSkus.includes(item.sku)) {
+              uniqueSkus.push(item.sku);
+            }
+          });
+        }
+      });
+    };
+    collectSkus(activePending);
+    collectSkus(activeDelivered);
+
+    // Consultar el stock real y la factibilidad de producción en paralelo para cada SKU
+    const stockMap = {};
+    if (!noStock && uniqueSkus.length > 0) {
+      await Promise.all(uniqueSkus.map(async (sku) => {
+        try {
+          const queryUrl = "https://me.yiqi.com.ar/api/public/STOCK/query?schemaId=1491";
+          const body = {
+            page: 1,
+            pageSize: 30,
+            columns: [
+              { field: "STOC_SKU" },
+              { field: "STOC_CANTIDAD" },
+              { field: "STOC_FACTIBILIDAD_PRODUCC" },
+              { field: "STOC_UBICACION_NOMBRE" }
+            ],
+            filters: [
+              { columnName: "STOC_SKU", operator: "=", value: sku }
+            ]
+          };
+
+          const sResp = await fetch(queryUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Cookie": cookies
+            },
+            body: JSON.stringify(body)
+          });
+
+          if (sResp.ok) {
+            const sData = await sResp.json();
+            const rows = sData.data || sData.rows || [];
+
+            let stockDepo = 0;
+            let stockDepor = 0;
+            let factibilidad = 0;
+
+            rows.forEach(r => {
+              const qty = r.STOC_CANTIDAD ? parseFloat(r.STOC_CANTIDAD) : 0;
+              const fact = r.STOC_FACTIBILIDAD_PRODUCC ? parseFloat(r.STOC_FACTIBILIDAD_PRODUCC) : 0;
+              const loc = (r.STOC_UBICACION_NOMBRE || "").trim().toUpperCase();
+
+              if (loc === "DEPO") {
+                stockDepo += qty;
+                if (fact > factibilidad) factibilidad = fact;
+              } else if (loc === "DEPOR") {
+                stockDepor += qty;
+              }
+            });
+
+            stockMap[sku] = { stockDepo, stockDepor, factibilidad };
+          }
+        } catch (err) {
+          console.error(`Error al consultar stock para SKU ${sku}:`, err);
+        }
+      }));
+    }
+
+    // Enriquecer los ítems con los niveles de stock correctos
+    const enrichOrders = (orders) => {
+      orders.forEach(o => {
+        if (o && o.items) {
+          o.items.forEach(item => {
+            const stockInfo = stockMap[item.sku];
+            if (stockInfo) {
+              item.stockDepo = stockInfo.stockDepo + stockInfo.factibilidad;
+              item.stockDepor = stockInfo.stockDepor;
+              item.rawStockDepo = stockInfo.stockDepo;
+              item.factibilidad = stockInfo.factibilidad;
+            } else {
+              item.stockDepo = 0;
+              item.stockDepor = 0;
+              item.rawStockDepo = 0;
+              item.factibilidad = 0;
+            }
+          });
+        }
+      });
+    };
+    enrichOrders(activePending);
+    enrichOrders(activeDelivered);
+
+    return res.json({
+      success: true,
+      clientCode,
+      metrics: {
+        total: totalPedidos,
+        annulled: anuladosPedidos,
+        ratio: ratioAnulados
+      },
+      pending: activePending,
+      delivered: activeDelivered
+    });
+
+  } catch (error) {
+    console.error("Error en obtenerPedidosPendientes:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function que sirve como proxy seguro para el módulo de Control de Calidad y Expedición (TMC 2.0).
+ */
+exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
+  const { action } = req.body;
+  if (!action) {
+    return res.status(400).json({ error: "Falta el parametro action" });
+  }
+
+  try {
+    const token = await getYiQiToken();
+
+    if (action === "getPedidos") {
+      // Pedidos a preparar
+      const url = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=1231&schemaId=1491&smartieId=2584";
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ page: 1, pageSize: 1000 })
+      });
+      if (!resp.ok) throw new Error(`YiQi GetList Pedidos retornó HTTP ${resp.status}`);
+      const data = await resp.json();
+      return res.json(data);
+
+    } else if (action === "prepararPedido") {
+      const { pedidoId, pedidoNro, cantBultos } = req.body;
+      if (!pedidoId || !pedidoNro) {
+        return res.status(400).json({ error: "Faltan parametros (pedidoId, pedidoNro)" });
+      }
+
+      // Normalization helpers for backend
+      const strip = (s) => String(s??"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
+      const normKey = (s) => strip(s).replace(/[-–—−_/.:(),;[\]{}|]/g," ").replace(/\s+/g," ").trim();
+      const pickExact = (row, candidates) => {
+        const keys = Object.keys(row || {});
+        const table = keys.map(k => ({ k, n: normKey(k) }));
+        for (const name of candidates) {
+          const nn = normKey(name);
+          const exact = table.find(o => o.n === nn);
+          if (exact) return row[exact.k];
+        }
+        for (const name of candidates) {
+          const nn = normKey(name);
+          const end = table.find(o => o.n.endsWith(" " + nn));
+          if (end) return row[end.k];
+        }
+        return undefined;
+      };
+      const objectifyColumnsData = (resp) => {
+        if (Array.isArray(resp?.columns) && Array.isArray(resp?.data)) {
+          const cols = resp.columns.map(c => c?.name ?? c);
+          return resp.data.map(arr => {
+            const o = {};
+            cols.forEach((cn, i) => o[cn] = arr[i]);
+            return o;
+          });
+        }
+        return null;
+      };
+      const getRows = (resp) => {
+        if (!resp) return [];
+        if (Array.isArray(resp.rows)) return resp.rows;
+        if (Array.isArray(resp.data?.rows)) return resp.data.rows;
+        if (Array.isArray(resp.data)) return resp.data;
+        if (Array.isArray(resp.instances)) return resp.instances;
+        if (Array.isArray(resp.items)) return resp.items;
+        const o = objectifyColumnsData(resp);
+        return Array.isArray(o) ? o : [];
+      };
+      const getRemitoId = (row) => {
+        return (row["ID"] ?? row["id"] ?? row["Identificador"] ?? row["REMITO_ID_REMITO"] ?? pickExact(row, ["ID", "Identificador", "REMITO_ID_REMITO"]) ?? "").toString().trim();
+      };
+      const getRemitoPedidoNro = (row) => {
+        return (row["PEDI_NUMERO"] ?? pickExact(row, ["Pedido - Nro", "Nro Pedido", "PEDI_NUMERO"]) ?? "").toString().trim();
+      };
+      const getRemitoNro = (row) => {
+        return (row["NUMERO"] ?? row["REMI_NRO_REMITO"] ?? row["NUMERO_COMPROBANTE"] ?? pickExact(row, ["Número", "Nro Comprobante", "Número Comprobante", "REMI_NRO_REMITO"]) ?? "").toString().trim();
+      };
+
+      // 1. Ejecutar transición de preparado (118991 - Staging Out)
+      const transitionUrl = "https://api.yiqi.com.ar/api/workflowApi/ExecuteTransition";
+      const transPayload = {
+        schemaId: 1491,
+        ids: [String(pedidoId)],
+        transitionId: 118991,
+        form: ""
+      };
+      console.log(`[CC] Ejecutando transicion 118991 para pedido ${pedidoNro} (ID: ${pedidoId})...`);
+      const transResp = await fetch(transitionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(transPayload)
+      });
+      if (!transResp.ok) {
+        const errText = await transResp.text();
+        throw new Error(`Error en transición preparado: ${errText}`);
+      }
+
+      // 2. Buscar remito proyectado (esperar y reintentar hasta 12 veces)
+      const getListRemitosUrl = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=859&schemaId=1491&smartieId=2583";
+      let remitoId = null;
+      let remitoNro = null;
+      
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      await sleep(2000); // Esperar 2s antes del primer intento
+
+      for (let i = 1; i <= 12; i++) {
+        console.log(`[CC] Buscando remito proyectado para pedido ${pedidoNro} (intento ${i}/12)...`);
+        const remListResp = await fetch(getListRemitosUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({ page: 1, pageSize: 300 })
+        });
+
+        if (remListResp.ok) {
+          const remData = await remListResp.json();
+          const rows = getRows(remData);
+
+          const match = rows.find(r => {
+            const pedNro = getRemitoPedidoNro(r);
+            return String(pedNro) === String(pedidoNro);
+          });
+
+          if (match) {
+            remitoId = getRemitoId(match);
+            remitoNro = getRemitoNro(match);
+            if (remitoId) {
+              console.log(`[CC] Remito cazado con ID: ${remitoId}, Nro: ${remitoNro}`);
+              break;
+            }
+          }
+        }
+        await sleep(2000);
+      }
+
+      if (!remitoId) {
+        throw new Error(`No se encontró el remito proyectado en YiQi para el pedido ${pedidoNro} tras varios reintentos.`);
+      }
+
+      // 3. Guardar bultos en el remito
+      console.log(`[CC] Intentando guardar ${cantBultos} bultos en remito ID: ${remitoId}...`);
+      const saveUrl = "https://api.yiqi.com.ar/api/instancesApi/Save";
+      const keys = ["6678", "REDV_BULTOS", "5090"];
+      let bultosSaved = false;
+
+      for (const k of keys) {
+        try {
+          const saveBody = {
+            entityId: 859,
+            schemaId: 1491,
+            instanceId: String(remitoId),
+            form: `${encodeURIComponent(k)}=${encodeURIComponent(Number(cantBultos) || 0)}`,
+            uploads: "",
+            password: null,
+            removedFiles: []
+          };
+          const saveResp = await fetch(saveUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify(saveBody)
+          });
+          if (saveResp.ok) {
+            // Verificar impacto
+            await sleep(800);
+            const verifyResp = await fetch(getListRemitosUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+              },
+              body: JSON.stringify({ page: 1, pageSize: 300 })
+            });
+            if (verifyResp.ok) {
+              const vData = await verifyResp.json();
+              const vRows = getRows(vData);
+              const row = vRows.find(r => String(getRemitoId(r)) === String(remitoId));
+              if (row) {
+                const val = parseInt((row["REDV_BULTOS"] ?? pickExact(row, ["REDV_BULTOS", "6678", "5090"]) ?? "").toString().trim() || "0", 10);
+                if (val === (parseInt(cantBultos, 10) || 0)) {
+                  console.log(`[CC] Bultos confirmados e impactados en YiQi para remito ${remitoId}`);
+                  bultosSaved = true;
+                  break;
+                }
+              }
+            }
+          }
+        } catch (saveErr) {
+          console.error(`[CC] Error al probar campo bultos key ${k}:`, saveErr.message);
+        }
+      }
+
+      return res.json({ success: true, remitoId, remitoNro, bultosSaved });
+
+    } else if (action === "quiebrePedido") {
+      const { pedidoId, comment } = req.body;
+      if (!pedidoId || !comment) {
+        return res.status(400).json({ error: "Faltan parametros (pedidoId, comment)" });
+      }
+
+      // 1. Agregar comentario en el Pedido (Entidad 828)
+      const commentUrl = "https://api.yiqi.com.ar/api/instancesApi/AddComment";
+      const commentBody = {
+        entityId: "828",
+        schemaId: "1491",
+        instanceId: String(pedidoId),
+        comment: String(comment)
+      };
+      console.log(`[CC] Agregando comentario de quiebre en pedido ID: ${pedidoId}...`);
+      const commentResp = await fetch(commentUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(commentBody)
+      });
+      if (!commentResp.ok) {
+        console.warn(`[CC] Error agregando comentario al pedido: ${await commentResp.text()}`);
+      }
+
+      // 2. Ejecutar transición Quiebre 2 (118973)
+      const transitionUrl = "https://api.yiqi.com.ar/api/workflowApi/ExecuteTransition";
+      const transPayload = {
+        schemaId: 1491,
+        ids: [String(pedidoId)],
+        transitionId: 118973,
+        form: ""
+      };
+      console.log(`[CC] Transicionando pedido ID: ${pedidoId} a Quiebre 2...`);
+      const transResp = await fetch(transitionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(transPayload)
+      });
+      if (!transResp.ok) {
+        const errText = await transResp.text();
+        throw new Error(`Error en transición quiebre: ${errText}`);
+      }
+
+      return res.json({ success: true });
+
+    } else if (action === "getAltasPendientes") {
+      // Remitos de compra pendientes de procesar
+      const url = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=787&schemaId=1491&smartieId=2698";
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ page: 1, pageSize: 200 })
+      });
+      if (!resp.ok) throw new Error(`YiQi GetList Altas Pendientes retornó HTTP ${resp.status}`);
+      const data = await resp.json();
+      return res.json(data);
+
+    } else if (action === "procesarAltas") {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: "Falta el parametro ids (array no vacío)" });
+      }
+
+      const transitionUrl = "https://api.yiqi.com.ar/api/workflowApi/ExecuteTransition";
+      const payload = {
+        schemaId: 1491,
+        ids: ids.map(String),
+        transitionId: 119014,
+        form: ""
+      };
+      console.log(`[CC] Procesando remitos de compra en lote: ${ids.join(", ")}...`);
+      const resp = await fetch(transitionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`Error al procesar remitos de compra: ${errText}`);
+      }
+      return res.json({ success: true });
+
+    } else if (action === "getJaulasPendientes") {
+      // Jaulas pendientes de control
+      const url = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=787&schemaId=1491&smartieId=2764";
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ page: 1, pageSize: 200 })
+      });
+      if (!resp.ok) throw new Error(`YiQi GetList Jaulas Pendientes retornó HTTP ${resp.status}`);
+      const data = await resp.json();
+      return res.json(data);
+
+    } else if (action === "getJaulaItems") {
+      const { instanceId } = req.body;
+      if (!instanceId) {
+        return res.status(400).json({ error: "Falta el parametro instanceId" });
+      }
+
+      const url = `https://me.yiqi.com.ar/api/childrenApi/GetChildList?entityId=787&schemaId=1491&childId=209&instanceId=${instanceId}&take=100&skip=0&page=1&pageSize=100&search=`;
+      const resp = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      });
+      if (!resp.ok) throw new Error(`YiQi GetChildList retornó HTTP ${resp.status}`);
+      const data = await resp.json();
+      return res.json(data);
+
+    } else if (action === "executeBulkTransition") {
+      const { ids, transitionId } = req.body;
+      if (!ids || !Array.isArray(ids) || !transitionId) {
+        return res.status(400).json({ error: "Faltan parametros (ids, transitionId)" });
+      }
+
+      // Obtener cookies si es una anulación para comprobar la contingencia de facturas cobradas
+      const isAnnulment = [118945, 119140, 118947].includes(Number(transitionId));
+      if (isAnnulment) {
+        try {
+          const cookies = await getYiQiCookies();
+          for (const orderId of ids) {
+            const orderUrl = `https://me.yiqi.com.ar/api/public/PEDIDO/${orderId}?schemaId=1491`;
+            const orderResp = await fetch(orderUrl, { headers: { "Cookie": cookies } });
+            if (orderResp.ok) {
+              const orderData = await orderResp.json();
+              const orderDetail = orderData.data || orderData;
+              if (orderDetail && orderDetail.FACTURAS) {
+                // Filtrar facturas vigentes cobradas
+                const paidInvoices = orderDetail.FACTURAS.filter(f => {
+                  const est = (f.ESTA_NOMBRE || "").toLowerCase();
+                  return est === "cobrada";
+                });
+                
+                for (const f of paidInvoices) {
+                  console.log(`[Contingencia Anulación] Factura ${f.id} está COBRADA. Creando Nota de Crédito de compensación...`);
+                  // Crear Nota de Crédito imputada a la factura
+                  const ncBody = {
+                    schemaId: 1491,
+                    data: {
+                      CLIE_ID_CLIE: orderDetail.CLIE_ID_CLIE || orderDetail.CLIE_CODIGO,
+                      CLIE_CODIGO: orderDetail.CLIE_ID_CLIE || orderDetail.CLIE_CODIGO,
+                      TIFA_ID_TIFA: f.TIFA_ID_TIFA || 1,
+                      PUVE_ID_PUVE: f.PUVE_ID_PUVE || 1,
+                      NOCR_FECHA_EMISION: new Date().toISOString().split("T")[0],
+                      NOCR_TOTAL: f.FACT_TOTAL || 0,
+                      NOCR_OBSERVACION: `N.C. automática por anulación de Pedido N° ${orderDetail.PEDI_NRO_PEDIDO || orderDetail.PEDI_NUMERO || orderId}`,
+                      FacturasCanceladas: [
+                        {
+                          CLIE_ID_CLIE: orderDetail.CLIE_ID_CLIE || orderDetail.CLIE_CODIGO,
+                          FACT_ID_FACT: f.id,
+                          CANC_IMPORTE_A_CANCELAR: f.FACT_TOTAL || 0
+                        }
+                      ]
+                    }
+                  };
+                  const ncUrl = "https://me.yiqi.com.ar/api/public/NOTA_CREDITO?schemaId=1491";
+                  const ncCreateResp = await fetch(ncUrl, {
+                    method: "POST",
+                    headers: { "Cookie": cookies, "Content-Type": "application/json" },
+                    body: JSON.stringify(ncBody)
+                  });
+                  if (!ncCreateResp.ok) {
+                    console.error(`[Contingencia Anulación] Error al crear NC para factura ${f.id}:`, await ncCreateResp.text());
+                  } else {
+                    console.log(`[Contingencia Anulación] Nota de Crédito creada y compensada para factura ${f.id}.`);
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error al ejecutar la verificación de contingencia de facturas cobradas:", err);
+        }
+      }
+
+      const transitionUrl = "https://api.yiqi.com.ar/api/workflowApi/ExecuteTransition";
+      const payload = {
+        schemaId: 1491,
+        ids: ids.map(String),
+        transitionId: Number(transitionId),
+        form: ""
+      };
+      
+      console.log(`[Bulk] Ejecutando transicion ${transitionId} para IDs: ${ids.join(", ")}`);
+      const tResp = await fetch(transitionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!tResp.ok) {
+        const errText = await tResp.text();
+        throw new Error(`Error en transición bulk ${transitionId}: ${errText}`);
+      }
+
+      const tData = await tResp.json();
+      console.log(`[Bulk] Respuesta de ExecuteTransition:`, JSON.stringify(tData));
+
+      // Verificar si la respuesta de YiQi indica un error a pesar de que el estado HTTP sea 200
+      if (tData && (tData.success === false || tData.error || tData.errors || tData.message)) {
+        const errMsg = tData.error || tData.message || (tData.errors && Array.isArray(tData.errors) ? tData.errors.join(", ") : String(tData.errors)) || "Error al realizar la transición en YiQi ERP";
+        return res.status(400).json({ error: errMsg });
+      }
+
+      return res.json({ success: true });
+
+    } else if (action === "createNotaCreditoDebito") {
+      const { clientCode, type, amount, reason, invoiceId, invoiceNumber } = req.body;
+      if (!clientCode || !type || !amount) {
+        return res.status(400).json({ error: "Faltan parametros (clientCode, type, amount)" });
+      }
+
+      const cookies = await getYiQiCookies();
+      let tifaId = 1; // Factura A
+      let puveId = 1; // Pto venta 1
+      let cofaId = 1; // Default fallback
+      let cofaCodigo = "AJUSTE";
+      let cofaConcepto = "Ajuste General";
+
+      // 1. Obtener detalles de la factura original para copiar TIFA_ID_TIFA, PUVE_ID_PUVE y conceptos
+      if (invoiceId) {
+        try {
+          const detailUrl = `https://me.yiqi.com.ar/api/public/FACTURA/${invoiceId}?schemaId=1491`;
+          const dResp = await fetch(detailUrl, { headers: { "Cookie": cookies } });
+          if (dResp.ok) {
+            const dData = await dResp.json();
+            const invObj = dData.data || dData;
+            if (invObj) {
+              tifaId = invObj.TIFA_ID_TIFA || 1;
+              puveId = invObj.PUVE_ID_PUVE || 1;
+              const details = invObj.DETALLE || [];
+              if (details.length > 0) {
+                cofaId = details[0].COFA_ID_COFA || cofaId;
+                cofaCodigo = details[0].FADE_CODIGO || cofaCodigo;
+                cofaConcepto = details[0].FADE_CONCEPTO_COMPLETO || cofaConcepto;
+              }
+            }
+          }
+        } catch (invErr) {
+          console.error("Error consultando factura origen para NC/ND:", invErr);
+        }
+      }
+
+      const entityName = type === "NC" ? "NOTA_CREDITO" : "NOTA_DEBITO";
+      const createUrl = `https://me.yiqi.com.ar/api/public/${entityName}?schemaId=1491`;
+      
+      const payloadData = {
+        CLIE_ID_CLIE: Number(clientCode),
+        CLIE_CODIGO: Number(clientCode),
+        TIFA_ID_TIFA: Number(tifaId),
+        PUVE_ID_PUVE: Number(puveId),
+        AUDI_FECHA_ALTA: new Date().toISOString()
+      };
+
+      const detailRow = {
+        COFA_ID_COFA: Number(cofaId),
+        DENV_CODIGO: cofaCodigo,
+        DENV_CONCEPTO_COMPLETO: reason || `Ajuste por ${invoiceNumber || "factura"}`,
+        DENV_CANTIDAD: 1,
+        DENV_PRECIO_UNITARIO: Number(amount),
+        DENV_NETO: Number(amount),
+        DENV_SUBTOTAL: Number(amount)
+      };
+
+      payloadData.DETALLE = [detailRow];
+
+      if (type === "NC") {
+        payloadData.NOCR_FECHA_EMISION = new Date().toISOString().split("T")[0];
+        payloadData.NOCR_NETO = Number(amount);
+        payloadData.NOCR_TOTAL = Number(amount);
+        payloadData.NOCR_TOTAL_GRAVADO = Number(amount);
+        payloadData.NOCR_OBSERVACION = reason || `Ajuste de Crédito por ${invoiceNumber || "factura"}`;
+        
+        // Si hay una factura relacionada, la imputamos de forma inmediata
+        if (invoiceId) {
+          payloadData.FacturasCanceladas = [
+            {
+              CLIE_ID_CLIE: Number(clientCode),
+              FACT_ID_FACT: Number(invoiceId),
+              CANC_IMPORTE_A_CANCELAR: Number(amount)
+            }
+          ];
+        }
+      } else {
+        payloadData.NODE_FECHA_EMISION = new Date().toISOString().split("T")[0];
+        payloadData.NODE_NETO = Number(amount);
+        payloadData.NODE_TOTAL = Number(amount);
+        payloadData.NODE_TOTAL_GRAVADO = Number(amount);
+        payloadData.NODE_OBSERVACION = reason || `Ajuste de Débito por ${invoiceNumber || "factura"}`;
+      }
+
+      console.log(`[NCND] Creando ${entityName} para cliente ${clientCode} por total ${amount}...`);
+      const createResp = await fetch(createUrl, {
+        method: "POST",
+        headers: {
+          "Cookie": cookies,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          schemaId: 1491,
+          data: payloadData
+        })
+      });
+
+      if (!createResp.ok) {
+        const errText = await createResp.text();
+        throw new Error(`Error de YiQi al registrar ${entityName}: ${errText}`);
+      }
+
+      const createRes = await createResp.json();
+      const newId = createRes.newId || createRes.id || (createRes.data && createRes.data.id);
+      return res.json({ success: true, newId });
+
+    } else {
+      return res.status(400).json({ error: "Acción no reconocida" });
+    }
+
+  } catch (error) {
+    console.error(`Error en controlCalidadApi (action: ${action}):`, error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function para obtener todos los datos de CRM: seguimientos,
+ * plantillas de planes y asignaciones de clientes.
+ */
+exports.obtenerDatosCrm = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const db = admin.firestore();
+    
+    // 1. Obtener todos los seguimientos
+    const followupsSnap = await db.collection("crm_followups").get();
+    const followups = [];
+    followupsSnap.forEach(doc => {
+      const data = doc.data();
+      followups.push({
+        id: doc.id,
+        ...data
+      });
+    });
+    
+    // 2. Obtener plantillas de planes
+    const templatesSnap = await db.collection("crm_plan_templates").get();
+    const templates = [];
+    templatesSnap.forEach(doc => {
+      const data = doc.data();
+      templates.push({
+        id: doc.id,
+        ...data
+      });
+    });
+    
+    // 3. Obtener asignaciones de clientes
+    const clientPlansSnap = await db.collection("crm_client_plans").get();
+    const clientPlans = {};
+    clientPlansSnap.forEach(doc => {
+      clientPlans[doc.id] = doc.data().planTemplateId || "";
+    });
+    
+    return res.json({
+      success: true,
+      data: {
+        followups,
+        templates,
+        clientPlans
+      }
+    });
+  } catch (error) {
+    console.error("Error en obtenerDatosCrm:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function para guardar o modificar de forma prolija e individual
+ * seguimientos, asignaciones de clientes o plantillas en Firestore.
+ */
+exports.guardarDatosCrm = onRequest({ cors: true }, async (req, res) => {
+  const { action, data } = req.body;
+  if (!action || !data) {
+    return res.status(400).json({ error: "Faltan parámetros action o data" });
+  }
+  
+  try {
+    const db = admin.firestore();
+    
+    if (action === "saveFollowup") {
+      const { id } = data;
+      if (!id) return res.status(400).json({ error: "Falta id de followup" });
+      await db.collection("crm_followups").doc(String(id)).set(data, { merge: true });
+      return res.json({ success: true, message: `Followup #${id} guardado correctamente` });
+      
+    } else if (action === "deleteFollowup") {
+      const { id } = data;
+      if (!id) return res.status(400).json({ error: "Falta id de followup" });
+      await db.collection("crm_followups").doc(String(id)).delete();
+      return res.json({ success: true, message: `Followup #${id} eliminado correctamente` });
+      
+    } else if (action === "saveClientPlan") {
+      const { clientId, planTemplateId } = data;
+      if (!clientId || !planTemplateId) {
+        return res.status(400).json({ error: "Falta clientId o planTemplateId" });
+      }
+      await db.collection("crm_client_plans").doc(String(clientId)).set({ planTemplateId }, { merge: true });
+      return res.json({ success: true, message: `Plan del cliente #${clientId} guardado` });
+      
+    } else if (action === "saveTemplate") {
+      const { id } = data;
+      if (!id) return res.status(400).json({ error: "Falta id de template" });
+      await db.collection("crm_plan_templates").doc(String(id)).set(data, { merge: true });
+      return res.json({ success: true, message: `Template #${id} guardado` });
+      
+    } else if (action === "deleteTemplate") {
+      const { id } = data;
+      if (!id) return res.status(400).json({ error: "Falta id de template" });
+      await db.collection("crm_plan_templates").doc(String(id)).delete();
+      return res.json({ success: true, message: `Template #${id} eliminado` });
+      
+    } else {
+      return res.status(400).json({ error: `Acción '${action}' no reconocida` });
+    }
+  } catch (error) {
+    console.error(`Error en guardarDatosCrm (action: ${action}):`, error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function que obtiene los productos más comprados de un cliente desde la Smartie de Ventas (Smartie 2795).
+ * URL pública: https://<region>-<project-id>.cloudfunctions.net/obtenerProductosFavoritos?clientCode=7739
+ */
+exports.obtenerProductosFavoritos = onRequest({ cors: true }, async (req, res) => {
+  const clientCode = req.query.clientCode;
+  if (!clientCode) {
+    return res.status(400).json({ error: "Falta el parametro clientCode" });
+  }
+
+  try {
+    const cookies = await getYiQiCookies();
+    
+    // 1. Aplicar filtro por CLIE_IDENTIFICADOR en la Smartie 2795
+    const filterUrl = "https://me.yiqi.com.ar/api/smartiesApi/UpdateFilters";
+    const filterBody = {
+      smartieId: "2795",
+      schemaId: 1491,
+      selectedColumns: [
+        {
+          field: "CLIE_IDENTIFICADOR",
+          operationType: 0,
+          sortType: null,
+          filterOperator: 1, // Equals
+          comparation: String(clientCode),
+          pivotMode: 0
+        }
+      ]
+    };
+
+    const filterResp = await fetch(filterUrl, {
+      method: "POST",
+      headers: {
+        "Cookie": cookies,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(filterBody)
+    });
+
+    if (!filterResp.ok) {
+      const errText = await filterResp.text();
+      console.error("Error aplicando filtro en Smartie 2795:", errText);
+      return res.status(filterResp.status).json({ error: "Error al aplicar filtro de Smartie", details: errText });
+    }
+
+    // 2. Traer registros de la Smartie 2795 filtrados con paginación
+    const queryUrl = "https://me.yiqi.com.ar/api/instancesApi/GetList?entityId=959&schemaId=1491&smartieId=2795";
+    
+    let allRows = [];
+    let page = 1;
+    let hasMore = true;
+    
+    while (hasMore && page <= 25) {
+      console.log(`[Favoritos] Buscando pagina ${page} para cliente ${clientCode}...`);
+      const queryResp = await fetch(queryUrl, {
+        method: "POST",
+        headers: {
+          "Cookie": cookies,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ page: page, pageSize: 100 })
+      });
+
+      if (!queryResp.ok) {
+        const errText = await queryResp.text();
+        console.error(`Error consultando Smartie 2795 en página ${page}:`, errText);
+        break;
+      }
+
+      const qData = await queryResp.json();
+      let rows = qData.data || qData.rows || [];
+      if (rows && rows.rows) {
+        rows = rows.rows;
+      }
+
+      if (!Array.isArray(rows) || rows.length === 0) {
+        hasMore = false;
+      } else {
+        allRows = allRows.concat(rows);
+        // Si nos trae menos de 50 registros (límite real de YiQi), ya es la última página
+        if (rows.length < 50) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+    }
+    
+    console.log(`[Favoritos] Total registros consolidados: ${allRows.length}`);
+    return res.json({ success: true, data: allRows });
+  } catch (error) {
+    console.error("Error en obtenerProductosFavoritos:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function que obtiene las métricas comerciales de pedidos (totales y cancelados) de forma muy rápida.
+ * URL pública: https://<region>-<project-id>.cloudfunctions.net/obtenerMetricasPedidos?clientCode=7550
+ */
+exports.obtenerMetricasPedidos = onRequest({ cors: true }, async (req, res) => {
+  const clientCode = req.query.clientCode;
+  if (!clientCode) {
+    return res.status(400).json({ error: "Falta el parametro clientCode" });
+  }
+
+  try {
+    const cookies = await getYiQiCookies();
+    
+    // 1. Obtener detalles del cliente para conseguir su CUIT y Razón Social
+    const clientQueryUrl = `https://me.yiqi.com.ar/api/public/CLIENTE/${clientCode}?schemaId=1491`;
+    const clientResponse = await fetch(clientQueryUrl, {
+      method: "GET",
+      headers: { "Cookie": cookies }
+    });
+
+    if (!clientResponse.ok) {
+      const errText = await clientResponse.text();
+      return res.status(clientResponse.status).json({ error: "Error al consultar detalles del cliente", details: errText });
+    }
+
+    const clientData = await clientResponse.json();
+    const clientObj = clientData.data || clientData.rows || clientData;
+    if (!clientObj) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    const cuit = clientObj.CLIE_CUIT;
+    const razonSocial = clientObj.CLIE_RAZON_SOCIAL;
+    const nombre = clientObj.CLIE_NOMBRE;
+
+    if (!cuit && !razonSocial && !nombre) {
+      return res.json({ success: true, metricas: { total: 0, anulados: 0, ratio: 0 } });
+    }
+
+    // 2. Query de pedidos
+    const queryUrl = "https://me.yiqi.com.ar/api/public/PEDIDO/query?schemaId=1491";
+    
+    const filters = [];
+    if (razonSocial) {
+      filters.push({
+        columnName: "CLIE_RAZON_SOCIAL",
+        operator: "=",
+        value: String(razonSocial)
+      });
+    } else if (cuit) {
+      filters.push({
+        columnName: "PEDI_CUIT",
+        operator: "=",
+        value: String(cuit)
+      });
+    } else if (nombre) {
+      filters.push({
+        columnName: "CLIE_NOMBRE",
+        operator: "=",
+        value: String(nombre)
+      });
+    }
+
+    const queryBody = {
+      page: 1,
+      pageSize: 100, // Traer hasta 100 pedidos históricos para una métrica robusta
+      columns: [
+        { field: "id" }
+      ],
+      filters: filters
+    };
+
+    const qResp = await fetch(queryUrl, {
+      method: "POST",
+      headers: {
+        "Cookie": cookies,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(queryBody)
+    });
+
+    if (!qResp.ok) {
+      const errText = await qResp.text();
+      return res.status(qResp.status).json({ error: "Error al consultar pedidos", details: errText });
+    }
+
+    const qData = await qResp.json();
+    const rows = qData.data || qData.rows || [];
+    
+    const total = rows.length;
+    const anulados = rows.filter(r => {
+      const cod = Number(r.ESTA_CODIGO || 0);
+      return cod === 442 || cod === 443 || cod === 444; // 442 is Anulado
+    }).length;
+    const ratio = total > 0 ? Math.round((anulados / total) * 100) : 0;
+
+    return res.json({
+      success: true,
+      clientCode,
+      metricas: {
+        total,
+        anulados: anulados,
+        ratio: ratio
+      }
+    });
+
+  } catch (error) {
+    console.error("Error en obtenerMetricasPedidos:", error);
+    return res.status(500).json({ error: error.message });
+  }
+
+});
+
+/**
+ * Cloud Function que consulta de forma ultra-ligera el estado de uno o varios pedidos.
+ * URL pública: https://<region>-<project-id>.cloudfunctions.net/obtenerEstadoPedido?orderIds=1234,5678
+ */
+exports.obtenerEstadoPedido = onRequest({ cors: true }, async (req, res) => {
+  const { orderIds } = req.query;
+  if (!orderIds) {
+    return res.status(400).json({ error: "Falta el parametro orderIds" });
+  }
+
+  const ids = orderIds.split(",");
+
+  try {
+    const cookies = await getYiQiCookies();
+    
+    // 1. Obtener detalles de cada pedido
+    const results = await Promise.all(ids.map(async (id) => {
+      try {
+        const detailUrl = `https://me.yiqi.com.ar/api/public/PEDIDO/${id}?schemaId=1491`;
+        const dResp = await fetch(detailUrl, {
+          headers: { "Cookie": cookies }
+        });
+        if (dResp.ok) {
+          const dData = await dResp.json();
+          const orderDetailObj = dData.data || dData;
+          const estado = orderDetailObj.ESTA_NOMBRE || "";
+          
+          const margins = orderDetailObj.MÁRGENES || [];
+          const items = margins.map(item => ({
+            producto: item.PRODUCTO || "",
+            sku: item.SKU || "",
+            cantidadPedida: item.CANTIDAD ? parseFloat(item.CANTIDAD) : 0,
+            cantidadAEntregar: item.CANT_A_ENTREGAR !== undefined && item.CANT_A_ENTREGAR !== null ? parseFloat(item.CANT_A_ENTREGAR) : 0,
+            estadoItem: item.ESTADO_DETALLE || "",
+            stockDepo: item.STOCK_DEPO !== undefined && item.STOCK_DEPO !== null ? parseFloat(item.STOCK_DEPO) : 0,
+            stockDepor: item.STOCK_DEPOR !== undefined && item.STOCK_DEPOR !== null ? parseFloat(item.STOCK_DEPOR) : 0,
+            disponible: item.DISPONIBLE || "",
+            reservadoCant: item.RESERVADO_CANT !== undefined && item.RESERVADO_CANT !== null ? parseFloat(item.RESERVADO_CANT) : 0,
+            stockFaltante: item.STOCK_FALTANTE !== undefined && item.STOCK_FALTANTE !== null ? parseFloat(item.STOCK_FALTANTE) : 0
+          }));
+
+          const facturas = (orderDetailObj.FACTURAS || [])
+            .filter(f => {
+              const est = (f.ESTA_NOMBRE || "").toLowerCase();
+              const nro = f.FACT_NUMERO;
+              const isProjected = est === "proyectada" || est === "borrador" || !nro || nro === 0 || String(nro) === "0";
+              return !isProjected;
+            })
+            .map(f => {
+              let tipo = "Factura";
+              if (f.TIFA_ID_TIFA === 1) tipo = "Factura A";
+              else if (f.TIFA_ID_TIFA === 2) tipo = "Factura B";
+              else if (f.TIFA_ID_TIFA === 3) tipo = "Factura C";
+              const ptoVta = f.FACT_PUVE_NOMBRE || "0";
+              const nro = f.FACT_NUMERO || "0";
+              return {
+                id: f.id,
+                numero: `${tipo} ${ptoVta}-${nro}`,
+                tifaId: f.TIFA_ID_TIFA || 1,
+                puveId: f.PUVE_ID_PUVE || 1,
+                total: f.FACT_TOTAL || 0,
+                estado: f.ESTA_NOMBRE || ""
+              };
+            });
+
+          return {
+            id,
+            numero: orderDetailObj.PEDI_NUMERO || "",
+            nroPedido: orderDetailObj.PEDI_NRO_PEDIDO || "",
+            fecha: orderDetailObj.PEDI_FECHA || null,
+            porcentajeEntrega: orderDetailObj.PEDI_PORCENTAJE_DE_ENTREG !== undefined && orderDetailObj.PEDI_PORCENTAJE_DE_ENTREG !== null ? parseFloat(orderDetailObj.PEDI_PORCENTAJE_DE_ENTREG) : 0,
+            total: orderDetailObj.PEDI_TOTAL !== undefined && orderDetailObj.PEDI_TOTAL !== null ? parseFloat(orderDetailObj.PEDI_TOTAL) : 0,
+            estado: estado,
+            facturas: facturas,
+            items: items,
+            success: true
+          };
+        }
+      } catch (err) {
+        console.error(`Error al consultar pedido ${id}:`, err);
+      }
+      return { id, success: false };
+    }));
+
+    const activeOrders = results.filter(r => r.success);
+
+    // 2. Query de stock para los SKUs de estos pedidos
+    const uniqueSkus = [];
+    activeOrders.forEach(o => {
+      if (o && o.items) {
+        o.items.forEach(item => {
+          if (item.sku && !uniqueSkus.includes(item.sku)) {
+            uniqueSkus.push(item.sku);
+          }
+        });
+      }
+    });
+
+    const stockMap = {};
+    if (uniqueSkus.length > 0) {
+      await Promise.all(uniqueSkus.map(async (sku) => {
+        try {
+          const queryUrl = "https://me.yiqi.com.ar/api/public/STOCK/query?schemaId=1491";
+          const body = {
+            page: 1,
+            pageSize: 30,
+            columns: [
+              { field: "STOC_SKU" },
+              { field: "STOC_CANTIDAD" },
+              { field: "STOC_FACTIBILIDAD_PRODUCC" },
+              { field: "STOC_UBICACION_NOMBRE" }
+            ],
+            filters: [
+              { columnName: "STOC_SKU", operator: "=", value: sku }
+            ]
+          };
+
+          const sResp = await fetch(queryUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Cookie": cookies
+            },
+            body: JSON.stringify(body)
+          });
+
+          if (sResp.ok) {
+            const sData = await sResp.json();
+            const rows = sData.data || sData.rows || [];
+
+            let stockDepo = 0;
+            let stockDepor = 0;
+            let factibilidad = 0;
+
+            rows.forEach(r => {
+              const qty = r.STOC_CANTIDAD ? parseFloat(r.STOC_CANTIDAD) : 0;
+              const fact = r.STOC_FACTIBILIDAD_PRODUCC ? parseFloat(r.STOC_FACTIBILIDAD_PRODUCC) : 0;
+              const loc = (r.STOC_UBICACION_NOMBRE || "").trim().toUpperCase();
+
+              if (loc === "DEPO") {
+                stockDepo += qty;
+                if (fact > factibilidad) factibilidad = fact;
+              } else if (loc === "DEPOR") {
+                stockDepor += qty;
+              }
+            });
+
+            stockMap[sku] = { stockDepo, stockDepor, factibilidad };
+          }
+        } catch (err) {
+          console.error(`Error al consultar stock para SKU ${sku}:`, err);
+        }
+      }));
+    }
+
+    // 3. Enriquecer
+    activeOrders.forEach(o => {
+      if (o && o.items) {
+        o.items.forEach(item => {
+          const stockInfo = stockMap[item.sku];
+          if (stockInfo) {
+            item.stockDepo = stockInfo.stockDepo + stockInfo.factibilidad;
+            item.stockDepor = stockInfo.stockDepor;
+            item.rawStockDepo = stockInfo.stockDepo;
+            item.factibilidad = stockInfo.factibilidad;
+          } else {
+            item.stockDepo = 0;
+            item.stockDepor = 0;
+            item.rawStockDepo = 0;
+            item.factibilidad = 0;
+          }
+        });
+      }
+    });
+
+    return res.json({
+      success: true,
+      orders: results
+    });
+  } catch (error) {
+    console.error("Error en obtenerEstadoPedido:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
 
 
 
