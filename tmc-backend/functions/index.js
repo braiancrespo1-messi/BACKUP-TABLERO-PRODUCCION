@@ -2068,7 +2068,7 @@ exports.obtenerPedidosPendientes = onRequest({ cors: true }, async (req, res) =>
               return !isProjected;
             })
             .map(f => {
-              let tipo = "Factura";
+              let tipo = "X";
               if (f.TIFA_ID_TIFA === 1) tipo = "Factura A";
               else if (f.TIFA_ID_TIFA === 2) tipo = "Factura B";
               else if (f.TIFA_ID_TIFA === 3) tipo = "Factura C";
@@ -3140,7 +3140,7 @@ exports.obtenerEstadoPedido = onRequest({ cors: true }, async (req, res) => {
               return !isProjected;
             })
             .map(f => {
-              let tipo = "Factura";
+              let tipo = "X";
               if (f.TIFA_ID_TIFA === 1) tipo = "Factura A";
               else if (f.TIFA_ID_TIFA === 2) tipo = "Factura B";
               else if (f.TIFA_ID_TIFA === 3) tipo = "Factura C";
