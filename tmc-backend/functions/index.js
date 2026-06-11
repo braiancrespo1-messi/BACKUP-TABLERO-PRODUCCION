@@ -3665,12 +3665,37 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
         .where("status", "==", "ABIERTO")
         .get();
       
+      const matchPhones = (phoneA, phoneB) => {
+        const cleanA = String(phoneA || "").replace(/\D/g, "");
+        const cleanB = String(phoneB || "").replace(/\D/g, "");
+        if (!cleanA || !cleanB) return false;
+        if (cleanA === cleanB) return true;
+        const standardize = (p) => {
+          let res = p;
+          if (res.startsWith("549")) res = res.substring(3);
+          else if (res.startsWith("54")) res = res.substring(2);
+          if (res.startsWith("0")) res = res.substring(1);
+          if (res.length === 12 && res.substring(2, 4) === "15") {
+            res = res.substring(0, 2) + res.substring(4);
+          } else if (res.length === 10 && res.startsWith("15")) {
+            res = res.substring(2);
+          }
+          return res;
+        };
+        const stdA = standardize(cleanA);
+        const stdB = standardize(cleanB);
+        if (stdA === stdB) return true;
+        if (stdA.includes(stdB) || stdB.includes(stdA)) return true;
+        const lastA = stdA.slice(-8);
+        const lastB = stdB.slice(-8);
+        if (lastA.length >= 7 && lastA === lastB) return true;
+        return false;
+      };
+
       let matchedFollowup = null;
       followupsSnap.forEach(doc => {
         const fData = doc.data();
-        const fPhoneClean = String(fData.clientPhone || "").replace(/\D/g, "");
-        const phoneClean = phone.replace(/\D/g, "");
-        if (fPhoneClean && phoneClean && (fPhoneClean.includes(phoneClean) || phoneClean.includes(fPhoneClean))) {
+        if (matchPhones(fData.clientPhone, phone)) {
           matchedFollowup = fData;
         }
       });
