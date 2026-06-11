@@ -2056,7 +2056,8 @@ exports.obtenerPedidosPendientes = onRequest({ cors: true }, async (req, res) =>
             stockDepor: item.STOCK_DEPOR !== undefined && item.STOCK_DEPOR !== null ? parseFloat(item.STOCK_DEPOR) : 0,
             disponible: item.DISPONIBLE || "",
             reservadoCant: item.RESERVADO_CANT !== undefined && item.RESERVADO_CANT !== null ? parseFloat(item.RESERVADO_CANT) : 0,
-            stockFaltante: item.STOCK_FALTANTE !== undefined && item.STOCK_FALTANTE !== null ? parseFloat(item.STOCK_FALTANTE) : 0
+            stockFaltante: item.STOCK_FALTANTE !== undefined && item.STOCK_FALTANTE !== null ? parseFloat(item.STOCK_FALTANTE) : 0,
+            textoAdicional: item.TEXTO_ADICIONAL || ""
           }));
 
           // Obtener lista de facturas (excluyendo solo proyectadas/borradores)
@@ -2086,6 +2087,16 @@ exports.obtenerPedidosPendientes = onRequest({ cors: true }, async (req, res) =>
               };
             });
 
+          // Obtener lista de remitos (REMITOSDEVENTA)
+          const remitos = (orderDetailObj.REMITOSDEVENTA || [])
+            .map(r => ({
+              id: r.id,
+              numero: r.REDV_NRO || r.REDV_DESCRIPCION || "",
+              estado: r.ESTA_NOMBRE || "",
+              fechaDespacho: r.REDV_FECHA_DE_DESPACHO || null,
+              bultos: r.REDV_BULTOS || 0
+            }));
+
           return {
             id: order.id,
             numero: order.PEDI_NUMERO || "",
@@ -2095,6 +2106,7 @@ exports.obtenerPedidosPendientes = onRequest({ cors: true }, async (req, res) =>
             total: order.PEDI_TOTAL !== undefined && order.PEDI_TOTAL !== null ? parseFloat(order.PEDI_TOTAL) : 0,
             estado: estado,
             facturas: facturas,
+            remitos: remitos,
             items: items
           };
         }
@@ -3635,12 +3647,20 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
     };
     await messageRef.set(messageData);
 
-    // 2. Resolver vendedor asignado
+    // 2. Resolver vendedor asignado y vincular cliente automáticamente
     let assignedSeller = null;
+    let clientId = null;
+    let clientName = null;
+
     const chatDoc = await chatRef.get();
-    if (chatDoc.exists && chatDoc.data().assignedSeller) {
-      assignedSeller = chatDoc.data().assignedSeller;
-    } else {
+    if (chatDoc.exists) {
+      const chatData = chatDoc.data();
+      assignedSeller = chatData.assignedSeller;
+      clientId = chatData.clientId;
+      clientName = chatData.clientName;
+    }
+
+    if (!assignedSeller || !clientId) {
       const followupsSnap = await db.collection("crm_followups")
         .where("status", "==", "ABIERTO")
         .get();
@@ -3655,8 +3675,12 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
         }
       });
 
-      if (matchedFollowup && matchedFollowup.vendedor) {
-        assignedSeller = matchedFollowup.vendedor;
+      if (matchedFollowup) {
+        if (!assignedSeller) assignedSeller = matchedFollowup.vendedor;
+        if (!clientId) {
+          clientId = matchedFollowup.clientId;
+          clientName = matchedFollowup.clientName;
+        }
       }
     }
 
@@ -3667,6 +3691,11 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
       lastUpdated: timestamp,
       assignedSeller: assignedSeller || "No asignado"
     };
+
+    if (clientId) {
+      chatUpdate.clientId = clientId;
+      chatUpdate.clientName = clientName;
+    }
 
     if (!fromMe) {
       chatUpdate.unreadCount = admin.firestore.FieldValue.increment(1);

@@ -2413,9 +2413,14 @@ function goToHomeCrm() {
     
     if (activeTabBtn) {
         if (activeTabBtn.id === "tab-btn-tablero") {
-            renderCrmControlBoard();
-            if (window.renderWhatsAppResponseMetrics) {
-                window.renderWhatsAppResponseMetrics();
+            const activeSubtabBtn = document.querySelector(".tablero-subtab-btn.btn-primary");
+            const activeSubtab = activeSubtabBtn 
+                ? activeSubtabBtn.id.replace("tablero-subtab-btn-", "") 
+                : "seguimientos";
+            if (window.switchTableroSubtab) {
+                window.switchTableroSubtab(activeSubtab);
+            } else {
+                renderCrmControlBoard();
             }
         } else if (activeTabBtn.id === "tab-btn-estadisticas") {
             renderCrmStatsChart();
@@ -4745,10 +4750,11 @@ function switchDashboardTab(tabId) {
     
     // Render subview details
     if (tabId === "tablero") {
-        renderCrmControlBoard();
-        if (window.renderWhatsAppResponseMetrics) {
-            window.renderWhatsAppResponseMetrics();
-        }
+        const activeSubtabBtn = document.querySelector(".tablero-subtab-btn.btn-primary");
+        const activeSubtab = activeSubtabBtn 
+            ? activeSubtabBtn.id.replace("tablero-subtab-btn-", "") 
+            : "seguimientos";
+        switchTableroSubtab(activeSubtab);
     } else if (tabId === "estadisticas") {
         renderCrmStatsChart();
     } else if (tabId === "configuracion") {
@@ -7337,6 +7343,44 @@ function escapeHtml(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+// Switch Tablero Subtabs (delays vs whatsapp response)
+function switchTableroSubtab(subtabId) {
+    const contentSeg = document.getElementById("tablero-content-seguimientos");
+    const contentWa = document.getElementById("tablero-content-whatsapp");
+    
+    if (contentSeg && contentWa) {
+        contentSeg.style.display = "none";
+        contentWa.style.display = "none";
+        
+        const target = document.getElementById(`tablero-content-${subtabId}`);
+        if (target) {
+            target.style.display = "flex";
+        }
+    }
+    
+    // Update subtab buttons style
+    document.querySelectorAll(".tablero-subtab-btn").forEach(btn => {
+        btn.classList.remove("btn-primary");
+        btn.classList.add("btn-secondary");
+    });
+    
+    const activeBtn = document.getElementById(`tablero-subtab-btn-${subtabId}`);
+    if (activeBtn) {
+        activeBtn.classList.remove("btn-secondary");
+        activeBtn.classList.add("btn-primary");
+    }
+    
+    // Trigger specific subtab loading
+    if (subtabId === "seguimientos") {
+        renderCrmControlBoard();
+    } else if (subtabId === "whatsapp") {
+        if (window.renderWhatsAppResponseMetrics) {
+            window.renderWhatsAppResponseMetrics();
+        }
+    }
+}
+window.switchTableroSubtab = switchTableroSubtab;
 
 // Render WhatsApp response metrics on Control Board
 async function renderWhatsAppResponseMetrics() {

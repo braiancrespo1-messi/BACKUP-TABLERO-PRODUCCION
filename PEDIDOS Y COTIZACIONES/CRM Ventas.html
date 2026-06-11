@@ -123,24 +123,33 @@
 
             <!-- Subview 2: Tablero de Demoras -->
             <div id="subview-tablero" class="subview-crm-general" style="display: none; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; padding: 0 20px 20px 20px; max-width: 100%; margin: 0 auto; width: 100%;">
-                <!-- Date Filter Row for Tablero -->
-                <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 18px; border-radius: var(--radius-md); display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 15px; font-size: 0.8rem; text-align: left;">
-                    <span style="font-weight: 700; color: var(--text-primary); font-size: 0.85rem;">📅 Filtrar por Fecha de Gestión:</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label style="color: var(--text-secondary);">Desde:</label>
-                        <input type="date" id="tablero-date-from" class="form-input" style="padding: 5px 8px; font-size: 0.78rem; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="renderCrmControlBoard()">
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label style="color: var(--text-secondary);">Hasta:</label>
-                        <input type="date" id="tablero-date-to" class="form-input" style="padding: 5px 8px; font-size: 0.78rem; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="renderCrmControlBoard()">
-                    </div>
-                    <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.75rem; border-color: var(--border-color);" onclick="clearTableroDates()">Limpiar Filtros</button>
+                <!-- Subtabs navigation for Tablero -->
+                <div class="tablero-subtabs" style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; text-align: left; margin-top: 10px;">
+                    <button class="btn btn-primary tablero-subtab-btn" onclick="switchTableroSubtab('seguimientos')" id="tablero-subtab-btn-seguimientos" style="padding: 6px 14px; font-size: 0.8rem;">📋 Demoras de Seguimiento</button>
+                    <button class="btn btn-secondary tablero-subtab-btn" onclick="switchTableroSubtab('whatsapp')" id="tablero-subtab-btn-whatsapp" style="padding: 6px 14px; font-size: 0.8rem;">⏱️ Tiempos de Respuesta WhatsApp</button>
                 </div>
-                <div id="crm-control-board-container"></div>
+
+                <!-- Subtab 1 Content: Seguimientos & Delays -->
+                <div id="tablero-content-seguimientos" style="display: flex; flex-direction: column; width: 100%;">
+                    <!-- Date Filter Row for Tablero -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 18px; border-radius: var(--radius-md); display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 15px; font-size: 0.8rem; text-align: left;">
+                        <span style="font-weight: 700; color: var(--text-primary); font-size: 0.85rem;">📅 Filtrar por Fecha de Gestión:</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label style="color: var(--text-secondary);">Desde:</label>
+                            <input type="date" id="tablero-date-from" class="form-input" style="padding: 5px 8px; font-size: 0.78rem; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="renderCrmControlBoard()">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label style="color: var(--text-secondary);">Hasta:</label>
+                            <input type="date" id="tablero-date-to" class="form-input" style="padding: 5px 8px; font-size: 0.78rem; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="renderCrmControlBoard()">
+                        </div>
+                        <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.75rem; border-color: var(--border-color);" onclick="clearTableroDates()">Limpiar Filtros</button>
+                    </div>
+                    <div id="crm-control-board-container"></div>
+                </div>
                 
-                <!-- Section 2: WhatsApp Response Metrics -->
-                <div style="margin-top: 30px; border-top: 2px solid var(--border-color); padding-top: 20px;">
-                    <h3 style="font-family: var(--font-title); font-size: 1.1rem; font-weight: 700; color: var(--text-primary); text-align: left; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <!-- Subtab 2 Content: WhatsApp Response Metrics -->
+                <div id="tablero-content-whatsapp" style="display: none; flex-direction: column; width: 100%;">
+                    <h3 style="font-family: var(--font-title); font-size: 1.1rem; font-weight: 700; color: var(--text-primary); text-align: left; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; margin-top: 10px;">
                         ⏱️ Tiempo de Respuesta WhatsApp (Clientes Registrados)
                     </h3>
                     <div id="crm-wa-response-metrics-container"></div>
@@ -550,6 +559,6 @@
 
     <!-- Script references -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="logica.js?v=2.0.3"></script>
+    <script src="logica.js?v=2.0.4"></script>
 </body>
 </html>
