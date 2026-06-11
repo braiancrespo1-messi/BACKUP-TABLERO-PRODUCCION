@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo Comercial: Cotizaciones y Pedidos — TMC</title>
+    <link rel="stylesheet" href="estilos.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- App Loader Overlay -->
+    <div id="app-loader" class="loader-overlay" style="display: none;">
+        <div class="loader-spinner"></div>
+        <div id="loader-text" class="loader-text">Cargando...</div>
+    </div>
+
+    <!-- Modal Notifications -->
+    <div id="app-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header" id="modal-title">Aviso</div>
+            <div class="modal-body" id="modal-content"></div>
+            <div class="modal-footer" id="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-brand">
+                <span class="brand-icon">💼</span>
+                <div>
+                    <h1 class="brand-title">Módulo Comercial & CRM</h1>
+                    <p class="brand-subtitle">TMC — Gestión CRM y Carga de Pedidos</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-nav-home" class="btn btn-secondary" onclick="goToHomeCrm()" style="display: none;" title="Volver al CRM General">
+                    🏠 Inicio CRM
+                </button>
+                <div id="sync-indicator" class="sync-indicator offline" title="Estado de Conexión YiQi">
+                    <span class="indicator-dot"></span>
+                    <span id="sync-text" class="indicator-text">Desconectado</span>
+                </div>
+                <button id="btn-sync-articles" class="btn btn-secondary" onclick="syncArticlesMaster()" title="Sincronizar catálogo de artículos">
+                    🔄 Catálogo
+                </button>
+                <button id="btn-sync-crm" class="btn btn-secondary" onclick="manualCrmRefresh()" title="Sincronizar CRM con Base de Datos">
+                    🔄 Refrescar CRM
+                </button>
+                <button id="btn-theme-toggle" class="btn btn-icon" onclick="toggleTheme()" title="Cambiar Tema">☀️</button>
+                <button class="btn btn-icon" onclick="location.reload()" title="Refrescar Aplicación">🔄</button>
+            </div>
+        </header>
+
+        <!-- View 1: CRM General (Pantalla de Inicio) -->
+        <div id="view-crm-general" class="app-view">
+            <!-- Center Top Search Box -->
+            <div class="crm-hero-search">
+                <div class="crm-search-card">
+                    <h2 class="crm-hero-title">Atención al Cliente & CRM</h2>
+                    <p class="crm-hero-subtitle">Busca un cliente para ver su ficha, gestionar tareas de seguimiento o crear cotizaciones</p>
+                    <div class="search-box-container" style="max-width: 600px; margin: 0 auto; padding: 0; border: none; background: transparent; box-shadow: none;">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="client-search" class="form-input" placeholder="Ingresá nombre, CUIT o código de cliente..." autocomplete="off" style="font-size: 1.05rem; padding: 14px 20px; border-radius: var(--radius-md);">
+                            <span class="search-clear" id="client-search-clear" style="display:none; right: 15px;">✕</span>
+                        </div>
+                        <div id="client-search-results" class="autocomplete-results" style="display: none; max-width: 600px; width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CRM Dashboard Navigation Tabs -->
+            <div class="crm-tabs-navigation" style="display: flex; justify-content: center; gap: 10px; margin: 8px auto; background: var(--bg-card); padding: 6px; border-radius: var(--radius-md); border: 1px solid var(--border-color); max-width: 100%; width: calc(100% - 40px); flex-wrap: wrap;">
+                <button class="btn btn-primary crm-dashboard-tab-btn" onclick="switchDashboardTab('alertas')" id="tab-btn-alertas">🔔 Gestión Diaria</button>
+                <button class="btn btn-secondary crm-dashboard-tab-btn" onclick="switchDashboardTab('inbox')" id="tab-btn-inbox">💬 Bandeja de Entrada</button>
+                <button class="btn btn-secondary crm-dashboard-tab-btn" onclick="switchDashboardTab('tablero')" id="tab-btn-tablero">📊 Tablero de Control</button>
+                <button class="btn btn-secondary crm-dashboard-tab-btn" onclick="switchDashboardTab('estadisticas')" id="tab-btn-estadisticas">📈 Estadísticas Comerciales</button>
+                <button class="btn btn-secondary crm-dashboard-tab-btn" onclick="switchDashboardTab('configuracion')" id="tab-btn-configuracion">⚙️ Configuración</button>
+                <button class="btn btn-secondary" onclick="resetTour()" style="font-size: 0.82rem; padding: 6px 14px;" title="Ver guía de uso interactiva">❔ Guía de Uso</button>
+            </div>
+
+            <!-- Subview 1: active alerts & daily list -->
+            <div id="subview-alertas" class="subview-crm-general" style="display: flex; flex-direction: column; flex-grow: 1; min-height: 0; overflow: hidden; padding: 0 20px 20px 20px; max-width: 100%; margin: 0 auto; width: 100%;">
+                <!-- CRM Dashboard Layout -->
+                <div class="crm-dashboard-grid">
+                    <!-- Alerts / Reminders -->
+                    <section class="crm-card alert-section">
+                        <div class="crm-card-header">
+                            <span class="crm-card-icon">🔔</span>
+                            <h3 class="crm-card-title">Llamados y Seguimientos para Hoy</h3>
+                        </div>
+                        <div class="crm-card-body" id="crm-alerts-container">
+                            <div class="empty-state" style="padding: 20px;">
+                                <div class="empty-icon">🎉</div>
+                                <p class="empty-title">¡Todo al día!</p>
+                                <p class="empty-desc">No tenés llamados o seguimientos programados pendientes para hoy.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Active Followups list -->
+                    <section class="crm-card list-section">
+                        <div class="crm-card-header">
+                            <span class="crm-card-icon">📈</span>
+                            <h3 class="crm-card-title">Seguimientos Activos Recientes</h3>
+                        </div>
+                        <div class="crm-card-body" id="crm-active-list-container">
+                            <div class="empty-state" style="padding: 20px;">
+                                <div class="empty-icon">📁</div>
+                                <p class="empty-title">Sin seguimientos</p>
+                                <p class="empty-desc">Las cotizaciones guardadas aparecerán acá con su correspondiente plan de seguimiento.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Subview 2: Tablero de Demoras -->
+            <div id="subview-tablero" class="subview-crm-general" style="display: none; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; padding: 0 20px 20px 20px; max-width: 100%; margin: 0 auto; width: 100%;">
+                <!-- Date Filter Row for Tablero -->
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 18px; border-radius: var(--radius-md); display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 15px; font-size: 0.8rem; text-align: left;">
+                    <span style="font-weight: 700; color: var(--text-primary); font-size: 0.85rem;">📅 Filtrar por Fecha de Gestión:</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="color: var(--text-secondary);">Desde:</label>
+                        <input type="date" id="tablero-date-from" class="form-input" style="padding: 5px 8px; font-size: 0.78rem; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="renderCrmControlBoard()">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="color: var(--text-secondary);">Hasta:</label>
+                        <input type="date" id="tablero-date-to" class="form-input" style="padding: 5px 8px; font-size: 0.78rem; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="renderCrmControlBoard()">
+                    </div>
+                    <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.75rem; border-color: var(--border-color);" onclick="clearTableroDates()">Limpiar Filtros</button>
+                </div>
+                <div id="crm-control-board-container"></div>
+            </div>
+
+            <!-- Subview 3: Estadísticas Comerciales -->
+            <div id="subview-estadisticas" class="subview-crm-general" style="display: none; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; padding: 0 20px 20px 20px; max-width: 100%; margin: 0 auto; width: 100%;">
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: var(--radius-md); text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);">📈 Conversión y Estados de Cotizaciones</h3>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="chk-hide-pending" onchange="renderCrmStatsChart()" style="width: 16px; height: 16px; accent-color: var(--primary);">
+                            <span>Ocultar Pendientes (Enviadas)</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Date Filter Row for Stats -->
+                    <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: var(--radius-sm); display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 20px; font-size: 0.78rem;">
+                        <span style="font-weight: 700; color: var(--text-primary);">📅 Filtrar por Fecha de Cotización:</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <label style="color: var(--text-secondary);">Desde:</label>
+                            <input type="date" id="stats-date-from" class="form-input" style="padding: 4px 6px; font-size: 0.75rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="renderCrmStatsChart()">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <label style="color: var(--text-secondary);">Hasta:</label>
+                            <input type="date" id="stats-date-to" class="form-input" style="padding: 4px 6px; font-size: 0.75rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="renderCrmStatsChart()">
+                        </div>
+                        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.72rem; border-color: var(--border-color); background: var(--bg-card);" onclick="clearStatsDates()">Limpiar Filtros</button>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center;">
+                        <!-- Left: Text Summary Metrics -->
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                                <span style="font-size: 0.85rem; color: var(--text-secondary);">Cotizaciones Totales (Familias Únicas):</span>
+                                <strong id="stat-total-quotes" style="font-size: 1rem; color: var(--text-primary);">0</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: rgba(74, 222, 128, 0.08); border-radius: var(--radius-sm); border: 1px solid rgba(74, 222, 128, 0.2);">
+                                <span style="font-size: 0.85rem; color: #4ade80;">Aprobadas (Confirmadas / Pedido):</span>
+                                <strong id="stat-approved-quotes" style="font-size: 1rem; color: #4ade80;">0</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: rgba(248, 113, 113, 0.08); border-radius: var(--radius-sm); border: 1px solid rgba(248, 113, 113, 0.2);">
+                                <span style="font-size: 0.85rem; color: #f87171;">Rechazadas (Canceladas):</span>
+                                <strong id="stat-rejected-quotes" style="font-size: 1rem; color: #f87171;">0</strong>
+                            </div>
+                            <div id="stat-pending-row" style="display: flex; justify-content: space-between; padding: 10px 14px; background: rgba(96, 165, 250, 0.08); border-radius: var(--radius-sm); border: 1px solid rgba(96, 165, 250, 0.2);">
+                                <span style="font-size: 0.85rem; color: #60a5fa;">Pendientes (Abiertas / Seguimiento):</span>
+                                <strong id="stat-pending-quotes" style="font-size: 1rem; color: #60a5fa;">0</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); border-left: 4px solid var(--primary);">
+                                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">Tasa de Conversión (Aprobadas / Respondidas):</span>
+                                <strong id="stat-conversion-rate" style="font-size: 1rem; color: var(--primary);">0%</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Interactive Canvas or Fallback progress bars -->
+                        <div style="min-height: 250px; display: flex; align-items: center; justify-content: center; position: relative;">
+                            <div style="width: 100%; height: 250px; position: relative;">
+                                <canvas id="crm-stats-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rejection Reasons Section -->
+                    <div id="crm-stats-rejection-breakdown" style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px; display: none;">
+                        <h4 style="margin: 0 0 14px 0; font-size: 0.95rem; color: var(--text-primary);">❌ Distribución de Motivos de Rechazo</h4>
+                        <div id="crm-rejection-bars-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; text-align: left;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subview 4: Configuración de Planes -->
+            <div id="subview-configuracion" class="subview-crm-general" style="display: none; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; padding: 0 20px 20px 20px; max-width: 100%; margin: 0 auto; width: 100%;">
+                <div id="crm-plan-config-container"></div>
+            </div>
+
+            <!-- Subview 5: Bandeja de Entrada (Chats) -->
+            <div id="subview-inbox" class="subview-crm-general" style="display: none; flex-direction: column; flex-grow: 1; min-height: 0; overflow: hidden; padding: 0 20px 20px 20px; max-width: 100%; margin: 0 auto; width: 100%;">
+                <div id="view-crm-inbox" class="inbox-layout">
+                    <!-- Columna 1: Listado de Chats -->
+                    <div class="inbox-sidebar">
+                        <div class="inbox-sidebar-header">
+                            <h3 style="margin: 0; font-size: 0.95rem; color: var(--text-primary); font-family: var(--font-title); font-weight: 700;">Chats Recientes</h3>
+                            <select id="inbox-filter-seller" class="form-input" style="padding: 4px 8px; font-size: 0.75rem; width: auto; height: auto;" onchange="filterConversations()">
+                                <option value="">Todos</option>
+                                <option value="Fábrica">Fábrica</option>
+                                <option value="Augusto">Augusto</option>
+                            </select>
+                        </div>
+                        <div id="inbox-chats-list" class="inbox-chats-list">
+                            <div class="empty-state" style="padding: 20px;">
+                                <div class="empty-icon">💬</div>
+                                <p class="empty-title">Cargando conversaciones...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna 2: Conversación Activa -->
+                    <div class="inbox-chat-area">
+                        <div id="inbox-active-chat-header" class="inbox-chat-header" style="display: none;">
+                            <div class="inbox-chat-header-info">
+                                <span class="inbox-chat-avatar">👤</span>
+                                <div>
+                                    <div id="inbox-chat-client-name" style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem;">Cliente</div>
+                                    <div id="inbox-chat-client-phone" style="font-size: 0.78rem; color: var(--text-secondary);">+549...</div>
+                                </div>
+                            </div>
+                            <div class="inbox-chat-header-actions">
+                                <span id="inbox-chat-seller-badge" class="badge">Vendedor</span>
+                            </div>
+                        </div>
+                        
+                        <div id="inbox-messages-container" class="inbox-messages-container">
+                            <div class="empty-state" style="padding: 40px 20px;">
+                                <div class="empty-icon">💬</div>
+                                <p class="empty-title">Bandeja de Entrada</p>
+                                <p class="empty-desc">Seleccioná una conversación de la lista para ver los mensajes y responder.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="inbox-input-area" class="inbox-input-area" style="display: none;">
+                            <textarea id="inbox-message-text" class="form-input" placeholder="Escribí un mensaje de WhatsApp..." rows="1" onkeydown="handleInboxTextareaKey(event)"></textarea>
+                            <button id="inbox-btn-send" class="btn btn-primary" onclick="sendInboxMessage()" style="padding: 10px 18px; font-weight: 600; font-size: 0.85rem;">Enviar ➔</button>
+                        </div>
+                    </div>
+
+                    <!-- Columna 3: Perfil Rápido -->
+                    <div class="inbox-profile-sidebar" id="inbox-profile-sidebar">
+                        <div class="empty-state" style="padding: 20px;">
+                            <p class="empty-desc">Seleccioná un chat para ver el perfil del cliente.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 2: Client Profile CRM -->
+        <div id="view-client-crm" class="app-view" style="display: none;">
+            <div class="client-crm-layout">
+                <!-- Left: Client Profile info (YiQi) -->
+                <section class="crm-client-profile">
+                    <div class="panel-header">
+                        <span class="panel-header-icon" style="display: inline-flex; align-items: center;">
+                            <img src="yiqi-logo.png" alt="YiQi" style="width: 18px; height: 18px; object-fit: contain;">
+                        </span>
+                        <h2 class="panel-header-title">Ficha de Cliente (YiQi)</h2>
+                    </div>
+                    <div id="client-details-container" style="padding: 20px; overflow-y: auto; max-height: calc(100vh - 180px);">
+                        <!-- Rendered by renderClientCard() -->
+                    </div>
+                </section>
+
+                <!-- Right: CRM Followup Tracker -->
+                <section class="crm-client-tracker">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="panel-header-icon">📋</span>
+                            <h2 class="panel-header-title">Seguimiento de Cotizaciones (CRM)</h2>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="btn-crm-refresh-tracker" class="btn btn-secondary" onclick="manualCrmRefresh()" style="font-size: 0.8rem; padding: 6px 14px; display: flex; align-items: center; gap: 4px;" title="Sincronizar CRM con Base de Datos">
+                                🔄 Refrescar CRM
+                            </button>
+                            <button class="btn btn-primary" onclick="startNewQuote()" style="font-size: 0.8rem; padding: 6px 14px;">
+                                ➕ Nueva Cotización / Pedido
+                            </button>
+                        </div>
+                    </div>
+                    <div class="crm-tracker-container" style="padding: 20px; overflow-y: auto; max-height: calc(100vh - 180px);">
+                        <!-- Plan de Seguimiento Activo -->
+                        <div class="tracker-section">
+                            <h3 class="tracker-section-title">Plan de Seguimiento Activo</h3>
+                            <div id="crm-active-plan-container">
+                                <!-- Rendered dynamically by renderClientCrmPlan() -->
+                            </div>
+                        </div>
+
+                        <!-- Cotizaciones en Preparación -->
+                        <div class="tracker-section" style="margin-top: 24px;">
+                            <h3 class="tracker-section-title" id="preparacion-section-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; margin-bottom: 0; border-bottom: none; padding-bottom: 0;" onclick="togglePreparacionSection()">
+                                <span>Cotizaciones en Preparación</span>
+                                <span id="preparacion-section-arrow" style="transition: transform 0.2s ease; transform: rotate(0deg); display: inline-block; font-size: 0.8rem; color: var(--text-secondary);">▶</span>
+                            </h3>
+                            <div id="crm-preparacion-logs-container" style="display: none; margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 14px;">
+                                <!-- Rendered dynamically by renderClientCrmPreparacion() -->
+                            </div>
+                        </div>
+
+                        <!-- Reversiones en Curso -->
+                        <div class="tracker-section" style="margin-top: 24px;">
+                            <h3 class="tracker-section-title" id="reversiones-section-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; margin-bottom: 0; border-bottom: none; padding-bottom: 0;" onclick="toggleReversionesSection()">
+                                <span>Reversiones en Curso</span>
+                                <span id="reversiones-section-arrow" style="transition: transform 0.2s ease; transform: rotate(0deg); display: inline-block; font-size: 0.8rem; color: var(--text-secondary);">▶</span>
+                            </h3>
+                            <div id="crm-reversiones-logs-container" style="display: none; margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 14px;">
+                                <!-- Rendered dynamically by renderClientCrmReversiones() -->
+                            </div>
+                        </div>
+
+                        <!-- Crm Log history -->
+                        <div class="tracker-section" style="margin-top: 24px;">
+                            <h3 class="tracker-section-title" id="history-section-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; margin-bottom: 0; border-bottom: none; padding-bottom: 0;" onclick="toggleHistorySection()">
+                                <span>Historial de Gestiones Cerradas</span>
+                                <span id="history-section-arrow" style="transition: transform 0.2s ease; transform: rotate(0deg); display: inline-block; font-size: 0.8rem; color: var(--text-secondary);">▶</span>
+                            </h3>
+                            <div id="crm-history-logs-container" style="display: none; margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 14px;">
+                                <!-- Closed followups -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- View 3: Commercial Creator (2 Columns) -->
+        <div id="view-commercial-creator" class="app-view" style="display: none;">
+            <div class="commercial-creator-layout">
+                <!-- Column 1: Catalog of Articles -->
+                <section class="column-panel articles-panel">
+                    <div class="panel-header">
+                        <span class="panel-header-icon">📦</span>
+                        <h2 class="panel-header-title" style="flex-grow: 1;">Catálogo de Artículos</h2>
+                        <button class="btn btn-icon btn-small" id="btn-toggle-catalog-expand" onclick="toggleCatalogExpanded()" title="Maximizar Tamaño Catálogo" style="margin-right: 8px; transition: transform 0.2s ease;">↔️</button>
+                        <button class="btn btn-icon btn-small" onclick="showCatalogConfigModal()" title="Configurar Columnas y Filtros" style="margin-right: 8px;">⚙️</button>
+                        <span id="articles-count" class="badge">0 items</span>
+                    </div>
+
+                    <!-- Search and Filters -->
+                    <div class="search-box-container">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="article-search" class="form-input" placeholder="Buscar por SKU o descripción..." disabled>
+                            <span class="search-clear" id="article-search-clear" style="display:none;">✕</span>
+                        </div>
+                        <div class="filter-options-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filter-stock-only" disabled>
+                                <span>Solo con Stock</span>
+                            </label>
+                            <button id="btn-refresh-stock" class="btn btn-secondary" onclick="manualStockRefresh()" title="Actualizar Stock en Tiempo Real" style="padding: 4px 10px; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border-color: var(--border-color); background: var(--bg-card); cursor: pointer;" disabled>
+                                🔄 Refrescar Stock
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Articles Grid List -->
+                    <div class="articles-list-wrapper">
+                        <div id="articles-empty" class="empty-state">
+                            <div class="empty-icon">📦</div>
+                            <p class="empty-title">Catálogo no inicializado</p>
+                            <p class="empty-desc">Los artículos se cargarán de forma instantánea una vez seleccionado un cliente.</p>
+                        </div>
+                        <table class="data-table" id="articles-table" style="display: none;">
+                            <thead id="articles-thead"></thead>
+                            <tbody id="articles-tbody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Column 2: Cart / Document Creator -->
+                <section class="column-panel cart-panel">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="panel-header-icon">🛒</span>
+                            <h2 class="panel-header-title" id="cart-panel-title">Canasta de Venta</h2>
+                            <div id="cart-edit-badge" style="display: none; align-items: center; gap: 6px; background: rgba(230,126,34,0.15); border: 1px solid rgba(230,126,34,0.3); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 600; color: #e67e22; letter-spacing: 0.5px;">
+                                <span>✏️ EDITANDO COTIZACIÓN N° <span id="cart-edit-quote-num"></span></span>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="cancelCommercialCreator()" style="font-size: 0.8rem; padding: 6px 14px;">
+                            ✕ Cancelar
+                        </button>
+                    </div>
+
+                    <!-- Relocated: Sucursal selector and client contact info display (2-row layout) -->
+                    <div id="doc-sucursal-container" style="display: none; padding: 12px 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 0; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.01);">
+                        <!-- Row 1: Sucursal, Email, Contacto -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+                            <!-- Left: Sucursal select -->
+                            <div id="branch-select-wrapper" style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+                                <label id="creator-left-label" for="doc-sucursal" class="form-label" style="font-weight: 600; font-size: 0.72rem; margin-bottom: 4px; color: var(--text-secondary); text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Sucursal a Cotizar</label>
+                                <select id="doc-sucursal" class="form-input" style="font-size: 0.82rem; padding: 8px 10px; width: 100%; height: auto; background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                                    <option value="">Seleccione una sucursal...</option>
+                                </select>
+                                <div id="doc-no-sucursal-text" style="display: none; font-size: 0.85rem; padding: 8px 0; color: var(--text-primary); font-weight: 700; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; text-align: left;">Juaquin Sabina</div>
+                            </div>
+                            
+                            <!-- Middle: Additional Email Recipient -->
+                            <div id="email-adicional-wrapper" style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+                                <label for="doc-mail-adicional" class="form-label" style="font-weight: 600; font-size: 0.72rem; margin-bottom: 4px; color: var(--text-secondary); text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Destinatario Mail Adicional</label>
+                                <input type="email" id="doc-mail-adicional" class="form-input" placeholder="mail@ejemplo.com" style="font-size: 0.82rem; padding: 8px 10px; width: 100%; height: auto; background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                            </div>
+                            
+                            <!-- Right: Client quick contact reference (Email & WhatsApp/Teléfono) -->
+                            <div id="client-quick-contact" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
+                                <span class="form-label" style="font-weight: 600; font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Contacto Cliente</span>
+                                <div style="display: flex; gap: 6px;">
+                                    <div id="quick-contact-email" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card); cursor: pointer; transition: all 0.2s;" title="Email del cliente" onclick="copyClientEmailToClipboard()">
+                                        <img src="gmail-logo.png" alt="Gmail" style="width: 18px; height: 18px; object-fit: contain;">
+                                    </div>
+                                    <div id="quick-contact-phone" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card); cursor: pointer; transition: all 0.2s;" title="Teléfono / WhatsApp" onclick="copyClientPhoneToClipboard()">
+                                        <img src="whatsapp-logo.png" alt="WhatsApp" style="width: 18px; height: 18px; object-fit: contain;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Row 2: Condición de Pago y Método de Envío -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+                            <!-- Left: Condición de Pago -->
+                            <div id="cove-select-wrapper" style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+                                <label for="doc-cond-pago" class="form-label" style="font-weight: 600; font-size: 0.72rem; margin-bottom: 4px; color: var(--text-secondary); text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Condición de Pago</label>
+                                <select id="doc-cond-pago" class="form-input" style="font-size: 0.82rem; padding: 8px 10px; width: 100%; height: auto; background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                                    <!-- Options will be populated in logica.js -->
+                                </select>
+                            </div>
+                            
+                            <!-- Right: Método de Envío (Transportista) -->
+                            <div id="trlo-select-wrapper" style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+                                <label for="doc-metodo-envio" class="form-label" style="font-weight: 600; font-size: 0.72rem; margin-bottom: 4px; color: var(--text-secondary); text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Método de Envío (Transportista)</label>
+                                <select id="doc-metodo-envio" class="form-input" style="font-size: 0.82rem; padding: 8px 10px; width: 100%; height: auto; background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                                    <option value="">Seleccione un método de envío...</option>
+                                    <!-- Options will be populated in logica.js -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cart Items Container -->
+                    <div class="cart-items-wrapper">
+                        <div id="cart-empty" class="empty-state">
+                            <div class="empty-icon">🛒</div>
+                            <p class="empty-title">Canasta vacía</p>
+                            <p class="empty-desc">Agregá artículos desde la columna izquierda haciendo clic en el botón "+".</p>
+                        </div>
+                        <table class="data-table" id="cart-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Detalle</th>
+                                    <th class="text-center" style="width: 70px;">Cant</th>
+                                    <th class="text-right" style="width: 105px;">P. Base</th>
+                                    <th class="text-right" style="width: 60px;">Dto %</th>
+                                    <th class="text-right" style="width: 85px;">Unit Net</th>
+                                    <th class="text-right" style="width: 100px;">Total Net</th>
+                                    <th class="text-center" style="width: 35px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Document Form Details -->
+                    <div class="cart-form-details" id="cart-form-container" style="display: none;">
+                        <div class="form-group">
+                            <label for="doc-observations" class="form-label">Observaciones del Pedido</label>
+                            <input type="text" id="doc-observations" class="form-input" placeholder="Instrucciones de entrega, detalles de contacto, observaciones..." style="font-size: 0.85rem; padding: 10px 12px; width: 100%;">
+                        </div>
+
+                        <!-- Manual Global Discount Input (Inline Row) -->
+                        <div class="form-group discount-inline-row">
+                            <label for="global-discount-field" class="form-label">
+                                <span>Descuento / Recargo Global (%)</span>
+                                <span id="global-discount-val-badge" class="badge" style="display: none;">0%</span>
+                            </label>
+                            <div class="discount-input-wrapper">
+                                <input type="number" id="global-discount-field" class="form-input" min="-99" max="99" step="0.5" value="0" onchange="updateGlobalDiscount(this.value)" placeholder="0">
+                                <span class="percent-symbol">%</span>
+                            </div>
+                        </div>
+
+                        <!-- Totals Box -->
+                        <div class="totals-card">
+                            <div class="totals-row">
+                                <span class="totals-label">Subtotal Neto</span>
+                                <span class="totals-val" id="total-subtotal-net">$0,00</span>
+                            </div>
+                            <div class="totals-row">
+                                <span class="totals-label">Descuento Global</span>
+                                <span class="totals-val text-discount" id="total-global-discount">-$0,00</span>
+                            </div>
+                            <div class="totals-row">
+                                <span class="totals-label">IVA Facturado</span>
+                                <span class="totals-val" id="total-iva-amount">$0,00</span>
+                            </div>
+                            <div class="totals-row total-highlight">
+                                <span class="totals-label">TOTAL GENERAL</span>
+                                <span class="totals-val" id="total-final-amount">$0,00</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="cart-actions-row">
+                            <button class="btn btn-secondary flex-grow" id="btn-action-quote" onclick="submitDocument('BORRADOR')">
+                                📝 Guardar Cotización
+                            </button>
+                            <button class="btn btn-primary flex-grow" id="btn-action-order" onclick="submitDocument('RESERVAR')">
+                                🚀 Cargar Pedido
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Script references -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="logica.js?v=2.0.2"></script>
+</body>
+</html>

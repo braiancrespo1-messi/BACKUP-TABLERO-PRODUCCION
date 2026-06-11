@@ -2377,65 +2377,43 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
         throw new Error(`No se encontró el remito proyectado en YiQi para el pedido ${pedidoNro} tras varios reintentos.`);
       }
 
-      // 3. Guardar bultos en el remito
-      console.log(`[CC] Intentando guardar ${cantBultos} bultos en remito ID: ${remitoId}...`);
+      // 3. Guardar bultos y tracking code en el remito
+      console.log(`[CC] Guardando bultos (${cantBultos}) y tracking code (${remitoId}) en remito ID: ${remitoId}...`);
       const saveUrl = "https://api.yiqi.com.ar/api/instancesApi/Save";
-      const keys = ["6678", "REDV_BULTOS", "5090"];
       let bultosSaved = false;
 
-      for (const k of keys) {
-        try {
-          const saveBody = {
-            entityId: 859,
-            schemaId: 1491,
-            instanceId: String(remitoId),
-            form: `${encodeURIComponent(k)}=${encodeURIComponent(Number(cantBultos) || 0)}`,
-            uploads: "",
-            password: null,
-            removedFiles: []
-          };
-          const saveResp = await fetch(saveUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer " + token
-            },
-            body: JSON.stringify(saveBody)
-          });
-          if (saveResp.ok) {
-            // Verificar impacto
-            await sleep(800);
-            const verifyResp = await fetch(getListRemitosUrl, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
-              },
-              body: JSON.stringify({ page: 1, pageSize: 300 })
-            });
-            if (verifyResp.ok) {
-              const vData = await verifyResp.json();
-              const vRows = getRows(vData);
-              const row = vRows.find(r => String(getRemitoId(r)) === String(remitoId));
-              if (row) {
-                const val = parseInt((row["REDV_BULTOS"] ?? pickExact(row, ["REDV_BULTOS", "6678", "5090"]) ?? "").toString().trim() || "0", 10);
-                if (val === (parseInt(cantBultos, 10) || 0)) {
-                  console.log(`[CC] Bultos confirmados e impactados en YiQi para remito ${remitoId}`);
-                  bultosSaved = true;
-                  break;
-                }
-              }
-            }
-          }
-        } catch (saveErr) {
-          console.error(`[CC] Error al probar campo bultos key ${k}:`, saveErr.message);
+      try {
+        const saveBody = {
+          entityId: 859,
+          schemaId: 1491,
+          instanceId: String(remitoId),
+          form: `6678=${encodeURIComponent(cantBultos)}&6679=${encodeURIComponent(remitoId)}`,
+          uploads: "",
+          password: null,
+          removedFiles: []
+        };
+        const saveResp = await fetch(saveUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify(saveBody)
+        });
+        if (saveResp.ok) {
+          console.log(`[CC] Bultos y tracking code guardados correctamente para remito ${remitoId}`);
+          bultosSaved = true;
+        } else {
+          console.error(`[CC] Error al guardar en remito: ${await saveResp.text()}`);
         }
+      } catch (saveErr) {
+        console.error(`[CC] Excepción al guardar en remito:`, saveErr.message);
       }
 
       return res.json({ success: true, remitoId, remitoNro, bultosSaved });
 
     } else if (action === "quiebrePedido") {
-      const { pedidoId, comment } = req.body;
+      const { pedidoId, comment, pedidoNro, clienteNombre, clienteCode: bodyClienteCode } = req.body;
       if (!pedidoId || !comment) {
         return res.status(400).json({ error: "Faltan parametros (pedidoId, comment)" });
       }
@@ -2483,6 +2461,180 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
         throw new Error(`Error en transición quiebre: ${errText}`);
       }
 
+      // 3. Obtener detalles del pedido para registrar alerta en Firestore
+      let clienteCode = bodyClienteCode || "";
+      let resolvedClienteNombre = clienteNombre || "";
+      let resolvedPedidoNro = pedidoNro || "";
+
+      if (!clienteCode || !resolvedClienteNombre || !resolvedPedidoNro) {
+        try {
+          const cookies = await getYiQiCookies();
+          const detailUrl = `https://me.yiqi.com.ar/api/public/PEDIDO/${pedidoId}?schemaId=1491`;
+          const dResp = await fetch(detailUrl, {
+            headers: { "Cookie": cookies }
+          });
+          if (dResp.ok) {
+            const orderObj = await dResp.json();
+            const order = orderObj.data || orderObj;
+            if (order) {
+              if (!clienteCode) {
+                clienteCode = order.CLIE_ID_CLIE || "";
+                if (clienteCode) clienteCode = String(clienteCode).trim();
+              }
+              if (!resolvedClienteNombre) {
+                resolvedClienteNombre = order.CLIE_RAZON_SOCIAL || order.PEDI_RAZON_SOCIAL || "";
+                if (resolvedClienteNombre) resolvedClienteNombre = String(resolvedClienteNombre).trim();
+              }
+              if (!resolvedPedidoNro) {
+                resolvedPedidoNro = order.PEDI_NRO_PEDIDO || order.PEDI_NUMERO || "";
+                if (resolvedPedidoNro) resolvedPedidoNro = String(resolvedPedidoNro).trim();
+              }
+            }
+          }
+        } catch (getErr) {
+          console.error(`[CC] Error al obtener detalles públicos del pedido: ${getErr.message}`);
+        }
+      }
+
+      if (!clienteCode || !resolvedClienteNombre || !resolvedPedidoNro) {
+        try {
+          const getUrl = `https://api.yiqi.com.ar/api/instancesApi/GetInstance?schemaId=1491&entityId=1231&id=${pedidoId}`;
+          const getResp = await fetch(getUrl, {
+            headers: {
+              "Authorization": "Bearer " + token
+            }
+          });
+          if (getResp.ok) {
+            const instObj = await getResp.json();
+            if (instObj.atts) {
+              if (!clienteCode) {
+                clienteCode = instObj.atts["13134"]?.val || instObj.atts["13135"]?.val || "";
+                if (clienteCode) clienteCode = String(clienteCode).trim();
+              }
+              if (!resolvedClienteNombre) {
+                resolvedClienteNombre = instObj.atts["9286"]?.val || instObj.atts["9795"]?.val || "";
+                if (resolvedClienteNombre) resolvedClienteNombre = String(resolvedClienteNombre).trim();
+              }
+              if (!resolvedPedidoNro) {
+                resolvedPedidoNro = instObj.atts["10583"]?.val || instObj.atts["11102"]?.val || instObj.atts["12337"]?.val || instObj.atts["12338"]?.val || "";
+                if (resolvedPedidoNro) resolvedPedidoNro = String(resolvedPedidoNro).trim();
+              }
+            }
+          }
+        } catch (fallbackErr) {
+          console.error(`[CC] Error en fallback de GetInstance: ${fallbackErr.message}`);
+        }
+      }
+
+      // 4. Guardar alerta en Firestore
+      try {
+        const db = admin.firestore();
+        const alertDoc = {
+          alertaTipo: "QUIEBRE_2",
+          pedidoId: String(pedidoId),
+          pedidoNro: String(resolvedPedidoNro),
+          clienteCode: String(clienteCode),
+          clienteNombre: String(resolvedClienteNombre),
+          motivo: String(comment || "Falta de stock detectada en expedición / No pasó control de calidad"),
+          leida: false,
+          creadoEn: admin.firestore.FieldValue.serverTimestamp()
+        };
+        console.log(`[CC] Escribiendo alerta QUIEBRE_2 en Firestore para pedido ID: ${pedidoId}...`);
+        await db.collection("alertas_compartidas").add(alertDoc);
+      } catch (dbErr) {
+        console.error(`[CC] Error al registrar alerta en Firestore: ${dbErr.message}`);
+      }
+
+      return res.json({ success: true });
+
+    } else if (action === "registrarAlertaQuiebreSoloFirestore") {
+      const { pedidoId, comment, pedidoNro, clienteNombre, clienteCode: bodyClienteCode } = req.body;
+      if (!pedidoId) {
+        return res.status(400).json({ error: "Falta pedidoId" });
+      }
+
+      let clienteCode = bodyClienteCode || "";
+      let resolvedClienteNombre = clienteNombre || "";
+      let resolvedPedidoNro = pedidoNro || "";
+
+      if (!clienteCode || !resolvedClienteNombre || !resolvedPedidoNro) {
+        try {
+          const cookies = await getYiQiCookies();
+          const detailUrl = `https://me.yiqi.com.ar/api/public/PEDIDO/${pedidoId}?schemaId=1491`;
+          const dResp = await fetch(detailUrl, {
+            headers: { "Cookie": cookies }
+          });
+          if (dResp.ok) {
+            const orderObj = await dResp.json();
+            const order = orderObj.data || orderObj;
+            if (order) {
+              if (!clienteCode) {
+                clienteCode = order.CLIE_ID_CLIE || "";
+                if (clienteCode) clienteCode = String(clienteCode).trim();
+              }
+              if (!resolvedClienteNombre) {
+                resolvedClienteNombre = order.CLIE_RAZON_SOCIAL || order.PEDI_RAZON_SOCIAL || "";
+                if (resolvedClienteNombre) resolvedClienteNombre = String(resolvedClienteNombre).trim();
+              }
+              if (!resolvedPedidoNro) {
+                resolvedPedidoNro = order.PEDI_NRO_PEDIDO || order.PEDI_NUMERO || "";
+                if (resolvedPedidoNro) resolvedPedidoNro = String(resolvedPedidoNro).trim();
+              }
+            }
+          }
+        } catch (getErr) {
+          console.error(`[CC] Error al obtener detalles públicos en registrarAlertaQuiebreSoloFirestore: ${getErr.message}`);
+        }
+      }
+
+      if (!clienteCode || !resolvedClienteNombre || !resolvedPedidoNro) {
+        try {
+          const getUrl = `https://api.yiqi.com.ar/api/instancesApi/GetInstance?schemaId=1491&entityId=1231&id=${pedidoId}`;
+          const getResp = await fetch(getUrl, {
+            headers: {
+              "Authorization": "Bearer " + token
+            }
+          });
+          if (getResp.ok) {
+            const instObj = await getResp.json();
+            if (instObj.atts) {
+              if (!clienteCode) {
+                clienteCode = instObj.atts["13134"]?.val || instObj.atts["13135"]?.val || "";
+                if (clienteCode) clienteCode = String(clienteCode).trim();
+              }
+              if (!resolvedClienteNombre) {
+                resolvedClienteNombre = instObj.atts["9286"]?.val || instObj.atts["9795"]?.val || "";
+                if (resolvedClienteNombre) resolvedClienteNombre = String(resolvedClienteNombre).trim();
+              }
+              if (!resolvedPedidoNro) {
+                resolvedPedidoNro = instObj.atts["10583"]?.val || instObj.atts["11102"]?.val || instObj.atts["12337"]?.val || instObj.atts["12338"]?.val || "";
+                if (resolvedPedidoNro) resolvedPedidoNro = String(resolvedPedidoNro).trim();
+              }
+            }
+          }
+        } catch (fallbackErr) {
+          console.error(`[CC] Error en fallback GetInstance en registrarAlertaQuiebreSoloFirestore: ${fallbackErr.message}`);
+        }
+      }
+
+      try {
+        const db = admin.firestore();
+        const alertDoc = {
+          alertaTipo: "QUIEBRE_2",
+          pedidoId: String(pedidoId),
+          pedidoNro: String(resolvedPedidoNro),
+          clienteCode: String(clienteCode),
+          clienteNombre: String(resolvedClienteNombre),
+          motivo: String(comment || "Falta de stock detectada en expedición / No pasó control de calidad"),
+          leida: false,
+          creadoEn: admin.firestore.FieldValue.serverTimestamp()
+        };
+        console.log(`[CC] Escribiendo alerta QUIEBRE_2 en Firestore (alerta sola) para pedido ID: ${pedidoId}...`);
+        await db.collection("alertas_compartidas").add(alertDoc);
+      } catch (dbErr) {
+        console.error(`[CC] Error registrando alerta sola en Firestore: ${dbErr.message}`);
+      }
+
       return res.json({ success: true });
 
     } else if (action === "getAltasPendientes") {
@@ -2501,7 +2653,7 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
       return res.json(data);
 
     } else if (action === "procesarAltas") {
-      const { ids } = req.body;
+      const { ids, transitionId, form } = req.body;
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({ error: "Falta el parametro ids (array no vacío)" });
       }
@@ -2510,10 +2662,10 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
       const payload = {
         schemaId: 1491,
         ids: ids.map(String),
-        transitionId: 119014,
-        form: ""
+        transitionId: transitionId ? Number(transitionId) : 119014,
+        form: form !== undefined ? String(form) : ""
       };
-      console.log(`[CC] Procesando remitos de compra en lote: ${ids.join(", ")}...`);
+      console.log(`[CC] Procesando remitos de compra en lote: ${ids.join(", ")} con transition ${payload.transitionId} y form: ${payload.form}...`);
       const resp = await fetch(transitionUrl, {
         method: "POST",
         headers: {
@@ -2767,6 +2919,86 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
       const newId = createRes.newId || createRes.id || (createRes.data && createRes.data.id);
       return res.json({ success: true, newId });
 
+    } else if (action === "saveChildInstances") {
+      const { instanceId, childId, items, append } = req.body;
+      if (!instanceId || !childId || !items) {
+        return res.status(400).json({ error: "Faltan parametros (instanceId, childId, items)" });
+      }
+      const url = `https://api.yiqi.com.ar/api/childrenApi/SaveChildInstances?instanceId=${instanceId}&schemaId=1491`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          entityId: "787",
+          schemaId: 1491,
+          childId: Number(childId),
+          instanceId: String(instanceId),
+          childInstances: items.map(i => JSON.stringify(i)),
+          append: append !== undefined ? append : true
+        })
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`YiQi SaveChildInstances retornó HTTP ${resp.status}: ${errText}`);
+      }
+      const data = await resp.json();
+      return res.json(data);
+
+    } else if (action === "addComment") {
+      const { entityId, instanceId, comment } = req.body;
+      if (!entityId || !instanceId || !comment) {
+        return res.status(400).json({ error: "Faltan parametros (entityId, instanceId, comment)" });
+      }
+      const url = "https://api.yiqi.com.ar/api/instancesApi/AddComment";
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          entityId: String(entityId),
+          schemaId: "1491",
+          instanceId: String(instanceId),
+          comment: String(comment)
+        })
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`YiQi AddComment retornó HTTP ${resp.status}: ${errText}`);
+      }
+      return res.json({ success: true });
+
+    } else if (action === "crearRemitoCompra") {
+      const { obs, proveedorId, depoId } = req.body;
+      const url = "https://api.yiqi.com.ar/api/instancesApi/Save";
+      const formStr = `4239=1883&4240=${proveedorId || 20027}&4243=${depoId || 198}&4241=${encodeURIComponent(obs)}&11086=off&8019=&6383=`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          schemaId: 1491,
+          entityId: "787",
+          form: formStr,
+          uploads: "",
+          parentId: null,
+          childId: null
+        })
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`YiQi Save Remito de Compra retornó HTTP ${resp.status}: ${errText}`);
+      }
+      const data = await resp.json();
+      const newId = data.newId || data.id || (data.ok && data.data ? data.data.id : null);
+      return res.json({ success: true, newId });
+
     } else {
       return res.status(400).json({ error: "Acción no reconocida" });
     }
@@ -2779,7 +3011,7 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
 
 /**
  * Cloud Function para obtener todos los datos de CRM: seguimientos,
- * plantillas de planes y asignaciones de clientes.
+ * plantillas de planes, asignaciones de clientes y configuraciones de WhatsApp.
  */
 exports.obtenerDatosCrm = onRequest({ cors: true }, async (req, res) => {
   try {
@@ -2813,13 +3045,21 @@ exports.obtenerDatosCrm = onRequest({ cors: true }, async (req, res) => {
     clientPlansSnap.forEach(doc => {
       clientPlans[doc.id] = doc.data().planTemplateId || "";
     });
+
+    // 4. Obtener configuraciones de WhatsApp
+    const waConfigsSnap = await db.collection("crm_whatsapp_configs").get();
+    const whatsappConfigs = {};
+    waConfigsSnap.forEach(doc => {
+      whatsappConfigs[doc.id.toUpperCase()] = doc.data();
+    });
     
     return res.json({
       success: true,
       data: {
         followups,
         templates,
-        clientPlans
+        clientPlans,
+        whatsappConfigs
       }
     });
   } catch (error) {
@@ -2830,7 +3070,7 @@ exports.obtenerDatosCrm = onRequest({ cors: true }, async (req, res) => {
 
 /**
  * Cloud Function para guardar o modificar de forma prolija e individual
- * seguimientos, asignaciones de clientes o plantillas en Firestore.
+ * seguimientos, asignaciones de clientes, plantillas o configuración de WhatsApp en Firestore.
  */
 exports.guardarDatosCrm = onRequest({ cors: true }, async (req, res) => {
   const { action, data } = req.body;
@@ -2872,6 +3112,27 @@ exports.guardarDatosCrm = onRequest({ cors: true }, async (req, res) => {
       if (!id) return res.status(400).json({ error: "Falta id de template" });
       await db.collection("crm_plan_templates").doc(String(id)).delete();
       return res.json({ success: true, message: `Template #${id} eliminado` });
+      
+    } else if (action === "saveWhatsappConfig") {
+      const { seller, name, apiUrl, apiToken } = data;
+      if (!seller) return res.status(400).json({ error: "Falta seller de config" });
+      await db.collection("crm_whatsapp_configs").doc(String(seller).toUpperCase()).set({
+        seller,
+        name,
+        apiUrl,
+        apiToken
+      }, { merge: true });
+      return res.json({ success: true, message: `Configuración de WhatsApp para ${seller} guardada` });
+      
+    } else if (action === "saveClientLink") {
+      const { phone, clientId, clientName, assignedSeller } = data;
+      if (!phone) return res.status(400).json({ error: "Falta phone" });
+      await db.collection("crm_chats").doc(String(phone)).set({
+        clientId,
+        clientName,
+        assignedSeller: assignedSeller || "No asignado"
+      }, { merge: true });
+      return res.json({ success: true, message: `Chat ${phone} vinculado con cliente ${clientName}` });
       
     } else {
       return res.status(400).json({ error: `Acción '${action}' no reconocida` });
@@ -3272,6 +3533,263 @@ exports.obtenerEstadoPedido = onRequest({ cors: true }, async (req, res) => {
     });
   } catch (error) {
     console.error("Error en obtenerEstadoPedido:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function que obtiene las alertas activas (no leídas) de la colección alertas_compartidas.
+ * Las ordena en memoria por fecha de creación descendente para evitar requerir índices compuestos.
+ */
+exports.obtenerAlertasCompartidas = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const alertsSnap = await db.collection("alertas_compartidas")
+      .where("leida", "==", false)
+      .get();
+
+    const alerts = [];
+    alertsSnap.forEach(doc => {
+      alerts.push({ id: doc.id, ...doc.data() });
+    });
+
+    // Ordenar en memoria (el más nuevo primero)
+    alerts.sort((a, b) => {
+      const aTime = a.creadoEn ? (a.creadoEn._seconds || a.creadoEn.seconds || 0) : 0;
+      const bTime = b.creadoEn ? (b.creadoEn._seconds || b.creadoEn.seconds || 0) : 0;
+      return bTime - aTime;
+    });
+
+    return res.json({ success: true, alerts });
+  } catch (error) {
+    console.error("Error en obtenerAlertasCompartidas:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function que marca una alerta compartida como leída.
+ */
+exports.resolverAlertaCompartida = onRequest({ cors: true }, async (req, res) => {
+  const { alertId } = req.body;
+  if (!alertId) {
+    return res.status(400).json({ error: "Falta el parámetro alertId" });
+  }
+
+  try {
+    const db = admin.firestore();
+    await db.collection("alertas_compartidas").doc(alertId).update({
+      leida: true,
+      resueltaEn: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Error en resolverAlertaCompartida:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function Webhook para recibir mensajes entrantes de Z-API.
+ */
+exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const body = req.body;
+    console.log("Recibido webhook Z-API:", JSON.stringify(body));
+
+    if (!body || !body.phone) {
+      return res.json({ success: true, message: "No phone found, skipped" });
+    }
+
+    const phone = String(body.phone).replace("@c.us", "").trim();
+    const fromMe = body.fromMe === true;
+    
+    let text = "";
+    if (body.text && typeof body.text === "object" && body.text.message) {
+      text = body.text.message;
+    } else if (body.text && typeof body.text === "string") {
+      text = body.text;
+    } else if (body.waitingMessage && typeof body.waitingMessage === "string") {
+      text = body.waitingMessage;
+    } else if (body.image || body.audio || body.video || body.document) {
+      text = `[Archivo/Multimedia]`;
+    } else {
+      return res.json({ success: true, message: "Unsupported message content, skipped" });
+    }
+
+    const senderName = body.senderName || body.chatName || (fromMe ? "Nosotros" : "Cliente");
+    const timestamp = body.momment ? new Date(body.momment).toISOString() : new Date().toISOString();
+
+    const db = admin.firestore();
+
+    // 1. Guardar mensaje en subcolección messages
+    const chatRef = db.collection("crm_chats").doc(phone);
+    const messageRef = chatRef.collection("messages").doc();
+    
+    const messageData = {
+      text: text,
+      timestamp: timestamp,
+      fromMe: fromMe,
+      senderName: senderName
+    };
+    await messageRef.set(messageData);
+
+    // 2. Resolver vendedor asignado
+    let assignedSeller = null;
+    const chatDoc = await chatRef.get();
+    if (chatDoc.exists && chatDoc.data().assignedSeller) {
+      assignedSeller = chatDoc.data().assignedSeller;
+    } else {
+      const followupsSnap = await db.collection("crm_followups")
+        .where("status", "==", "ABIERTO")
+        .get();
+      
+      let matchedFollowup = null;
+      followupsSnap.forEach(doc => {
+        const fData = doc.data();
+        const fPhoneClean = String(fData.clientPhone || "").replace(/\D/g, "");
+        const phoneClean = phone.replace(/\D/g, "");
+        if (fPhoneClean && phoneClean && (fPhoneClean.includes(phoneClean) || phoneClean.includes(fPhoneClean))) {
+          matchedFollowup = fData;
+        }
+      });
+
+      if (matchedFollowup && matchedFollowup.vendedor) {
+        assignedSeller = matchedFollowup.vendedor;
+      }
+    }
+
+    // 3. Actualizar chat principal
+    const chatUpdate = {
+      phone: phone,
+      lastMessage: text,
+      lastUpdated: timestamp,
+      assignedSeller: assignedSeller || "No asignado"
+    };
+
+    if (!fromMe) {
+      chatUpdate.unreadCount = admin.firestore.FieldValue.increment(1);
+    }
+
+    await chatRef.set(chatUpdate, { merge: true });
+
+    return res.json({ success: true, message: "Mensaje procesado correctamente" });
+  } catch (error) {
+    console.error("Error en receiveWhatsAppWebhook:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function para obtener conversaciones activas.
+ */
+exports.obtenerConversaciones = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const chatsSnap = await db.collection("crm_chats")
+      .orderBy("lastUpdated", "desc")
+      .limit(100)
+      .get();
+
+    const chats = [];
+    chatsSnap.forEach(doc => {
+      chats.push({ id: doc.id, ...doc.data() });
+    });
+
+    return res.json({ success: true, chats });
+  } catch (error) {
+    console.error("Error en obtenerConversaciones:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function para obtener mensajes de un chat específico.
+ */
+exports.obtenerMensajesChat = onRequest({ cors: true }, async (req, res) => {
+  const { phone } = req.query;
+  if (!phone) {
+    return res.status(400).json({ error: "Falta el parámetro phone" });
+  }
+
+  try {
+    const db = admin.firestore();
+    const messagesSnap = await db.collection("crm_chats")
+      .doc(phone)
+      .collection("messages")
+      .orderBy("timestamp", "asc")
+      .limit(100)
+      .get();
+
+    const messages = [];
+    messagesSnap.forEach(doc => {
+      messages.push({ id: doc.id, ...doc.data() });
+    });
+
+    return res.json({ success: true, messages });
+  } catch (error) {
+    console.error("Error en obtenerMensajesChat:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function para marcar un chat como leído.
+ */
+exports.marcarChatLeido = onRequest({ cors: true }, async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) {
+    return res.status(400).json({ error: "Falta el parámetro phone" });
+  }
+
+  try {
+    const db = admin.firestore();
+    await db.collection("crm_chats").doc(phone).set({
+      unreadCount: 0
+    }, { merge: true });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Error en marcarChatLeido:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Cloud Function para registrar un mensaje enviado desde el CRM.
+ */
+exports.guardarMensajeEnviado = onRequest({ cors: true }, async (req, res) => {
+  const { phone, text, senderName, assignedSeller } = req.body;
+  if (!phone || !text) {
+    return res.status(400).json({ error: "Faltan parámetros obligatorios phone o text" });
+  }
+
+  try {
+    const db = admin.firestore();
+    const timestamp = new Date().toISOString();
+
+    const chatRef = db.collection("crm_chats").doc(phone);
+    await chatRef.collection("messages").add({
+      text: text,
+      timestamp: timestamp,
+      fromMe: true,
+      senderName: senderName || "Nosotros"
+    });
+
+    const chatData = {
+      phone: phone,
+      lastMessage: text,
+      lastUpdated: timestamp
+    };
+    if (assignedSeller) {
+      chatData.assignedSeller = assignedSeller;
+    }
+    await chatRef.set(chatData, { merge: true });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Error en guardarMensajeEnviado:", error);
     return res.status(500).json({ error: error.message });
   }
 });
