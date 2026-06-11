@@ -2400,8 +2400,17 @@ function goToHomeCrm() {
     switchView("crm-general");
     renderCrmAlerts();
     
-    // Re-render the active dashboard tab to ensure up-to-date data
+    // Re-render the active dashboard tab to ensure up-to-date data and handle search visibility
     const activeTabBtn = document.querySelector(".crm-dashboard-tab-btn.btn-primary");
+    const heroSearch = document.querySelector(".crm-hero-search");
+    if (heroSearch) {
+        if (activeTabBtn && activeTabBtn.id === "tab-btn-alertas") {
+            heroSearch.style.display = "block";
+        } else {
+            heroSearch.style.display = "none";
+        }
+    }
+    
     if (activeTabBtn) {
         if (activeTabBtn.id === "tab-btn-tablero") {
             renderCrmControlBoard();
@@ -4704,6 +4713,16 @@ function switchDashboardTab(tabId) {
     if (tabId !== "inbox" && window.inboxPollInterval) {
         clearInterval(window.inboxPollInterval);
         window.inboxPollInterval = null;
+    }
+    
+    // Hide or show the top search hero section depending on tab to maximize visual space
+    const heroSearch = document.querySelector(".crm-hero-search");
+    if (heroSearch) {
+        if (tabId === "alertas") {
+            heroSearch.style.display = "block";
+        } else {
+            heroSearch.style.display = "none";
+        }
     }
     
     // Show target subview
