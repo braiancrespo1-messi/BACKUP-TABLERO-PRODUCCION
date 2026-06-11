@@ -1683,10 +1683,13 @@ async function submitDocument(type) {
                 currentPlan.status = "ABIERTO";
                 currentPlan.erpState = "Enviada";
                 currentPlan.closeDate = null;
+                if (!currentPlan.clientPhone && selectedClient) {
+                    currentPlan.clientPhone = selectedClient.phone || "";
+                }
                 saveCrmFollowups(followups, currentPlan);
             }
         } else {
-            createCrmFollowup(selectedClient.id, selectedClient.name, docId, docType, finalDocTotal, docDisplayNum);
+            createCrmFollowup(selectedClient.id, selectedClient.name, docId, docType, finalDocTotal, docDisplayNum, "ABIERTO", selectedClient.phone || "");
         }
         
         // Clean up previous draft version if we were editing one (but not if we edited and reused the preparation one)
@@ -2739,7 +2742,7 @@ function formatDateISO(date) {
 }
 
 // Helper to generate a followup object in memory (without saving immediately)
-function createCrmFollowupObject(clientId, clientName, docId, docType, docTotal, docDisplayNum, dateCreated = null) {
+function createCrmFollowupObject(clientId, clientName, docId, docType, docTotal, docDisplayNum, dateCreated = null, clientPhone = null) {
     // Find assigned plan template
     const clientPlans = JSON.parse(localStorage.getItem("tmc_client_plans") || "{}");
     const assignedTemplateId = clientPlans[clientId] || "standard";
@@ -2785,6 +2788,7 @@ function createCrmFollowupObject(clientId, clientName, docId, docType, docTotal,
         id: docId || `f_${Date.now()}`,
         clientId: clientId,
         clientName: clientName,
+        clientPhone: clientPhone || "",
         docId: docId,
         docDisplayNum: docDisplayNum || String(docId),
         docType: docType,
@@ -2797,9 +2801,13 @@ function createCrmFollowupObject(clientId, clientName, docId, docType, docTotal,
 }
 
 // Generate new follow-up plan
-function createCrmFollowup(clientId, clientName, docId, docType, docTotal, docDisplayNum, initialStatus = "ABIERTO") {
+function createCrmFollowup(clientId, clientName, docId, docType, docTotal, docDisplayNum, initialStatus = "ABIERTO", clientPhone = null) {
     const followups = getCrmFollowups();
-    const newFollowup = createCrmFollowupObject(clientId, clientName, docId, docType, docTotal, docDisplayNum);
+    let phoneToUse = clientPhone;
+    if (!phoneToUse && selectedClient && String(selectedClient.id) === String(clientId)) {
+        phoneToUse = selectedClient.phone || "";
+    }
+    const newFollowup = createCrmFollowupObject(clientId, clientName, docId, docType, docTotal, docDisplayNum, null, phoneToUse);
     newFollowup.status = initialStatus;
     if (initialStatus === "PREPARACION") {
         newFollowup.erpState = "En preparación";
@@ -3702,7 +3710,7 @@ async function versionCrmQuote(planId, docId) {
         plan.closeDate = new Date().toISOString();
         
         // Create new plan for the new quote version in PREPARACION status
-        const newFollowup = createCrmFollowup(plan.clientId, plan.clientName, newDocId, "COTIZACION", plan.docTotal, newDisplayNum, "PREPARACION");
+        const newFollowup = createCrmFollowup(plan.clientId, plan.clientName, newDocId, "COTIZACION", plan.docTotal, newDisplayNum, "PREPARACION", plan.clientPhone || "");
         
         // Retrieve fresh array of followups to save both changes (explicitly saving the VERSIONADO state to Firestore)
         const currentFollowups = getCrmFollowups();
@@ -3744,7 +3752,7 @@ async function copyCrmQuote(planId, docId) {
         hideLoader();
         
         // Create new CRM plan for the copied quote
-        createCrmFollowup(plan.clientId, plan.clientName, newDocId, "COTIZACION", plan.docTotal, newDisplayNum);
+        createCrmFollowup(plan.clientId, plan.clientName, newDocId, "COTIZACION", plan.docTotal, newDisplayNum, "ABIERTO", plan.clientPhone || "");
         
         showAppNotification("Cotización Copiada", `Se copió la cotización con éxito. Nueva Cotización N° ${newDisplayNum} creada y plan de seguimiento iniciado.`, "success");
         
