@@ -2405,6 +2405,9 @@ function goToHomeCrm() {
     if (activeTabBtn) {
         if (activeTabBtn.id === "tab-btn-tablero") {
             renderCrmControlBoard();
+            if (window.renderWhatsAppResponseMetrics) {
+                window.renderWhatsAppResponseMetrics();
+            }
         } else if (activeTabBtn.id === "tab-btn-estadisticas") {
             renderCrmStatsChart();
         } else if (activeTabBtn.id === "tab-btn-configuracion") {
@@ -4724,6 +4727,9 @@ function switchDashboardTab(tabId) {
     // Render subview details
     if (tabId === "tablero") {
         renderCrmControlBoard();
+        if (window.renderWhatsAppResponseMetrics) {
+            window.renderWhatsAppResponseMetrics();
+        }
     } else if (tabId === "estadisticas") {
         renderCrmStatsChart();
     } else if (tabId === "configuracion") {
@@ -5977,6 +5983,9 @@ async function syncCrmWithFirestore() {
                 if (activeTabBtn) {
                     if (activeTabBtn.id === "tab-btn-tablero") {
                         renderCrmControlBoard();
+                        if (window.renderWhatsAppResponseMetrics) {
+                            window.renderWhatsAppResponseMetrics();
+                        }
                     } else if (activeTabBtn.id === "tab-btn-estadisticas") {
                         renderCrmStatsChart();
                     } else if (activeTabBtn.id === "tab-btn-configuracion") {
@@ -7309,4 +7318,137 @@ function escapeHtml(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+// Render WhatsApp response metrics on Control Board
+async function renderWhatsAppResponseMetrics() {
+    const container = document.getElementById("crm-wa-response-metrics-container");
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div style="text-align: center; padding: 24px;">
+            <div class="loader-spinner" style="margin: 0 auto 12px auto; width: 24px; height: 24px; border-width: 3px;"></div>
+            <p class="text-secondary" style="font-size: 0.8rem;">Calculando tiempos de respuesta de WhatsApp...</p>
+        </div>
+    `;
+    
+    try {
+        const res = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/obtenerMetricasRespuesta`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const json = await res.json();
+        if (!json.success || !json.metrics) {
+            throw new Error(json.error || "Error al calcular métricas");
+        }
+        
+        const metrics = json.metrics;
+        const events = json.events || [];
+        
+        // Formatter for delay
+        const formatDelay = (mins) => {
+            if (mins < 1) return "Menos de 1 min";
+            if (mins < 60) return `${mins} min`;
+            const hs = Math.floor(mins / 60);
+            const remainingMins = mins % 60;
+            if (hs < 24) {
+                return `${hs} hs ${remainingMins > 0 ? remainingMins + ' min' : ''}`;
+            }
+            const days = Math.floor(hs / 24);
+            const remainingHours = hs % 24;
+            return `${days} ${days === 1 ? 'día' : 'días'} ${remainingHours > 0 ? remainingHours + ' hs' : ''}`;
+        };
+        
+        const avgDelayStr = formatDelay(metrics.averageDelayMinutes);
+        const maxDelayStr = formatDelay(metrics.maxDelayMinutes);
+        
+        let cardsHtml = `
+            <div class="control-board-metrics" style="margin-bottom: 20px;">
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-md); text-align: center; cursor: help;" title="Total consultas respondidas medidas de WhatsApp.">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.02em;">Total Consultas Respondidas</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-primary);">${metrics.totalInteractions}</div>
+                </div>
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-md); text-align: center; border-left: 4px solid var(--success); cursor: help;" title="Tiempo promedio que demoramos en responder una consulta.">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.02em;">Tiempo Promedio Respuesta</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--success);">${avgDelayStr}</div>
+                </div>
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-md); text-align: center; border-left: 4px solid var(--warning); cursor: help;" title="Demora máxima registrada en responder una consulta.">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.02em;">Demora Máxima Registrada</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--warning);">${maxDelayStr}</div>
+                </div>
+            </div>
+        `;
+        
+        let tableRows = "";
+        if (events.length === 0) {
+            tableRows = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted); font-style: italic;">No hay registros de consultas de WhatsApp para clientes vinculados.</td></tr>`;
+        } else {
+            events.forEach(ev => {
+                const dateStr = ev.incomingTime 
+                    ? new Date(ev.incomingTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) 
+                    : "-";
+                
+                // Truncate messages to prevent huge rows
+                const truncate = (str, len = 60) => {
+                    if (!str) return "-";
+                    return str.length > len ? str.substring(0, len) + "..." : str;
+                };
+                
+                // Color formatting based on response time: green under 15 min, yellow under 2 hours, red above
+                let badgeStyle = "background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3);";
+                if (ev.delayMinutes > 120) {
+                    badgeStyle = "background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: bold;";
+                } else if (ev.delayMinutes > 15) {
+                    badgeStyle = "background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);";
+                }
+                
+                tableRows += `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 12px; font-weight: 600; color: var(--text-primary); text-align: left;">
+                            <a href="javascript:void(0)" onclick="goToClientCrmFromAlert('${ev.clientId}', '${ev.clientName.replace(/'/g, "\\'")}')" style="color: var(--primary); text-decoration: none;">${ev.clientName}</a>
+                        </td>
+                        <td style="padding: 10px 12px; text-align: left; font-size: 0.78rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(ev.incomingText)}">
+                            ${escapeHtml(truncate(ev.incomingText))}
+                        </td>
+                        <td style="padding: 10px 12px; text-align: left; font-size: 0.78rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(ev.replyText)}">
+                            ${escapeHtml(truncate(ev.replyText))}
+                        </td>
+                        <td style="padding: 10px 12px; text-align: center;">${dateStr}</td>
+                        <td style="padding: 10px 12px; text-align: center;">
+                            <span class="crm-step-badge" style="${badgeStyle} font-size: 0.7rem; padding: 2px 6px;">${formatDelay(ev.delayMinutes)}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        let tableHtml = `
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; margin-top: 15px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                    <thead>
+                        <tr style="background: var(--bg-input); border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-weight: 700;">
+                            <th style="padding: 12px; text-align: left;">Cliente</th>
+                            <th style="padding: 12px; text-align: left;">Consulta Cliente</th>
+                            <th style="padding: 12px; text-align: left;">Nuestra Respuesta</th>
+                            <th style="padding: 12px; text-align: center; width: 140px;">Fecha Consulta</th>
+                            <th style="padding: 12px; text-align: center; width: 130px;">Tiempo de Espera</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        container.innerHTML = cardsHtml + tableHtml;
+        
+    } catch (e) {
+        console.error("Error rendering WhatsApp response metrics:", e);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: var(--danger); font-size: 0.85rem;">
+                ✕ No se pudieron calcular las métricas de respuesta: ${e.message}
+            </div>
+        `;
+    }
+}
+window.renderWhatsAppResponseMetrics = renderWhatsAppResponseMetrics;
 

@@ -3794,6 +3794,103 @@ exports.guardarMensajeEnviado = onRequest({ cors: true }, async (req, res) => {
   }
 });
 
+/**
+ * Cloud Function que calcula las métricas de tiempo de respuesta de WhatsApp.
+ * Analiza conversaciones con clientes registrados (que poseen clientId).
+ */
+exports.obtenerMetricasRespuesta = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const db = admin.firestore();
+    
+    // Obtener todos los chats
+    const chatsSnap = await db.collection("crm_chats").get();
+    
+    const responseEvents = [];
+    const chatPromises = [];
+    
+    chatsSnap.forEach(doc => {
+      const chatData = doc.data();
+      // Filtrar chats vinculados a clientes
+      if (chatData.clientId && chatData.phone) {
+        chatPromises.push((async () => {
+          const msgsSnap = await doc.ref.collection("messages")
+            .orderBy("timestamp", "asc")
+            .get();
+          
+          const msgs = [];
+          msgsSnap.forEach(mDoc => msgs.push(mDoc.data()));
+          
+          let firstIncomingTime = null;
+          let firstIncomingText = "";
+          
+          for (const msg of msgs) {
+            const fromMe = msg.fromMe === true;
+            const time = msg.timestamp ? new Date(msg.timestamp).getTime() : null;
+            
+            if (!time) continue;
+            
+            if (!fromMe) {
+              // Es un mensaje del cliente
+              if (firstIncomingTime === null) {
+                firstIncomingTime = time;
+                firstIncomingText = msg.text || "";
+              }
+            } else {
+              // Es una respuesta nuestra
+              if (firstIncomingTime !== null) {
+                const diffMinutes = Math.round((time - firstIncomingTime) / 60000);
+                responseEvents.push({
+                  phone: chatData.phone,
+                  clientName: chatData.clientName || chatData.phone,
+                  clientId: chatData.clientId,
+                  incomingTime: new Date(firstIncomingTime).toISOString(),
+                  responseTime: new Date(time).toISOString(),
+                  delayMinutes: diffMinutes,
+                  incomingText: firstIncomingText,
+                  replyText: msg.text || ""
+                });
+                // Resetear estado para el siguiente bloque
+                firstIncomingTime = null;
+                firstIncomingText = "";
+              }
+            }
+          }
+        })());
+      }
+    });
+    
+    await Promise.all(chatPromises);
+    
+    // Calcular agregados
+    let totalDelay = 0;
+    let maxDelay = 0;
+    responseEvents.forEach(e => {
+      totalDelay += e.delayMinutes;
+      if (e.delayMinutes > maxDelay) {
+        maxDelay = e.delayMinutes;
+      }
+    });
+    
+    const averageDelay = responseEvents.length > 0 ? Math.round(totalDelay / responseEvents.length) : 0;
+    
+    // Ordenar los eventos de respuesta por fecha más reciente primero
+    responseEvents.sort((a, b) => b.responseTime.localeCompare(a.responseTime));
+    
+    return res.json({
+      success: true,
+      metrics: {
+        totalInteractions: responseEvents.length,
+        averageDelayMinutes: averageDelay,
+        maxDelayMinutes: maxDelay
+      },
+      events: responseEvents
+    });
+  } catch (error) {
+    console.error("Error en obtenerMetricasRespuesta:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 
 
 
