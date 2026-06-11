@@ -72,6 +72,7 @@ let articlesCache = [];
 let skuStockMap = {};
 let clientSearchTimeout = null;
 let selectedClient = null;
+let activePlanToExpand = null;
 let cart = [];
 let globalDiscount = 0.0;
 let newPlanSteps = [];
@@ -3187,8 +3188,9 @@ function renderClientCrmPlan() {
             `;
         }
         
-        // Expand the first one if there is only 1, or collapse them by default to avoid clutter
-        const isDefaultExpanded = planIdx === 0 && activePlans.length === 1;
+        // Expand if it is the targeted plan or if it is the only active one
+        const isTargetExpanded = activePlanToExpand && String(activePlan.id) === String(activePlanToExpand);
+        const isDefaultExpanded = isTargetExpanded || (planIdx === 0 && activePlans.length === 1 && !activePlanToExpand);
         const displayStyle = isDefaultExpanded ? "flex" : "none";
         const arrowRotate = isDefaultExpanded ? "90deg" : "0deg";
         
@@ -3330,11 +3332,36 @@ function renderClientCrmPlan() {
     
     // Auto-trigger loading items for expanded plans
     activePlans.forEach((activePlan, planIdx) => {
-        const isDefaultExpanded = planIdx === 0 && activePlans.length === 1;
+        const isTargetExpanded = activePlanToExpand && String(activePlan.id) === String(activePlanToExpand);
+        const isDefaultExpanded = isTargetExpanded || (planIdx === 0 && activePlans.length === 1 && !activePlanToExpand);
         if (isDefaultExpanded) {
             loadCrmPlanItems(activePlan.id, activePlan.docId, activePlan.docType);
         }
     });
+    
+    // Smoothly scroll to the target plan if requested
+    if (activePlanToExpand) {
+        const targetId = activePlanToExpand;
+        setTimeout(() => {
+            const targetEl = document.getElementById(`plan-details-${targetId}`);
+            if (targetEl) {
+                // Ensure it's showing and load items
+                targetEl.style.display = "flex";
+                const arrow = document.getElementById(`plan-arrow-${targetId}`);
+                if (arrow) arrow.style.transform = "rotate(90deg)";
+                
+                const matchedPlan = activePlans.find(p => String(p.id) === String(targetId));
+                if (matchedPlan) {
+                    loadCrmPlanItems(matchedPlan.id, matchedPlan.docId, matchedPlan.docType);
+                }
+                
+                // Scroll the parent element into view
+                targetEl.parentElement.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            // Clear flag
+            activePlanToExpand = null;
+        }, 400);
+    }
 }
 
 // Complete active step
@@ -4436,7 +4463,7 @@ function renderCrmAlerts() {
                     </div>
                     <div style="display: flex; align-items: center;">
                         <span class="crm-step-badge" style="${badgeStyle} margin-right: 12px; font-size: 0.65rem;">${badgeText}</span>
-                        <button class="btn btn-primary crm-alert-action-btn" onclick="goToClientCrmFromAlert('${plan.clientId}', '${plan.clientName.replace(/'/g, "\\'")}')">Gestionar</button>
+                        <button class="btn btn-primary crm-alert-action-btn" onclick="goToClientCrmFromAlert('${plan.clientId}', '${plan.clientName.replace(/'/g, "\\'")}', '${plan.id}')">Gestionar</button>
                     </div>
                 </div>
             `;
@@ -4475,7 +4502,7 @@ function renderCrmAlerts() {
                         </span>
                     </div>
                     <div>
-                        <button class="btn btn-secondary crm-alert-action-btn" style="border-color: var(--primary); color: var(--primary);" onclick="goToClientCrmFromAlert('${plan.clientId}', '${plan.clientName.replace(/'/g, "\\'")}')">Ver Ficha</button>
+                        <button class="btn btn-secondary crm-alert-action-btn" style="border-color: var(--primary); color: var(--primary);" onclick="goToClientCrmFromAlert('${plan.clientId}', '${plan.clientName.replace(/'/g, "\\'")}', '${plan.id}')">Ver Ficha</button>
                     </div>
                 </div>
             `;
@@ -4484,7 +4511,8 @@ function renderCrmAlerts() {
     }
 }
 
-function goToClientCrmFromAlert(clientId, clientName) {
+function goToClientCrmFromAlert(clientId, clientName, planId = null) {
+    activePlanToExpand = planId;
     selectClient(clientId, clientName);
 }
 
