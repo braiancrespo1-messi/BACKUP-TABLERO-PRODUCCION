@@ -19,11 +19,110 @@
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
+      --bg-op-table: rgba(0, 0, 0, 0.2);
+      --bg-op-header: rgba(15, 23, 42, 0.6);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+      --text-sku: #60a5fa;
     }
 
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
+    }
+
+    /* Estilos del Tour de Ayuda Interactiva */
+    #tmc-tour-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 99990;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #tmc-tour-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .tmc-tour-active-highlight {
+      position: relative !important;
+      z-index: 99995 !important;
+      outline: 3px solid #3b82f6 !important;
+      box-shadow: 0 0 25px 8px rgba(59, 130, 246, 0.65) !important;
+      transition: outline 0.2s ease, box-shadow 0.2s ease;
+      background-color: var(--bg-card) !important;
+    }
+    #tmc-tour-modal {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 380px;
+      max-width: calc(100vw - 48px);
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      z-index: 99999;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      opacity: 0;
+      transform: translateY(20px);
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    #tmc-tour-modal.active {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #tmc-tour-modal h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #tmc-tour-modal p {
+      margin: 0;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #94a3b8;
+    }
+    .tmc-tour-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+    }
+    .tmc-tour-progress {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .tmc-tour-nav-btns {
+      display: flex;
+      gap: 8px;
+    }
+    .tmc-tour-btn-skip {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tmc-tour-btn-skip:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #f8fafc;
     }
 
     body {
@@ -65,6 +164,7 @@
     .tmc-sidebar {
       width: 360px;
       min-width: 320px;
+      flex-shrink: 0;
       background: var(--bg-sidebar);
       border-right: 1px solid var(--border);
       display: flex;
@@ -214,6 +314,7 @@
     /* Main content area */
     .tmc-main-content {
       flex-grow: 1;
+      min-width: 0;
       height: 100%;
       overflow-y: auto;
       padding: 32px;
@@ -321,6 +422,35 @@
       background-color: rgba(255, 255, 255, 0.1);
       color: #ffffff;
       border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* YiQi Logo Button and Alignment */
+    .tmc-yiqi-logo-btn {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 4px !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      vertical-align: middle;
+      transition: all 0.2s ease;
+    }
+    .tmc-yiqi-logo-btn img {
+      height: 24px;
+      width: auto;
+      object-fit: contain;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    body:not(.light-theme) .tmc-yiqi-logo-btn img {
+      filter: invert(1) hue-rotate(180deg) brightness(1.2) contrast(1.1);
+    }
+    .tmc-yiqi-logo-btn:hover img {
+      opacity: 0.85;
+      transform: scale(1.08);
     }
 
     /* Table Wrapper and Layouts */
@@ -796,6 +926,13 @@
       margin: 0 auto;
     }
 
+    .tmc-op-expanded-row {
+      background: rgba(0, 0, 0, 0.15) !important;
+    }
+    body.light-theme .tmc-op-expanded-row {
+      background: rgba(0, 0, 0, 0.04) !important;
+    }
+
     @keyframes tmcSpin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -963,6 +1100,10 @@
       --text-main: #1e293b;
       --text-muted: #64748b;
       --border: #cbd5e1;
+      --bg-op-table: rgba(255, 255, 255, 0.8);
+      --bg-op-header: #f8fafc;
+      --border-subtle: #cbd5e1;
+      --text-sku: #2563eb;
     }
 
     body.light-theme .tmc-sidebar-header h2 {
@@ -1573,13 +1714,40 @@
     body.light-theme .tmc-action-btn-mini:hover {
       background: rgba(0, 0, 0, 0.1);
     }
+    @keyframes tmcSlideIn {
+      from {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    @keyframes tmcPulseWarning {
+      0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+      }
+    }
+    .tmc-pulse-warning {
+      animation: tmcPulseWarning 2s infinite;
+    }
   </style>
 </head>
 <body>
 
+  <!-- Container for global unread alerts -->
+  <div id="tmc-global-alerts-container" style="position: fixed; top: 16px; right: 16px; z-index: 99999; display: flex; flex-direction: column; gap: 12px; max-width: 420px; width: calc(100% - 32px); pointer-events: none;"></div>
+
   <div class="tmc-dashboard-container">
     <!-- Left Sidebar: Consolidated Balances -->
-    <div class="tmc-sidebar">
+    <div id="tmc-sidebar-container" class="tmc-sidebar">
       <div class="tmc-sidebar-header">
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
           <h2 style="margin: 0; font-size: 18px;">TMC - CC Clientes</h2>
@@ -1632,6 +1800,10 @@
         </div>
         
         <div style="display: flex; align-items: center; gap: 12px;">
+          <!-- Botón de Guía de Ayuda Interactiva -->
+          <button id="tmc-help-btn" onclick="startInteractiveTour()" class="tmc-btn-secondary" style="padding: 0; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; width: 110px; height: 38px; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa;" title="Iniciar Guía de Ayuda Interactiva">
+            💡 Ayuda
+          </button>
           <a href="../index.html" class="tmc-btn-secondary" style="text-decoration: none; padding: 0; width: 110px; height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;" title="Volver al Inicio">
             🏠 Inicio
           </a>
@@ -1667,7 +1839,7 @@
         </div>
 
         <!-- Tarjeta de Resumen / Saldo -->
-        <div class="tmc-summary-card" style="display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 20px;">
+        <div class="tmc-summary-card" id="tmc-summary-card-container" style="display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 20px;">
           <!-- Saludo arriba de todo -->
           <div id="tmc-cliente-greeting" class="tmc-client-greeting" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 0; width: 100%; text-align: left;"></div>
           
@@ -1716,7 +1888,7 @@
             <!-- Acciones a la derecha en formato fila premium -->
             <div class="tmc-summary-info" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 120px;">
               <span class="tmc-label" style="text-align: right; display: block; white-space: nowrap;">RESUMEN DE CUENTA</span>
-              <div class="tmc-summary-actions" style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+              <div class="tmc-summary-actions" id="tmc-summary-actions-container" style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
                  <button id="tmc-btn-download-pdf" class="tmc-btn" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); width: 34px; height: 34px; padding: 0; justify-content: center; align-items: center; margin: 0; border-radius: 8px; display: inline-flex; box-sizing: border-box; cursor: pointer; transition: all 0.2s;" title="Descargar Resumen de Cuenta" disabled>
                    <img src="pdf-logo.png" style="width: 18px; height: 18px; object-fit: contain;">
                  </button>
@@ -1844,6 +2016,16 @@
                 <button class="tmc-btn-secondary" onclick="event.stopPropagation(); refreshPedidosOnly()" style="padding: 6px 12px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border-color: var(--border); color: var(--text-main);">
                   <span id="tmc-pedidos-refresh-icon" style="transition: transform 0.2s;">🔄</span> Refrescar
                 </button>
+                
+                <!-- Selector de Vista: Tarjetas o Tabla Detallada -->
+                <div id="tmc-view-selector-container" style="display: inline-flex; background: rgba(30,41,59,0.5); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; padding: 2px;">
+                  <button id="tmc-view-cards-btn" onclick="event.stopPropagation(); togglePendingOrdersView('cards')" style="padding: 4px 10px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; background: var(--primary); color: white;">
+                    <span>📇</span> Tarjetas
+                  </button>
+                  <button id="tmc-view-table-btn" onclick="event.stopPropagation(); togglePendingOrdersView('table')" style="padding: 4px 10px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; background: transparent; color: var(--text-muted);">
+                    <span>📊</span> Tabla Artículos
+                  </button>
+                </div>
               </div>
               
               <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; user-select: none;">
@@ -1860,6 +2042,10 @@
             
             <div id="tmc-pedidos-list-container" style="display: flex; flex-direction: column;">
               <!-- Se completará vía JS -->
+            </div>
+
+            <div id="tmc-pedidos-table-container" style="display: none; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: rgba(30, 41, 59, 0.2); margin-top: 8px;">
+              <!-- Se completará vía JS como tabla -->
             </div>
 
             <!-- Barra de Acciones Masivas para Pedidos Seleccionados -->
@@ -1907,6 +2093,27 @@
           </div>
           
           <div id="tmc-pedidos-entregados-body" style="margin-top: 16px; display: none;">
+            <!-- Controles de Búsqueda y Filtrado -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; padding: 0 4px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex-grow: 1;">
+                <!-- Buscador de pedidos entregados -->
+                <div style="position: relative; display: flex; align-items: center; min-width: 200px;">
+                  <span style="position: absolute; left: 10px; color: var(--text-muted); font-size: 14px;">🔍</span>
+                  <input type="text" id="tmc-pedidos-entregados-search" placeholder="Buscar por número, SKU o producto..." oninput="window.filterAndRenderDeliveredPedidos()" style="width: 100%; padding: 6px 12px 6px 32px; font-size: 13px; background: rgba(30,41,59,0.5); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); outline: none;">
+                </div>
+                
+                <!-- Selector de Vista: Tarjetas o Tabla Detallada -->
+                <div id="tmc-view-selector-container-entregados" style="display: inline-flex; background: rgba(30,41,59,0.5); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; padding: 2px;">
+                  <button id="tmc-view-cards-btn-entregados" onclick="event.stopPropagation(); toggleDeliveredOrdersView('cards')" style="padding: 4px 10px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; background: var(--primary); color: white;">
+                    <span>📇</span> Tarjetas
+                  </button>
+                  <button id="tmc-view-table-btn-entregados" onclick="event.stopPropagation(); toggleDeliveredOrdersView('table')" style="padding: 4px 10px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; background: transparent; color: var(--text-muted);">
+                    <span>📊</span> Tabla Artículos
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Contenido dinámico de pedidos entregados -->
             <div id="tmc-pedidos-entregados-loader" class="text-center py-4" style="display: none;">
               <div class="tmc-spinner"></div>
@@ -1915,6 +2122,10 @@
             
             <div id="tmc-pedidos-entregados-list-container" style="display: flex; flex-direction: column;">
               <!-- Se completará vía JS -->
+            </div>
+
+            <div id="tmc-pedidos-entregados-table-container" style="display: none; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: rgba(30, 41, 59, 0.2); margin-top: 8px;">
+              <!-- Se completará vía JS como tabla -->
             </div>
           </div>
         </div>
@@ -1946,7 +2157,7 @@
                 <span style="font-size: 10px; color: var(--text-muted);">Cobros aplicados históricos</span>
               </div>
               <!-- Collection ratio metric -->
-              <div class="tmc-summary-info" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 4px; position: relative;">
+              <div class="tmc-summary-info" style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px; padding: 16px; flex-direction: column; gap: 4px; position: relative;">
                 <span class="tmc-label tmc-tooltip-trigger" style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; cursor: help; display: inline-block; width: max-content;">Efectividad de Cobro</span>
                 <strong id="tmc-metric-efectividad" style="font-size: 20px; color: #3b82f6;">-</strong>
                 <!-- Progress bar -->
@@ -2053,9 +2264,30 @@
 
               <!-- Monthly Trend Chart Section -->
               <div style="border-top: 1px solid var(--border); padding-top: 24px; margin-top: 24px;">
-                <h4 style="margin: 0 0 16px 0; font-size: 13.5px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-                  <span>📈</span> Evolución Mensual Facturación vs. Costos <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Últimos 12 meses)</span>
-                </h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                  <h4 style="margin: 0; font-size: 13.5px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                    <span>📈</span> Evolución Mensual Facturación vs. Costos <span id="tmc-chart-range-label" style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Últimos 24 meses)</span>
+                  </h4>
+                  
+                  <!-- Filtros del Gráfico -->
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-muted);">
+                      <label for="tmc-chart-desde">Desde:</label>
+                      <select id="tmc-chart-desde" onchange="updateChartFilters()" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); color: var(--text-main); font-size: 11.5px; border-radius: 6px; padding: 4px 8px; outline: none; cursor: pointer; font-family: inherit;">
+                        <!-- Opciones dinámicas -->
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-muted);">
+                      <label for="tmc-chart-hasta">Hasta:</label>
+                      <select id="tmc-chart-hasta" onchange="updateChartFilters()" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); color: var(--text-main); font-size: 11.5px; border-radius: 6px; padding: 4px 8px; outline: none; cursor: pointer; font-family: inherit;">
+                        <!-- Opciones dinámicas -->
+                      </select>
+                    </div>
+                    <button id="tmc-chart-reset" onclick="resetChartFilters()" class="tmc-btn-secondary" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; display: none; height: auto; margin: 0;">
+                      Restablecer
+                    </button>
+                  </div>
+                </div>
                 
                 <!-- Chart Container -->
                 <div style="position: relative; height: 260px; width: 100%; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-sizing: border-box;">
@@ -2137,6 +2369,8 @@
                 <div><strong>Comprobante:</strong> <span id="tmc-detail-nro">-</span></div>
                 <div><strong>Fecha:</strong> <span id="tmc-detail-fecha">-</span></div>
                 <div><strong>Total:</strong> <span id="tmc-detail-total">-</span></div>
+                <div id="tmc-detail-bultos-container" style="display: none;"><strong>Bultos:</strong> <span id="tmc-detail-bultos">-</span></div>
+                <div id="tmc-detail-transporte-container" style="display: none;"><strong>Transporte:</strong> <span id="tmc-detail-transporte">-</span></div>
                 <div id="tmc-detail-pedido-container" style="display: none; flex-basis: 100%; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px; margin-top: 4px;"><strong>Pedido:</strong> <span id="tmc-detail-pedido-info">-</span></div>
               </div>
               <div id="tmc-detail-actions-container" style="display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; overflow-x: auto; width: auto; max-width: 100%;">
@@ -2149,8 +2383,8 @@
                 <button id="tmc-btn-share-doc-email" class="tmc-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); width: 28px; height: 28px; padding: 0; justify-content: center; align-items: center; margin: 0; border-radius: 6px; display: none; box-sizing: border-box; cursor: pointer; transition: all 0.2s;" title="Compartir por Email">
                   <img src="gmail-logo.png" style="width: 14px; height: 14px; object-fit: contain;">
                 </button>
-                <button id="tmc-btn-view-yiqi" class="tmc-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); width: 28px; height: 28px; padding: 0; justify-content: center; align-items: center; margin: 0; border-radius: 6px; display: none; box-sizing: border-box; cursor: pointer; transition: all 0.2s;" title="Ver en YiQi ERP">
-                  <img src="yiqi-logo.png" style="width: 14px; height: 14px; object-fit: contain;">
+                <button id="tmc-btn-view-yiqi" class="tmc-yiqi-logo-btn" style="display: none; height: 28px; padding: 0 4px !important; margin: 0 4px !important;" title="Ver en YiQi ERP">
+                  <img src="yiqi-logo.png" style="height: 16px; width: auto; object-fit: contain;">
                 </button>
                 <button id="tmc-btn-add-nc" class="tmc-btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 0 8px; font-size: 11px; font-weight: 600; margin: 0; display: none; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; transition: all 0.2s; box-sizing: border-box; height: 28px; white-space: nowrap;" title="Agregar Nota de Crédito">
                   ➕ NC
@@ -2199,8 +2433,137 @@
               <!-- Cargado dinámicamente -->
             </div>
           </div>
-          <div class="tmc-modal-footer">
-            <button id="tmc-modal-detail-btn-close" class="tmc-btn-secondary" style="padding: 8px 16px; font-size: 13px;">Cerrar</button>
+          <div class="tmc-modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <button id="tmc-btn-entregar-remito" class="tmc-btn" style="display: none; background: #10b981; color: white; border: none; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+              🚚 Pasar a Entregado
+            </button>
+            <button id="tmc-modal-detail-btn-close" class="tmc-btn-secondary" style="padding: 8px 16px; font-size: 13px; margin-left: auto;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal para Vista Previa de Remito (PDF / Conforme Firmado) -->
+      <div id="tmc-modal-preview-remito" class="tmc-modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 100010; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7);">
+        <div class="tmc-modal-content" style="max-width: 900px; width: 90%; height: 85vh; display: flex; flex-direction: column; background: #1e293b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+          <div class="tmc-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+            <h3 id="tmc-remito-preview-title" style="margin: 0; font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">📦 Vista Previa de Remito</h3>
+            <button id="tmc-remito-preview-close" class="tmc-modal-close-btn" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+          </div>
+          
+          <!-- Metadata Bar (Screen 1 style) -->
+          <div style="padding: 12px 16px 6px 16px; background: rgba(0,0,0,0.1);">
+            <div class="tmc-transaction-details-box" style="margin-bottom: 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; background-color: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); padding: 10px 14px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 12px; flex-grow: 1;">
+                <div><strong>Comprobante:</strong> <span id="tmc-remito-detail-nro">-</span></div>
+                <div><strong>Fecha:</strong> <span id="tmc-remito-detail-fecha">-</span></div>
+                <div id="tmc-remito-detail-pedido-container" style="display: none; flex-basis: 100%; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px; margin-top: 4px;"><strong>Pedido:</strong> <span id="tmc-remito-detail-pedido-info">-</span></div>
+              </div>
+              <div id="tmc-remito-detail-actions-container" style="display: flex; gap: 4px; align-items: center; flex-wrap: nowrap;">
+                <button id="tmc-remito-btn-pdf" class="tmc-btn" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); width: 28px; height: 28px; padding: 0; justify-content: center; align-items: center; margin: 0; border-radius: 6px; display: none; cursor: pointer; transition: all 0.2s;" title="Descargar PDF">
+                  <img src="pdf-logo.png" style="width: 14px; height: 14px; object-fit: contain;">
+                </button>
+                <button id="tmc-remito-btn-wa" class="tmc-btn" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); width: 28px; height: 28px; padding: 0; justify-content: center; align-items: center; margin: 0; border-radius: 6px; display: none; cursor: pointer; transition: all 0.2s;" title="Compartir por WhatsApp">
+                  <img src="whatsapp-logo.png" style="width: 14px; height: 14px; object-fit: contain;">
+                </button>
+                <button id="tmc-remito-btn-yiqi" class="tmc-yiqi-logo-btn" style="display: none; height: 28px; padding: 0 4px !important; margin: 0 4px !important; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 6px; cursor: pointer;" title="Ver en YiQi ERP">
+                  <img src="yiqi-logo.png" style="height: 14px; width: auto; object-fit: contain; vertical-align: middle;">
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; background: rgba(0,0,0,0.1); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 16px;">
+            <button id="tmc-remito-tab-pdf" class="tmc-remito-tab" style="background: none; border: none; color: #ffffff; padding: 12px 16px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid #3b82f6; transition: all 0.2s;">📄 Remito Oficial (PDF)</button>
+            <button id="tmc-remito-tab-conforme" class="tmc-remito-tab" style="background: none; border: none; color: #94a3b8; padding: 12px 16px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; display: none;">✍️ Conforme Firmado (Foto)</button>
+          </div>
+          <div class="tmc-modal-body" style="padding: 0; flex: 1; min-height: 0; display: flex; flex-direction: column; background: #0f172a; position: relative;">
+            <!-- Contenido de PDF (iframe) -->
+            <div id="tmc-remito-pane-pdf" style="width: 100%; height: 100%; display: block;">
+              <iframe id="tmc-remito-iframe-pdf" src="" style="width: 100%; height: 100%; border: none; background: #0f172a;"></iframe>
+            </div>
+            <!-- Contenido de Conforme -->
+            <div id="tmc-remito-pane-conforme" style="width: 100%; height: 100%; display: none; overflow: auto; text-align: center; padding: 16px; box-sizing: border-box;">
+              <img id="tmc-remito-img-conforme" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);" alt="Foto Conforme">
+              <iframe id="tmc-remito-iframe-conforme" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+            </div>
+            <!-- Loader interno -->
+            <div id="tmc-remito-preview-loader" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+              <div class="tmc-spinner"></div>
+              <p style="margin-top: 12px; color: #94a3b8; font-size: 13px;">Cargando documento...</p>
+            </div>
+          </div>
+          <div style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+            <button id="tmc-remito-btn-download-raw" class="tmc-btn" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; font-size: 12px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;">💾 Descargar Archivo</button>
+            <button id="tmc-remito-btn-close" class="tmc-btn" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ffffff; font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal para Vista Previa General de PDF (Facturas, Recibos, etc.) -->
+      <div id="tmc-modal-preview-general-pdf" class="tmc-modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 100020; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7);">
+        <div class="tmc-modal-content" style="max-width: 900px; width: 90%; height: 85vh; display: flex; flex-direction: column; background: #1e293b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+          <div class="tmc-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+            <h3 id="tmc-general-pdf-preview-title" style="margin: 0; font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">📄 Vista Previa de Documento</h3>
+            <button id="tmc-general-pdf-preview-close" class="tmc-modal-close-btn" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+          </div>
+          <div class="tmc-modal-body" style="padding: 0; flex: 1; min-height: 0; display: flex; flex-direction: column; background: #0f172a; position: relative;">
+            <iframe id="tmc-general-pdf-iframe" src="" style="width: 100%; height: 100%; border: none; background: #0f172a;"></iframe>
+            <!-- Loader interno -->
+            <div id="tmc-general-pdf-preview-loader" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+              <div class="tmc-spinner"></div>
+              <p style="margin-top: 12px; color: #94a3b8; font-size: 13px;">Cargando PDF...</p>
+            </div>
+          </div>
+          <div style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+            <button id="tmc-general-pdf-btn-download" class="tmc-btn" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; font-size: 12px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;">💾 Descargar PDF</button>
+            <button id="tmc-general-pdf-btn-close" class="tmc-btn" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ffffff; font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal para Detalle de Receta/BOM de un artículo -->
+      <div id="tmc-modal-item-bom" class="tmc-modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 100030; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7);">
+        <div class="tmc-modal-content" style="max-width: 650px; width: 90%; background: #1e293b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+          <div class="tmc-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+            <h3 id="tmc-bom-title" style="margin: 0; font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">📋 Receta de Fabricación (BOM)</h3>
+            <button id="tmc-bom-close" class="tmc-modal-close-btn" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+          </div>
+          <div class="tmc-modal-body" style="padding: 16px; max-height: 60vh; overflow-y: auto;">
+            <p style="font-size: 13.5px; margin: 0 0 12px 0; color: #cbd5e1;">
+              Componentes e insumos requeridos para fabricar: <strong id="tmc-bom-product-name" style="color: #ffffff;">-</strong>
+            </p>
+            
+            <!-- Loader -->
+            <div id="tmc-bom-loader" class="text-center py-4" style="text-align: center;">
+              <div class="tmc-spinner" style="margin: 0 auto;"></div>
+              <p class="text-muted" style="font-size: 12.5px; color: #94a3b8; margin-top: 8px;">Consultando componentes en YiQi ERP...</p>
+            </div>
+            
+            <!-- Tabla de componentes -->
+            <div id="tmc-bom-table-wrapper" style="display: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow-x: auto; background: rgba(0, 0, 0, 0.2);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+                <thead>
+                  <tr style="background-color: rgba(15, 23, 42, 0.6); border-bottom: 2px solid rgba(255, 255, 255, 0.1); color: #94a3b8; font-weight: 600;">
+                    <th style="padding: 10px 12px;">Componente SKU</th>
+                    <th style="padding: 10px 12px;">Nombre de Insumo</th>
+                    <th style="padding: 10px 12px; text-align: right;">Cant. Req.</th>
+                    <th style="padding: 10px 12px; text-align: right;">Stock Disp.</th>
+                    <th style="padding: 10px 12px; text-align: center;">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="tmc-bom-table-body">
+                  <!-- Dinámico -->
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- No BOM message -->
+            <div id="tmc-bom-empty" class="text-center py-4" style="display: none; color: #94a3b8; font-size: 13px; text-align: center;">
+              ℹ Este artículo no tiene una receta (BOM) registrada en YiQi ERP.
+            </div>
+          </div>
+          <div class="tmc-modal-footer" style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: flex-end; background: rgba(0,0,0,0.2);">
+            <button id="tmc-bom-btn-close" class="tmc-btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">Cerrar</button>
           </div>
         </div>
       </div>
@@ -2498,6 +2861,9 @@
           </div>
           <div class="tmc-modal-body" style="padding: 24px 20px; font-size: 13.5px; line-height: 1.6; color: #cbd5e1;">
             <p id="tmc-custom-dialog-message" style="margin: 0; word-break: break-word;"></p>
+            <div id="tmc-custom-dialog-input-container" style="display: none; margin-top: 15px;">
+              <input type="number" id="tmc-custom-dialog-input" min="1" step="1" style="width: 100%; padding: 10px 12px; font-size: 13.5px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(15, 23, 42, 0.6); color: #ffffff; box-sizing: border-box; outline: none; transition: border-color 0.2s;" />
+            </div>
           </div>
           <div class="tmc-modal-footer" style="padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; background-color: rgba(15, 23, 42, 0.8); border-top: 1px solid rgba(255, 255, 255, 0.08);">
             <button id="tmc-custom-dialog-btn-cancel" class="tmc-btn-secondary" style="padding: 8px 16px; font-size: 12.5px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: #cbd5e1; cursor: pointer; transition: all 0.2s;">Cancelar</button>
@@ -2528,6 +2894,8 @@
     const OBTENER_ESTADO_URL = "https://obtenerestadocuenta-vb5plcbgra-uc.a.run.app";
     const OBTENER_PEDIDOS_URL = "https://obtenerpedidospendientes-vb5plcbgra-uc.a.run.app";
     const OBTENER_ESTADO_PEDIDO_URL = "https://obtenerestadopedido-vb5plcbgra-uc.a.run.app";
+    const OBTENER_ALERTAS_ACTIVAS_URL = "https://us-central1-tmc-backend-2f5c4.cloudfunctions.net/obtenerAlertasCompartidas";
+    const MARCAR_ALERTA_LEIDA_URL = "https://us-central1-tmc-backend-2f5c4.cloudfunctions.net/resolverAlertaCompartida";
     
     // Receipt Modal Sorting & breakdown state
     let cobroInvoiceSortField = "fecha";
@@ -2543,7 +2911,387 @@
     const CONTROL_CALIDAD_URL = "https://controlcalidadapi-vb5plcbgra-uc.a.run.app";
     const CREAR_AJUSTE_URL = "https://controlcalidadapi-vb5plcbgra-uc.a.run.app";
     const OBTENER_METRICAS_PEDIDOS_URL = "https://obtenermetricaspedidos-vb5plcbgra-uc.a.run.app";
+    const OBTENER_BOM_DETALLE_URL = "https://obtenerbomdetalle-vb5plcbgra-uc.a.run.app";
+    const GESTIONAR_PRODUCCION_OP_URL = "https://us-central1-tmc-backend-2f5c4.cloudfunctions.net/gestionarProduccionOP";
     let currentImputations = {};
+
+    window.toggleOPExpansion = function(pedidoNro, pedidoId, mateId, sku, producto, qty, btn) {
+      const opRow = document.getElementById("tmc-op-row-" + pedidoNro + "-" + sku);
+      const opContent = document.getElementById("tmc-op-content-" + pedidoNro + "-" + sku);
+      if (!opRow || !opContent) return;
+
+      if (opRow.style.display !== "none") {
+        opRow.style.display = "none";
+        btn.textContent = "➕";
+        btn.style.transform = "rotate(0deg)";
+      } else {
+        opRow.style.display = "table-row";
+        btn.textContent = "➖";
+        btn.style.transform = "rotate(180deg)";
+        loadOPInfo(pedidoNro, pedidoId, mateId, sku, producto, qty, opContent);
+      }
+    };
+
+    async function loadOPInfo(pedidoNro, pedidoId, mateId, sku, producto, qty, container) {
+      container.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px 0; color: #94a3b8; font-size: 13px;">
+          <div class="tmc-spinner" style="width: 16px; height: 16px;"></div>
+          <span>Buscando Orden de Producción en YiQi ERP...</span>
+        </div>
+      `;
+
+      try {
+        const response = await fetch(GESTIONAR_PRODUCCION_OP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "getOP", pedidoId, mateId, sku })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data || !data.success) {
+          throw new Error(data.error || "Error al consultar la OP");
+        }
+
+        if (!data.found) {
+          container.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px 0;">
+              <div style="font-size: 13px; color: #cbd5e1; display: flex; align-items: center; gap: 6px;">
+                ⚠️ No se encontró ninguna Orden de Producción activa para este artículo en este pedido.
+              </div>
+              <div>
+                <button class="tmc-btn" style="background: var(--primary); border: none; color: white; padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" 
+                  onclick="window.gestionarOPAction('${pedidoNro}', '${pedidoId}', '${mateId}', '${sku}', '${producto}', ${qty}, null, 'createOP')">
+                  ⚙️ Crear Orden de Producción
+                </button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        const op = data.op;
+        
+        let statusColor = "#64748b";
+        let statusBg = "rgba(100, 116, 139, 0.1)";
+        let actionButtonsHtml = "";
+
+        const isProcess = op.estado.toLowerCase().includes("proceso");
+        const isFinished = op.estado.toLowerCase().includes("termina");
+        const isPending = op.estado.toLowerCase().includes("pendiente") || op.estado.toLowerCase().includes("reinicia") || op.estado.toLowerCase().includes("ingresa");
+
+        if (isProcess) {
+          statusColor = "#f59e0b";
+          statusBg = "rgba(245, 158, 11, 0.1)";
+          actionButtonsHtml = `
+            <button class="tmc-btn" style="background: #10b981; border: none; color: white; padding: 6px 12px; font-size: 11.5px; border-radius: 6px; cursor: pointer;" 
+              onclick="window.gestionarOPAction('${pedidoNro}', '${pedidoId}', '${mateId}', '${sku}', '${producto}', ${qty}, '${op.id}', 'terminarOP')">
+              ✅ Terminar Orden de Producción
+            </button>
+          `;
+        } else if (isPending) {
+          statusColor = "#3b82f6";
+          statusBg = "rgba(59, 130, 246, 0.1)";
+          actionButtonsHtml = `
+            <button class="tmc-btn" style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; padding: 6px 12px; font-size: 11.5px; border-radius: 6px; cursor: pointer;" 
+              onclick="window.gestionarOPAction('${pedidoNro}', '${pedidoId}', '${mateId}', '${sku}', '${producto}', ${qty}, '${op.id}', 'calcularBOM')">
+              🔄 Calcular Artículos Requeridos
+            </button>
+            <button class="tmc-btn" style="background: var(--primary); border: none; color: white; padding: 6px 12px; font-size: 11.5px; border-radius: 6px; cursor: pointer; margin-left: 8px;" 
+              onclick="window.gestionarOPAction('${pedidoNro}', '${pedidoId}', '${mateId}', '${sku}', '${producto}', ${qty}, '${op.id}', 'reservarStock')">
+              📦 Reservar Insumos (Iniciar OP)
+            </button>
+          `;
+        } else if (isFinished) {
+          statusColor = "#10b981";
+          statusBg = "rgba(16, 185, 129, 0.1)";
+          actionButtonsHtml = `<span style="color: #10b981; font-weight: 600; font-size: 12.5px;">🎉 Producción completada exitosamente. Insumos descontados.</span>`;
+        } else {
+          statusColor = "#94a3b8";
+          statusBg = "rgba(148, 163, 184, 0.1)";
+        }
+
+        const statusBadge = `<span style="background: ${statusBg}; color: ${statusColor}; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-block;">${escapeHTML(op.estado)}</span>`;
+
+        let bomTableHtml = "";
+        if (op.requiredItems && op.requiredItems.length > 0) {
+          let rowsHtml = "";
+          op.requiredItems.forEach(insumo => {
+            const req = parseFloat(insumo.reqQty || 0);
+            const stock = parseFloat(insumo.stockQty || 0);
+            const unit = insumo.unit || "U";
+
+            let badgeColor = "#ef4444";
+            let badgeBg = "rgba(239, 68, 68, 0.1)";
+            let badgeText = "Sin Stock";
+
+            if (stock >= req) {
+              badgeColor = "#10b981";
+              badgeBg = "rgba(16, 185, 129, 0.1)";
+              badgeText = "Disponible";
+            } else if (stock > 0) {
+              badgeColor = "#f59e0b";
+              badgeBg = "rgba(245, 158, 11, 0.1)";
+              badgeText = "Parcial";
+            }
+
+            const badgeHtml = `<span style="background: ${badgeBg}; color: ${badgeColor}; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; display: inline-block;">${badgeText}</span>`;
+
+             rowsHtml += `
+              <tr style="border-bottom: 1px solid var(--border-subtle);">
+                <td style="padding: 6px 8px; font-family: monospace; font-weight: 600; color: var(--text-sku);">${escapeHTML(insumo.sku)}</td>
+                <td style="padding: 6px 8px; color: var(--text-main); font-size: 11.5px;">${escapeHTML(insumo.name)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: 600; color: var(--text-main);">${req.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2})} ${escapeHTML(unit)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: 600; color: ${stock > 0 ? 'var(--text-sku)' : 'var(--danger)'}">${stock.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2})} ${escapeHTML(unit)}</td>
+                <td style="padding: 6px 8px; text-align: center;">${badgeHtml}</td>
+              </tr>
+            `;
+          });
+
+          bomTableHtml = `
+            <div style="margin-top: 10px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--bg-op-table);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                <thead>
+                  <tr style="background-color: var(--bg-op-header); border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 600;">
+                    <th style="padding: 6px 8px;">Insumo SKU</th>
+                    <th style="padding: 6px 8px;">Nombre del Material</th>
+                    <th style="padding: 6px 8px; text-align: right;">Req.</th>
+                    <th style="padding: 6px 8px; text-align: right;">Físico</th>
+                    <th style="padding: 6px 8px; text-align: center;">Disponibilidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else if (!isFinished) {
+          bomTableHtml = `
+            <div style="padding: 10px 0; color: var(--text-muted); font-size: 12px; font-style: italic;">
+              ⚠️ La OP aún no tiene insumos calculados. Por favor presiona "Calcular Artículos Requeridos" para cargar la BOM.
+            </div>
+          `;
+        }
+
+        container.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 4px 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12.5px;">
+              <span style="color: var(--text-main); display: inline-flex; align-items: center; gap: 4px;">
+                📋 <strong>Orden de Producción #${op.nro}</strong> (ID: ${op.id})
+                <button class="tmc-yiqi-logo-btn" title="Ver en YiQi ERP" onclick="event.stopPropagation(); window.open('https://me.yiqi.com.ar/view/ORDEN_DE_PRODUCCION?schemaId=1491#/${op.id}', '_blank')">
+                  <img src="yiqi-logo.png" alt="YiQi" style="height: 14px; width: auto; object-fit: contain; vertical-align: middle;">
+                </button>
+              </span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--text-muted);">Estado:</span>
+                ${statusBadge}
+              </div>
+            </div>
+            
+            ${bomTableHtml}
+
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.06);">
+              ${actionButtonsHtml}
+            </div>
+          </div>
+        `;
+
+      } catch (err) {
+        console.error("Error al cargar OP:", err);
+        container.innerHTML = `
+          <div style="color: #f43f5e; font-size: 13px; padding: 8px 0; display: flex; align-items: center; gap: 6px;">
+            ❌ Error consultando la OP: ${escapeHTML(err.message)}
+          </div>
+        `;
+      }
+    }
+
+    window.gestionarOPAction = async function(pedidoNro, pedidoId, mateId, sku, producto, qty, opId, action) {
+      if (window.event) window.event.stopPropagation();
+
+      const actionLabels = {
+        'createOP': 'Crear Orden de Producción',
+        'calcularBOM': 'Calcular Artículos Requeridos',
+        'reservarStock': 'Reservar Insumos (Iniciar OP)',
+        'terminarOP': 'Terminar Orden de Producción'
+      };
+      const label = actionLabels[action] || action;
+
+      if (action === 'terminarOP') {
+        const confirmText = `¿Estás seguro de que deseas TERMINAR la Orden de Producción de este artículo?\n\nEsta acción descontará físicamente los insumos de stock y finalizará la producción en YiQi ERP.`;
+        if (!await showCustomConfirm("Confirmar Finalización de Producción", confirmText)) return;
+      } else if (action === 'createOP') {
+        const confirmText = `¿Estás seguro de que deseas crear una Orden de Producción en YiQi ERP para ${qty} unidades de "${producto}"?`;
+        if (!await showCustomConfirm("Confirmar Creación de OP", confirmText)) return;
+      }
+
+      const opContent = document.getElementById("tmc-op-content-" + pedidoNro + "-" + sku);
+      if (opContent) {
+        opContent.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px 0; color: #94a3b8; font-size: 13px;">
+            <div class="tmc-spinner" style="width: 16px; height: 16px;"></div>
+            <span>Ejecutando acción "${label}" en YiQi ERP...</span>
+          </div>
+        `;
+      }
+
+      try {
+        const response = await fetch(GESTIONAR_PRODUCCION_OP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, opId, pedidoId, mateId, qty })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data || !data.success) {
+          throw new Error(data.error || "Operación fallida en YiQi ERP");
+        }
+
+        if (opContent) {
+          await loadOPInfo(pedidoNro, pedidoId, mateId, sku, producto, qty, opContent);
+        }
+
+        if (action === 'terminarOP' || action === 'createOP' || action === 'reservarStock') {
+          showToast(`Operación "${label}" ejecutada exitosamente.`, 'success');
+          setTimeout(() => {
+            const clientCode = document.getElementById("clientCodeInput").value.trim();
+            if (clientCode) {
+              window.buscarPedidosCliente(clientCode);
+            }
+          }, 1500);
+        }
+
+      } catch (err) {
+        console.error("Error ejecutando acción OP:", err);
+        showToast(`Error: ${err.message}`, 'error', 6000);
+        if (opContent) {
+          await loadOPInfo(pedidoNro, pedidoId, mateId, sku, producto, qty, opContent);
+        }
+      }
+    };
+
+    window.verBOMItem = function(sku, producto) {
+      const modal = document.getElementById("tmc-modal-item-bom");
+      const productNameEl = document.getElementById("tmc-bom-product-name");
+      const loader = document.getElementById("tmc-bom-loader");
+      const tableWrapper = document.getElementById("tmc-bom-table-wrapper");
+      const tableBody = document.getElementById("tmc-bom-table-body");
+      const emptyMsg = document.getElementById("tmc-bom-empty");
+
+      productNameEl.textContent = `${sku} - ${producto}`;
+
+      loader.style.display = "block";
+      tableWrapper.style.display = "none";
+      emptyMsg.style.display = "none";
+      tableBody.innerHTML = "";
+
+      modal.style.display = "flex";
+
+      const url = `${OBTENER_BOM_DETALLE_URL}?sku=${encodeURIComponent(sku)}`;
+      
+      fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          loader.style.display = "none";
+          
+          if (!data || !data.success || !data.components || data.components.length === 0) {
+            emptyMsg.textContent = `ℹ Este artículo (${sku}) no tiene una receta (BOM) registrada en YiQi ERP.`;
+            emptyMsg.style.display = "block";
+            return;
+          }
+
+          let html = "";
+          data.components.forEach(item => {
+            const reqQty = parseFloat(item.reqQty || 0);
+            const stockQty = parseFloat(item.stockQty || 0);
+            const unit = item.unit || "U";
+            
+            let badgeColor = "#ef4444";
+            let badgeBg = "rgba(239, 68, 68, 0.1)";
+            let badgeText = "Sin Stock";
+            
+            if (stockQty >= reqQty) {
+              badgeColor = "#10b981";
+              badgeBg = "rgba(16, 185, 129, 0.1)";
+              badgeText = "Disponible";
+            } else if (stockQty > 0) {
+              badgeColor = "#f59e0b";
+              badgeBg = "rgba(245, 158, 11, 0.1)";
+              badgeText = "Parcial";
+            }
+            
+            const badgeHtml = `<span style="background: ${badgeBg}; color: ${badgeColor}; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block;">${badgeText}</span>`;
+            
+            html += `
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 12px; font-family: monospace; font-weight: 600; color: #60a5fa;">${escapeHTML(item.sku)}</td>
+                <td style="padding: 10px 12px; color: #cbd5e1;">${escapeHTML(item.name)}</td>
+                <td style="padding: 10px 12px; text-align: right; font-weight: 600; color: #ffffff;">${reqQty.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2})} ${escapeHTML(unit)}</td>
+                <td style="padding: 10px 12px; text-align: right; font-weight: 600; color: ${stockQty > 0 ? '#60a5fa' : '#ef4444'}">${stockQty.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2})} ${escapeHTML(unit)}</td>
+                <td style="padding: 10px 12px; text-align: center;">${badgeHtml}</td>
+              </tr>
+            `;
+          });
+          
+          tableBody.innerHTML = html;
+          tableWrapper.style.display = "block";
+        })
+        .catch(err => {
+          console.error("Error consultando BOM:", err);
+          loader.style.display = "none";
+          emptyMsg.textContent = `❌ Error al consultar la receta: ${err.message}`;
+          emptyMsg.style.display = "block";
+        });
+    };
+
+    const closeBOMModal = () => {
+      document.getElementById("tmc-modal-item-bom").style.display = "none";
+    };
+
+    // Registrar eventos del modal BOM una vez definidas las funciones
+    document.addEventListener("DOMContentLoaded", () => {
+      const closeBtn1 = document.getElementById("tmc-bom-close");
+      const closeBtn2 = document.getElementById("tmc-bom-btn-close");
+      const modal = document.getElementById("tmc-modal-item-bom");
+      if (closeBtn1) closeBtn1.onclick = closeBOMModal;
+      if (closeBtn2) closeBtn2.onclick = closeBOMModal;
+      if (modal) {
+        modal.onclick = (e) => {
+          if (e.target === modal) {
+            closeBOMModal();
+          }
+        };
+      }
+    });
+
+    // Como salvaguarda por si el DOM ya cargó
+    setTimeout(() => {
+      const closeBtn1 = document.getElementById("tmc-bom-close");
+      const closeBtn2 = document.getElementById("tmc-bom-btn-close");
+      const modal = document.getElementById("tmc-modal-item-bom");
+      if (closeBtn1 && !closeBtn1.onclick) closeBtn1.onclick = closeBOMModal;
+      if (closeBtn2 && !closeBtn2.onclick) closeBtn2.onclick = closeBOMModal;
+      if (modal && !modal.onclick) {
+        modal.onclick = (e) => {
+          if (e.target === modal) {
+            closeBOMModal();
+          }
+        };
+      }
+    }, 1000);
 
     function escapeHTML(str) {
       if (!str) return "";
@@ -3245,6 +3993,7 @@
 
     const showCustomAlert = (title, message) => {
       return new Promise((resolve) => {
+        document.getElementById("tmc-custom-dialog-input-container").style.display = "none";
         document.getElementById("tmc-custom-dialog-title").innerHTML = title;
         document.getElementById("tmc-custom-dialog-message").innerHTML = String(message).replace(/\n/g, "<br>");
         
@@ -3264,6 +4013,7 @@
 
     const showCustomConfirm = (title, message) => {
       return new Promise((resolve) => {
+        document.getElementById("tmc-custom-dialog-input-container").style.display = "none";
         document.getElementById("tmc-custom-dialog-title").innerHTML = title;
         document.getElementById("tmc-custom-dialog-message").innerHTML = String(message).replace(/\n/g, "<br>");
         
@@ -3281,7 +4031,41 @@
       });
     };
 
+    const showCustomPrompt = (title, message, defaultValue = "") => {
+      return new Promise((resolve) => {
+        document.getElementById("tmc-custom-dialog-title").innerHTML = title;
+        document.getElementById("tmc-custom-dialog-message").innerHTML = String(message).replace(/\n/g, "<br>");
+        
+        const inputContainer = document.getElementById("tmc-custom-dialog-input-container");
+        const inputEl = document.getElementById("tmc-custom-dialog-input");
+        inputContainer.style.display = "block";
+        inputEl.value = defaultValue;
+        
+        document.getElementById("tmc-custom-dialog-btn-cancel").style.display = "block";
+        
+        const acceptBtn = document.getElementById("tmc-custom-dialog-btn-accept");
+        acceptBtn.textContent = "Aceptar";
+        
+        document.getElementById("tmc-custom-dialog").style.display = "flex";
+        
+        setTimeout(() => inputEl.focus(), 50);
+        
+        customDialogResolve = (res) => {
+          const val = inputEl.value;
+          inputContainer.style.display = "none";
+          document.getElementById("tmc-custom-dialog").style.display = "none";
+          resolve(res ? val : null);
+        };
+      });
+    };
+
     // Event listeners para cerrar/responder el diálogo personalizado
+    document.getElementById("tmc-custom-dialog-input").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        if (customDialogResolve) customDialogResolve(true);
+      }
+    });
+
     document.getElementById("tmc-custom-dialog-btn-accept").addEventListener("click", () => {
       if (customDialogResolve) customDialogResolve(true);
     });
@@ -3341,14 +4125,51 @@
       }
     };
 
-    // Aplicar política de TMC en cliente: Ocultar prefijo "Fac X" / "FX" y variaciones
+    // Aplicar política de TMC en cliente: Ocultar prefijo "Fac X" / "FX" / "X " y variaciones
     const cleanFXComprobante = (comprobante) => {
-      if (!comprobante) return "-";
-      const regexFX = /^(?:factura\s+x|fac\.?\s+x|fx)\s*(?:n[°o]|nro\.?|#)?\s*/i;
-      if (regexFX.test(comprobante)) {
-        return comprobante.replace(regexFX, "").trim();
+      if (comprobante === undefined || comprobante === null) return "-";
+      const str = String(comprobante).trim();
+      if (!str) return "-";
+      const regexFX = /^(?:factura\s+x|fac\.?\s+x|fx|\bx\b)\s*(?:n[°o]|nro\.?|#)?\s*[- ]*\s*/i;
+      return str.replace(regexFX, "").trim();
+    };
+
+    window.previewPDF = (pdfUrl, titleText = "Vista Previa de Documento") => {
+      const modal = document.getElementById("tmc-modal-preview-general-pdf");
+      if (!modal) {
+        window.open(pdfUrl, '_blank');
+        return;
       }
-      return comprobante;
+      const titleEl = document.getElementById("tmc-general-pdf-preview-title");
+      const iframe = document.getElementById("tmc-general-pdf-iframe");
+      const loader = document.getElementById("tmc-general-pdf-preview-loader");
+      const btnDownload = document.getElementById("tmc-general-pdf-btn-download");
+
+      titleEl.textContent = titleText;
+      iframe.src = "";
+      loader.style.display = "flex";
+      
+      iframe.src = pdfUrl;
+      iframe.onload = () => {
+        loader.style.display = "none";
+      };
+
+      btnDownload.onclick = () => {
+        window.open(pdfUrl, '_blank');
+      };
+
+      const closeModal = () => {
+        modal.style.display = "none";
+        iframe.src = "";
+      };
+
+      document.getElementById("tmc-general-pdf-preview-close").onclick = closeModal;
+      document.getElementById("tmc-general-pdf-btn-close").onclick = closeModal;
+      modal.onclick = (e) => {
+        if (e.target === modal) closeModal();
+      };
+
+      modal.style.display = "flex";
     };
 
     const matchDocumentNames = (name1, name2) => {
@@ -3981,6 +4802,285 @@
       }
     };
 
+    const populateChartFilterOptions = () => {
+      const desdeSelect = document.getElementById("tmc-chart-desde");
+      const hastaSelect = document.getElementById("tmc-chart-hasta");
+      if (!desdeSelect || !hastaSelect) return;
+
+      if (desdeSelect.options.length === 0) {
+        const today = new Date();
+        const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+        for (let i = 47; i >= 0; i--) {
+          const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+          const y = d.getFullYear();
+          const m = d.getMonth();
+          const val = `${y}-${String(m + 1).padStart(2, '0')}`;
+          const label = `${monthNames[m]} ${y}`;
+
+          desdeSelect.appendChild(new Option(label, val));
+          hastaSelect.appendChild(new Option(label, val));
+        }
+      }
+
+      const today = new Date();
+      const currentMonthVal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+      const defaultDesdeDate = new Date(today.getFullYear(), today.getMonth() - 23, 1);
+      const defaultDesdeVal = `${defaultDesdeDate.getFullYear()}-${String(defaultDesdeDate.getMonth() + 1).padStart(2, '0')}`;
+
+      desdeSelect.value = defaultDesdeVal;
+      hastaSelect.value = currentMonthVal;
+    };
+
+    window.updateChartFilters = () => {
+      const desdeSelect = document.getElementById("tmc-chart-desde");
+      const hastaSelect = document.getElementById("tmc-chart-hasta");
+      const resetBtn = document.getElementById("tmc-chart-reset");
+      const rangeLabel = document.getElementById("tmc-chart-range-label");
+
+      if (!desdeSelect || !hastaSelect) return;
+
+      const desdeVal = desdeSelect.value;
+      const hastaVal = hastaSelect.value;
+
+      if (desdeVal > hastaVal) {
+        const temp = desdeSelect.value;
+        desdeSelect.value = hastaSelect.value;
+        hastaSelect.value = temp;
+      }
+
+      if (resetBtn) resetBtn.style.display = "inline-flex";
+
+      if (rangeLabel) {
+        const dParts = desdeSelect.value.split("-");
+        const hParts = hastaSelect.value.split("-");
+        const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        const dName = monthNames[parseInt(dParts[1]) - 1];
+        const hName = monthNames[parseInt(hParts[1]) - 1];
+        rangeLabel.textContent = `(Desde ${dName} ${dParts[0]} hasta ${hName} ${hParts[0]})`;
+      }
+
+      if (window.cachedProductsData && window.cachedClientMovements) {
+        window.renderMonthlyTrendChart(window.cachedProductsData, window.cachedClientMovements);
+      }
+    };
+
+    window.resetChartFilters = () => {
+      const desdeSelect = document.getElementById("tmc-chart-desde");
+      const hastaSelect = document.getElementById("tmc-chart-hasta");
+      const resetBtn = document.getElementById("tmc-chart-reset");
+      const rangeLabel = document.getElementById("tmc-chart-range-label");
+
+      if (desdeSelect && hastaSelect) {
+        const today = new Date();
+        const currentMonthVal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const defaultDesdeDate = new Date(today.getFullYear(), today.getMonth() - 23, 1);
+        const defaultDesdeVal = `${defaultDesdeDate.getFullYear()}-${String(defaultDesdeDate.getMonth() + 1).padStart(2, '0')}`;
+
+        desdeSelect.value = defaultDesdeVal;
+        hastaSelect.value = currentMonthVal;
+      }
+
+      if (resetBtn) resetBtn.style.display = "none";
+      if (rangeLabel) rangeLabel.textContent = "(Últimos 24 meses)";
+
+      if (window.cachedProductsData && window.cachedClientMovements) {
+        window.renderMonthlyTrendChart(window.cachedProductsData, window.cachedClientMovements);
+      }
+    };
+
+    window.renderMonthlyTrendChart = (productsData, movements) => {
+      const totalCrm = productsData.reduce((sum, r) => sum + parseFloat(r.CRM || 0), 0);
+      const totalNeto = productsData.reduce((sum, r) => sum + parseFloat(r.NETO || 0), 0);
+      const costRatio = totalNeto > 0 ? (totalCrm / totalNeto) : 0;
+
+      const monthlyNeto = {};
+      if (Array.isArray(movements)) {
+        movements.forEach(m => {
+          const debe = m.debe ? parseFloat(m.debe) : 0;
+          if (debe <= 0) return;
+
+          const comp = (m.comprobante || "").trim().toUpperCase();
+          const isExcluded = comp.includes("REC") || 
+                             comp.includes("COB") || 
+                             comp.includes("NC") || 
+                             comp.includes("NOTA DE CREDITO") || 
+                             comp.includes("AJU");
+          if (isExcluded) return;
+
+          if (!m.fecha) return;
+
+          let y = null;
+          let monthStr = null;
+          if (m.fecha.includes("-")) {
+            const parts = m.fecha.split("-");
+            y = parts[0];
+            monthStr = parts[1];
+          } else if (m.fecha.includes("/")) {
+            const parts = m.fecha.split("/");
+            y = parts[2];
+            monthStr = parts[1];
+          }
+
+          if (y && monthStr) {
+            const key = `${y.substring(0, 4)}-${monthStr.substring(0, 2)}`;
+            monthlyNeto[key] = (monthlyNeto[key] || 0) + debe;
+          }
+        });
+      }
+
+      const desdeSelect = document.getElementById("tmc-chart-desde");
+      const hastaSelect = document.getElementById("tmc-chart-hasta");
+
+      let startYear, startMonth, endYear, endMonth;
+      const today = new Date();
+
+      if (desdeSelect && hastaSelect && desdeSelect.value && hastaSelect.value) {
+        const dParts = desdeSelect.value.split("-");
+        const hParts = hastaSelect.value.split("-");
+        startYear = parseInt(dParts[0]);
+        startMonth = parseInt(dParts[1]) - 1;
+        endYear = parseInt(hParts[0]);
+        endMonth = parseInt(hParts[1]) - 1;
+      } else {
+        const startD = new Date(today.getFullYear(), today.getMonth() - 23, 1);
+        startYear = startD.getFullYear();
+        startMonth = startD.getMonth();
+        endYear = today.getFullYear();
+        endMonth = today.getMonth();
+      }
+
+      const labels = [];
+      const netoValues = [];
+      const crmValues = [];
+      const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+      let currentD = new Date(startYear, startMonth, 1);
+      const endD = new Date(endYear, endMonth, 1);
+
+      let count = 0;
+      while (currentD <= endD && count < 60) {
+        const y = currentD.getFullYear();
+        const m = currentD.getMonth();
+        const monthStr = String(m + 1).padStart(2, '0');
+        const key = `${y}-${monthStr}`;
+
+        const neto = monthlyNeto[key] || 0;
+        const crm = neto * costRatio;
+        const profit = neto - crm;
+        const formattedProfit = formatCurrency(profit).split(",")[0];
+
+        labels.push([`${monthNames[m]} ${y}`, `Gan: ${formattedProfit}`]);
+        netoValues.push(neto);
+        crmValues.push(crm);
+
+        currentD.setMonth(currentD.getMonth() + 1);
+        count++;
+      }
+
+      if (window.tmcAnalyticsChartInstance) {
+        window.tmcAnalyticsChartInstance.destroy();
+      }
+
+      const chartCanvas = document.getElementById("tmc-analytics-chart");
+      if (chartCanvas && typeof Chart !== "undefined") {
+        const ctx = chartCanvas.getContext("2d");
+        window.tmcAnalyticsChartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Neto Facturado",
+                data: netoValues,
+                borderColor: "#10b981",
+                backgroundColor: "rgba(16, 185, 129, 0.05)",
+                borderWidth: 2,
+                tension: 0.3,
+                pointBackgroundColor: "#10b981",
+                pointHoverRadius: 6,
+                fill: true
+              },
+              {
+                label: "Costo (CRM)",
+                data: crmValues,
+                borderColor: "#ef4444",
+                backgroundColor: "rgba(239, 68, 68, 0.05)",
+                borderWidth: 2,
+                tension: 0.3,
+                pointBackgroundColor: "#ef4444",
+                pointHoverRadius: 6,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "top",
+                labels: {
+                  color: "#f8fafc",
+                  font: { family: "Outfit", size: 11 }
+                }
+              },
+              tooltip: {
+                backgroundColor: "rgba(15, 23, 42, 0.95)",
+                borderColor: "rgba(255, 255, 255, 0.1)",
+                borderWidth: 1,
+                titleFont: { family: "Outfit", size: 12, weight: "bold" },
+                bodyFont: { family: "Outfit", size: 11 },
+                callbacks: {
+                  title: function(context) {
+                    const label = context[0].label;
+                    if (Array.isArray(label)) return label[0];
+                    if (typeof label === "string" && label.includes(",")) {
+                      return label.split(",")[0];
+                    }
+                    return label;
+                  },
+                  label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                      label += ': ';
+                    }
+                    if (context.parsed.y !== null) {
+                      label += formatCurrency(context.parsed.y);
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  color: "rgba(255, 255, 255, 0.05)"
+                },
+                ticks: {
+                  color: "#94a3b8",
+                  font: { family: "Outfit", size: 10 }
+                }
+              },
+              y: {
+                grid: {
+                  color: "rgba(255, 255, 255, 0.05)"
+                },
+                ticks: {
+                  color: "#94a3b8",
+                  font: { family: "Outfit", size: 10 },
+                  callback: function(value) {
+                    return formatCurrency(value).split(",")[0];
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    };
+
     window.cargarProductosFavoritos = async (clientCode, movements) => {
       const loader = document.getElementById("tmc-products-loader");
       const listContainer = document.getElementById("tmc-products-list");
@@ -4025,175 +5125,16 @@
         // Render initial view (Top 5)
         window.renderProductsRanking();
         
-        // 3. Render Monthly Evolution Chart
-        const totalCrm = res.data.reduce((sum, r) => sum + parseFloat(r.CRM || 0), 0);
-        const totalNeto = res.data.reduce((sum, r) => sum + parseFloat(r.NETO || 0), 0);
-        const costRatio = totalNeto > 0 ? (totalCrm / totalNeto) : 0;
+        // Populate and reset chart date filters
+        populateChartFilterOptions();
         
-        // Group client movements by month (invoices only)
-        const monthlyNeto = {};
-        if (Array.isArray(movements)) {
-          movements.forEach(m => {
-            const debe = m.debe ? parseFloat(m.debe) : 0;
-            if (debe <= 0) return;
-            
-            const comp = (m.comprobante || "").trim().toUpperCase();
-            const isExcluded = comp.includes("REC") || 
-                               comp.includes("COB") || 
-                               comp.includes("NC") || 
-                               comp.includes("NOTA DE CREDITO") || 
-                               comp.includes("AJU");
-            if (isExcluded) return;
-            
-            if (!m.fecha) return;
-            
-            let y = null;
-            let monthStr = null;
-            if (m.fecha.includes("-")) {
-              const parts = m.fecha.split("-");
-              y = parts[0];
-              monthStr = parts[1];
-            } else if (m.fecha.includes("/")) {
-              const parts = m.fecha.split("/");
-              y = parts[2];
-              monthStr = parts[1];
-            }
-            
-            if (y && monthStr) {
-              const key = `${y.substring(0, 4)}-${monthStr.substring(0, 2)}`;
-              monthlyNeto[key] = (monthlyNeto[key] || 0) + debe;
-            }
-          });
-        }
+        const resetBtn = document.getElementById("tmc-chart-reset");
+        if (resetBtn) resetBtn.style.display = "none";
+        const rangeLabel = document.getElementById("tmc-chart-range-label");
+        if (rangeLabel) rangeLabel.textContent = "(Últimos 24 meses)";
         
-        // Generate last 12 months dataset chronologically
-        const labels = [];
-        const netoValues = [];
-        const crmValues = [];
-        const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-        
-        const today = new Date();
-        for (let i = 11; i >= 0; i--) {
-          const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-          const y = d.getFullYear();
-          const m = d.getMonth();
-          const monthStr = String(m + 1).padStart(2, '0');
-          const key = `${y}-${monthStr}`;
-          
-          const neto = monthlyNeto[key] || 0;
-          const crm = neto * costRatio;
-          const profit = neto - crm;
-          const formattedProfit = formatCurrency(profit).split(",")[0];
-          
-          // Etiqueta multi-línea para el eje X: Mes Año en la primera línea, y Ganancia en la segunda
-          labels.push([`${monthNames[m]} ${y}`, `Gan: ${formattedProfit}`]);
-          netoValues.push(neto);
-          crmValues.push(crm);
-        }
-        
-        // Instantiate Chart.js
-        if (window.tmcAnalyticsChartInstance) {
-          window.tmcAnalyticsChartInstance.destroy();
-        }
-        
-        const chartCanvas = document.getElementById("tmc-analytics-chart");
-        if (chartCanvas && typeof Chart !== "undefined") {
-          const ctx = chartCanvas.getContext("2d");
-          window.tmcAnalyticsChartInstance = new Chart(ctx, {
-            type: "line",
-            data: {
-              labels: labels,
-              datasets: [
-                {
-                  label: "Neto Facturado",
-                  data: netoValues,
-                  borderColor: "#10b981", // green
-                  backgroundColor: "rgba(16, 185, 129, 0.05)",
-                  borderWidth: 2,
-                  tension: 0.3,
-                  pointBackgroundColor: "#10b981",
-                  pointHoverRadius: 6,
-                  fill: true
-                },
-                {
-                  label: "Costo (CRM)",
-                  data: crmValues,
-                  borderColor: "#ef4444", // red
-                  backgroundColor: "rgba(239, 68, 68, 0.05)",
-                  borderWidth: 2,
-                  tension: 0.3,
-                  pointBackgroundColor: "#ef4444",
-                  pointHoverRadius: 6,
-                  fill: true
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: "top",
-                  labels: {
-                    color: "#f8fafc",
-                    font: { family: "Outfit", size: 11 }
-                  }
-                },
-                tooltip: {
-                  backgroundColor: "rgba(15, 23, 42, 0.95)",
-                  borderColor: "rgba(255, 255, 255, 0.1)",
-                  borderWidth: 1,
-                  titleFont: { family: "Outfit", size: 12, weight: "bold" },
-                  bodyFont: { family: "Outfit", size: 11 },
-                  callbacks: {
-                    title: function(context) {
-                      // Limpiar el título del tooltip para omitir la línea de ganancia y mostrar sólo "Mes Año"
-                      const label = context[0].label;
-                      if (Array.isArray(label)) return label[0];
-                      if (typeof label === "string" && label.includes(",")) {
-                        return label.split(",")[0];
-                      }
-                      return label;
-                    },
-                    label: function(context) {
-                      let label = context.dataset.label || '';
-                      if (label) {
-                        label += ': ';
-                      }
-                      if (context.parsed.y !== null) {
-                        label += formatCurrency(context.parsed.y);
-                      }
-                      return label;
-                    }
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  grid: {
-                    color: "rgba(255, 255, 255, 0.05)"
-                  },
-                  ticks: {
-                    color: "#94a3b8",
-                    font: { family: "Outfit", size: 10 }
-                  }
-                },
-                y: {
-                  grid: {
-                    color: "rgba(255, 255, 255, 0.05)"
-                  },
-                  ticks: {
-                    color: "#94a3b8",
-                    font: { family: "Outfit", size: 10 },
-                    callback: function(value) {
-                      return formatCurrency(value).split(",")[0];
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }
+        // Render Monthly Evolution Chart
+        window.renderMonthlyTrendChart(res.data, movements);
         
       } catch (err) {
         console.error("Error analyzing top products:", err);
@@ -4587,12 +5528,13 @@
           const schemaId = "1491";
           
           const downloadUrl = `${DESCARGAR_PDF_URL}?reportId=${reportId}&instanceId=${instanceId}&schemaId=${schemaId}`;
-          window.open(downloadUrl, '_blank');
+          window.previewPDF(downloadUrl, "Vista Previa - Resumen de Cuenta");
         };
 
         // 6. Lógica del modal de detalle de comprobante
         const closeDetailModal = () => {
           document.getElementById("tmc-modal-detail-doc").style.display = "none";
+          document.getElementById("tmc-modal-detail-title").textContent = "📄 Detalle del Comprobante";
         };
 
         document.getElementById("tmc-modal-detail-close").addEventListener("click", closeDetailModal);
@@ -4788,6 +5730,17 @@
           downloadDocPdfBtn.style.display = "none";
           downloadDocPdfBtn.onclick = null;
           
+          const bultosCont = document.getElementById("tmc-detail-bultos-container");
+          const transporteCont = document.getElementById("tmc-detail-transporte-container");
+          if (bultosCont) bultosCont.style.display = "none";
+          if (transporteCont) transporteCont.style.display = "none";
+          
+          const entregarBtn = document.getElementById("tmc-btn-entregar-remito");
+          if (entregarBtn) {
+            entregarBtn.style.display = "none";
+            entregarBtn.onclick = null;
+          }
+          
           const shareWaBtn = document.getElementById("tmc-btn-share-doc-wa");
           const shareEmailBtn = document.getElementById("tmc-btn-share-doc-email");
           if (shareWaBtn) {
@@ -4839,80 +5792,226 @@
             const res = await response.json();
             if (!res.success || !res.detalles) throw new Error("Detalles no devueltos");
 
+            // Look up SKUs for Remito items using product name in cache
+            if (res.tipo === 'REMITO' && res.detalles) {
+              const allOrders = (window.currentClientPedidosPending || []).concat(window.currentClientPedidosDelivered || []);
+              res.detalles.forEach(item => {
+                let matchedSku = "";
+                for (const order of allOrders) {
+                  if (order.items) {
+                    const found = order.items.find(oi => oi.producto && oi.producto.toLowerCase() === item.concepto.toLowerCase());
+                    if (found) {
+                      matchedSku = found.sku || found.codigo;
+                      break;
+                    }
+                  }
+                }
+                if (matchedSku) {
+                  item.codigo = matchedSku;
+                }
+              });
+            }
+
+            const compLimpio = cleanFXComprobante(comprobante);
+
             // Configurar botones de descarga y compartir PDF oficial del comprobante si aplica
             let downloadUrl = "";
-            if (res.tipo !== 'COBRO' && res.docId && res.cae) {
+            if (res.tipo !== 'COBRO' && res.tipo !== 'REMITO' && res.docId && res.cae) {
               const reportId = "60";
               const schemaId = "1491";
               downloadUrl = `${DESCARGAR_PDF_URL}?reportId=${reportId}&instanceId=${res.docId}&schemaId=${schemaId}`;
             } else if (res.tipo === 'COBRO' && res.docId) {
               downloadUrl = `${DESCARGAR_PDF_URL}?reportName=RECIBO_v1.2&instanceId=${res.docId}&schemaId=1491&entityName=COBRO`;
+            } else if (res.tipo === 'REMITO' && res.docId) {
+              downloadUrl = `${DESCARGAR_PDF_URL}?reportId=28&instanceId=${res.docId}&schemaId=1491`;
             }
 
             if (downloadUrl) {
               downloadDocPdfBtn.style.display = "inline-flex";
-              downloadDocPdfBtn.onclick = () => {
-                window.open(downloadUrl, '_blank');
-              };
+              if (res.tipo === 'REMITO') {
+                downloadDocPdfBtn.onclick = () => {
+                  window.descargarRemitoCompleto(res.docId, res.adjuntoId);
+                };
+              } else {
+                downloadDocPdfBtn.onclick = () => {
+                  window.previewPDF(downloadUrl, `Vista Previa - ${compLimpio}`);
+                };
+              }
 
-              if (shareWaBtn) {
-                shareWaBtn.style.display = "inline-flex";
-                shareWaBtn.onclick = () => {
-                  const compLimpio = cleanFXComprobante(comprobante);
-                  const clientName = currentClientRazonSocial || currentClientName || currentClientCode;
-                  const formattedFecha = formatDate(res.fecha);
-                  const formattedTotal = formatCurrency(res.total);
-                  
-                  let text = `*Detalle de Comprobante - TMC*\n\n` +
+              // Determine official status
+              let isOfficial = true;
+              if (res.tipo === 'REMITO') {
+                const allP = (window.currentClientPedidosPending || []).concat(window.currentClientPedidosDelivered || []);
+                const pedidoObj = allP.find(p => p.remitos && p.remitos.some(rem => String(rem.id) === String(res.docId)));
+                if (pedidoObj) {
+                  if (pedidoObj.facturas && pedidoObj.facturas.length > 0) {
+                    isOfficial = pedidoObj.facturas.some(f => (f.tifaId === 1 || f.tifaId === 2 || f.tifaId === 3) || !(/^(?:factura\s+x|fac\.?\s+x|fx|x)\b/i.test(f.numero)));
+                  } else {
+                    isOfficial = !(/^(?:manual|x|presupuesto)/i.test(pedidoObj.nroPedido || pedidoObj.numero || ""));
+                  }
+                }
+              }
+
+              if (viewYiqiBtn) {
+                if (isOfficial || res.tipo === 'REMITO') {
+                  viewYiqiBtn.style.display = "inline-flex";
+                  viewYiqiBtn.onclick = () => {
+                    let yiqiUrl = "";
+                    if (res.tipo === 'REMITO') {
+                      yiqiUrl = `https://me.yiqi.com.ar/view/REMITO_DE_VENTA?schemaId=1491#/${res.docId}`;
+                    } else if (res.tipo === 'COBRO') {
+                      yiqiUrl = `https://me.yiqi.com.ar/view/COBRO?schemaId=1491#/${res.docId}`;
+                    } else {
+                      yiqiUrl = `https://me.yiqi.com.ar/view/FACTURA?schemaId=1491#/${res.docId}`;
+                    }
+                    window.open(yiqiUrl, '_blank');
+                  };
+                } else {
+                  viewYiqiBtn.style.display = "none";
+                }
+              }
+
+              if (isOfficial) {
+                if (shareWaBtn) {
+                  shareWaBtn.style.display = "inline-flex";
+                  shareWaBtn.onclick = () => {
+                    const clientName = currentClientRazonSocial || currentClientName || currentClientCode;
+                    const formattedFecha = formatDate(res.fecha);
+                    
+                    let text = "";
+                    if (res.tipo === 'REMITO') {
+                      text = `*Detalle de Remito - TMC*\n\n` +
+                             `Cliente: *${clientName}* (ID: ${currentClientCode})\n` +
+                             `Remito: *${compLimpio}*\n` +
+                             `Fecha: ${formattedFecha}\n` +
+                             `- *Descargar PDF:* ${downloadUrl}`;
+                    } else {
+                      const formattedTotal = formatCurrency(res.total);
+                      text = `*Detalle de Comprobante - TMC*\n\n` +
                              `Cliente: *${clientName}* (ID: ${currentClientCode})\n` +
                              `Comprobante: *${compLimpio}*\n` +
                              `Fecha: ${formattedFecha}\n` +
                              `Importe: ${formattedTotal}\n` +
                              `- *Descargar PDF:* ${downloadUrl}`;
-                             
-                  const matchedC = allClients.find(c => String(c.id) === String(currentClientCode));
-                  let clientPhone = "";
-                  if (matchedC) {
-                    clientPhone = cleanPhoneNumber(matchedC.tel || matchedC.celular || matchedC.te1 || matchedC.CLIE_TE1 || "");
-                  }
-                  
-                  const phoneParam = clientPhone ? `phone=${clientPhone}&` : "";
-                  const url = `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(text)}`;
-                  window.open(url, "_blank");
-                };
-              }
+                    }
+                                 
+                    const matchedC = allClients.find(c => String(c.id) === String(currentClientCode));
+                    let clientPhone = "";
+                    if (matchedC) {
+                      clientPhone = cleanPhoneNumber(matchedC.tel || matchedC.celular || matchedC.te1 || matchedC.CLIE_TE1 || "");
+                    }
+                    
+                    const phoneParam = clientPhone ? `phone=${clientPhone}&` : "";
+                    const url = `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(text)}`;
+                    window.open(url, "_blank");
+                  };
+                }
 
-              if (shareEmailBtn) {
-                shareEmailBtn.style.display = "inline-flex";
-                shareEmailBtn.onclick = () => {
-                  const compLimpio = cleanFXComprobante(comprobante);
-                  const clientName = currentClientRazonSocial || currentClientName || currentClientCode;
-                  const formattedFecha = formatDate(res.fecha);
-                  const formattedTotal = formatCurrency(res.total);
-                  
-                  const subject = encodeURIComponent(`Detalle de Comprobante: ${compLimpio} - ${clientName}`);
-                  let body = `Hola,\n\nTe comparto el detalle y el enlace de descarga del comprobante de la cuenta corriente de ${clientName}:\n\n` +
+                if (shareEmailBtn) {
+                  shareEmailBtn.style.display = "inline-flex";
+                  shareEmailBtn.onclick = () => {
+                    const clientName = currentClientRazonSocial || currentClientName || currentClientCode;
+                    const formattedFecha = formatDate(res.fecha);
+                    
+                    let subject = "";
+                    let body = "";
+                    if (res.tipo === 'REMITO') {
+                      subject = encodeURIComponent(`Detalle de Remito: ${compLimpio} - ${clientName}`);
+                      body = `Hola,\n\nTe comparto el detalle del remito ${compLimpio} de la cuenta corriente de ${clientName}:\n\n` +
+                             `- Comprobante: ${compLimpio}\n` +
+                             `- Fecha: ${formattedFecha}\n` +
+                             `- Descargar PDF: ${downloadUrl}\n\nSaludos.`;
+                    } else {
+                      const formattedTotal = formatCurrency(res.total);
+                      subject = encodeURIComponent(`Detalle de Comprobante: ${compLimpio} - ${clientName}`);
+                      body = `Hola,\n\nTe comparto el detalle y el enlace de descarga del comprobante de la cuenta corriente de ${clientName}:\n\n` +
                              `- Comprobante: ${compLimpio}\n` +
                              `- Fecha: ${formattedFecha}\n` +
                              `- Importe: ${formattedTotal}\n` +
                              `- Descargar PDF: ${downloadUrl}\n\nSaludos.`;
-                             
-                  const matchedC = allClients.find(c => String(c.id) === String(currentClientCode));
-                  let clientMail = "";
-                  if (matchedC) {
-                    clientMail = matchedC.mail || matchedC.CLIE_MAIL || "";
-                  }
-                  
-                  const toParam = clientMail ? encodeURIComponent(clientMail) : "";
-                  const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${toParam}&su=${subject}&body=${encodeURIComponent(body)}`;
-                  window.open(url, "_blank");
-                };
+                    }
+                                 
+                    const matchedC = allClients.find(c => String(c.id) === String(currentClientCode));
+                    let clientMail = "";
+                    if (matchedC) {
+                      clientMail = matchedC.mail || matchedC.CLIE_MAIL || "";
+                    }
+                    
+                    const toParam = clientMail ? encodeURIComponent(clientMail) : "";
+                    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${toParam}&su=${subject}&body=${encodeURIComponent(body)}`;
+                    window.open(url, "_blank");
+                  };
+                }
+              } else {
+                if (shareWaBtn) shareWaBtn.style.display = "none";
+                if (shareEmailBtn) shareEmailBtn.style.display = "none";
               }
             }
 
             // Rellenar cabecera
+            document.getElementById("tmc-modal-detail-title").textContent = res.tipo === 'REMITO' ? "📄 Detalle de Remito" : "📄 Detalle del Comprobante";
             fechaEl.textContent = formatDate(res.fecha);
             totalEl.textContent = formatCurrency(res.total);
+            
+            if (res.tipo === 'REMITO') {
+              totalsWrapper.style.display = "none";
+              
+              const bultosValEl = document.getElementById("tmc-detail-bultos");
+              const transporteValEl = document.getElementById("tmc-detail-transporte");
+              
+              if (bultosCont && bultosValEl) {
+                bultosValEl.textContent = res.bultos !== undefined && res.bultos !== null ? res.bultos : "0";
+                bultosCont.style.display = "inline-block";
+              }
+              if (transporteCont && transporteValEl) {
+                transporteValEl.textContent = res.transportista || "No asignado";
+                transporteCont.style.display = "inline-block";
+              }
+              
+              if (res.estadoEntrega && res.estadoEntrega.toLowerCase() === 'despachado' && entregarBtn) {
+                entregarBtn.style.display = "inline-flex";
+                entregarBtn.onclick = async () => {
+                  entregarBtn.disabled = true;
+                  const originalText = entregarBtn.innerHTML;
+                  entregarBtn.innerHTML = "⏳ Procesando...";
+                  try {
+                    const transResp = await fetch(CONTROL_CALIDAD_URL, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "executeBulkTransition",
+                        ids: [res.docId],
+                        transitionId: 119679
+                      })
+                    });
+                    
+                    if (!transResp.ok) {
+                      const errData = await transResp.json();
+                      throw new Error(errData.error || `HTTP ${transResp.status}`);
+                    }
+                    
+                    await showCustomAlert("Remito Entregado", "✅ El remito ha sido pasado a ENTREGADO con éxito.");
+                    
+                    // Close modal
+                    document.getElementById("tmc-modal-detail-doc").style.display = "none";
+                    
+                    // Refresh client data
+                    const clientCodeInput = document.getElementById("clientCodeInput");
+                    if (clientCodeInput && clientCodeInput.value) {
+                      cargarDatosCliente(clientCodeInput.value.trim());
+                    }
+                  } catch (err) {
+                    console.error("Error al entregar remito:", err);
+                    await showCustomAlert("Error", `❌ No se pudo entregar el remito: ${err.message}`);
+                  } finally {
+                    entregarBtn.disabled = false;
+                    entregarBtn.innerHTML = originalText;
+                  }
+                };
+              }
+            } else {
+              totalsWrapper.style.display = "block";
+            }
             if (res.observaciones) {
               obsEl.textContent = `Observaciones: ${res.observaciones}`;
               obsEl.style.display = "block";
@@ -5007,6 +6106,27 @@
                 cancelationsWrapper.innerHTML = cancelacionesHtml;
                 cancelationsWrapper.style.display = "block";
               }
+            } else if (res.tipo === 'REMITO') {
+              // Cabecera para Remitos
+              head.innerHTML = `
+                <tr>
+                  <th style="padding: 10px 12px; color: #64748b; font-weight: 600;">CÓDIGO</th>
+                  <th style="padding: 10px 12px; color: #64748b; font-weight: 600;">CONCEPTO</th>
+                  <th style="padding: 10px 12px; color: #64748b; font-weight: 600;" class="text-right">CANT.</th>
+                </tr>
+              `;
+
+              let rowsHtml = "";
+              res.detalles.forEach(d => {
+                rowsHtml += `
+                  <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                    <td style="padding: 10px 12px; font-family: monospace;" data-label="CÓDIGO">${d.codigo || '-'}</td>
+                    <td style="padding: 10px 12px;" data-label="CONCEPTO">${d.concepto}</td>
+                    <td style="padding: 10px 12px;" class="text-right" data-label="CANT.">${d.cantidad}</td>
+                  </tr>
+                `;
+              });
+              tbody.innerHTML = rowsHtml;
             } else {
               // Cabecera estándar para Facturas y Notas
               head.innerHTML = `
@@ -5228,7 +6348,7 @@
               }
             }
 
-            if (res.tipo !== 'COBRO') {
+            if (res.tipo !== 'COBRO' && res.tipo !== 'REMITO') {
               const pStatusEl = document.getElementById("tmc-detail-payment-status");
               const pend = res.pendientePago !== null ? parseFloat(res.pendientePago) : 0;
               if (pend === 0) {
@@ -5286,6 +6406,218 @@
             loaderEl.style.display = "none";
             errorEl.style.display = "block";
           }
+        };
+
+        window.verDetalleComprobante = (comprobante, clientCode) => {
+          if (window.openDocumentDetailModal) {
+            window.openDocumentDetailModal(comprobante, clientCode || currentClientCode);
+          }
+        };
+
+        window.descargarRemitoCompleto = (remitoId, adjuntoId) => {
+          const modal = document.getElementById("tmc-modal-preview-remito");
+          if (!modal) {
+            // Fallback
+            const pdfUrl = `https://me.yiqi.com.ar/report/view?schemaId=1491&reportId=28&instanceId=${remitoId}`;
+            window.open(pdfUrl, '_blank');
+            if (adjuntoId) {
+              const adjuntoUrl = `https://me.yiqi.com.ar/api/instancesApi/GetFile?id=${adjuntoId}&schemaId=1491`;
+              setTimeout(() => window.open(adjuntoUrl, '_blank'), 300);
+            }
+            return;
+          }
+
+          const titleEl = document.getElementById("tmc-remito-preview-title");
+          const tabPdf = document.getElementById("tmc-remito-tab-pdf");
+          const tabConforme = document.getElementById("tmc-remito-tab-conforme");
+          const panePdf = document.getElementById("tmc-remito-pane-pdf");
+          const paneConforme = document.getElementById("tmc-remito-pane-conforme");
+          const iframePdf = document.getElementById("tmc-remito-iframe-pdf");
+          const imgConforme = document.getElementById("tmc-remito-img-conforme");
+          const iframeConforme = document.getElementById("tmc-remito-iframe-conforme");
+          const loader = document.getElementById("tmc-remito-preview-loader");
+          const btnDownloadRaw = document.getElementById("tmc-remito-btn-download-raw");
+
+          let remitoNumero = `Remito #${remitoId}`;
+          let remitoFecha = "-";
+          let nroPedido = "";
+          let orderId = "";
+          let isOfficialRemito = true;
+
+          // Find the order and remito object in cache
+          const allP = (window.currentClientPedidosPending || []).concat(window.currentClientPedidosDelivered || []);
+          const pedidoObj = allP.find(p => p.remitos && p.remitos.some(r => String(r.id) === String(remitoId)));
+          
+          if (pedidoObj) {
+            nroPedido = pedidoObj.nroPedido || pedidoObj.numero || "";
+            orderId = pedidoObj.id;
+            const remitoObj = pedidoObj.remitos.find(r => String(r.id) === String(remitoId));
+            if (remitoObj) {
+              remitoNumero = remitoObj.numero || remitoNumero;
+              remitoFecha = remitoObj.fecha || remitoFecha;
+            }
+            
+            // Determine official status
+            if (pedidoObj.facturas && pedidoObj.facturas.length > 0) {
+              isOfficialRemito = pedidoObj.facturas.some(f => (f.tifaId === 1 || f.tifaId === 2 || f.tifaId === 3) || !(/^(?:factura\s+x|fac\.?\s+x|fx|x)\b/i.test(f.numero)));
+            } else {
+              isOfficialRemito = !(/^(?:manual|x|presupuesto)/i.test(nroPedido));
+            }
+          }
+
+          const cleanRemitoNum = cleanFXComprobante(remitoNumero);
+
+          // Reset UI
+          titleEl.textContent = `📦 Vista Previa de Remito #${cleanRemitoNum}`;
+          iframePdf.src = "";
+          imgConforme.src = "";
+          imgConforme.style.display = "none";
+          iframeConforme.src = "";
+          iframeConforme.style.display = "none";
+          loader.style.display = "flex";
+
+          // Use proxy function URL
+          const pdfUrl = `${DESCARGAR_PDF_URL}?reportId=28&instanceId=${remitoId}&schemaId=1491`;
+          iframePdf.src = pdfUrl;
+
+          // Update Metadata Bar elements
+          document.getElementById("tmc-remito-detail-nro").textContent = cleanRemitoNum;
+          document.getElementById("tmc-remito-detail-fecha").textContent = remitoFecha !== "-" ? formatDate(remitoFecha) : "-";
+          
+          const pedidoCont = document.getElementById("tmc-remito-detail-pedido-container");
+          const pedidoInfo = document.getElementById("tmc-remito-detail-pedido-info");
+          if (nroPedido) {
+            pedidoCont.style.display = "block";
+            pedidoInfo.textContent = nroPedido;
+          } else {
+            pedidoCont.style.display = "none";
+          }
+
+          // Show/Hide actions based on isOfficialRemito
+          const remitoPdfBtn = document.getElementById("tmc-remito-btn-pdf");
+          const remitoWaBtn = document.getElementById("tmc-remito-btn-wa");
+          const remitoYiqiBtn = document.getElementById("tmc-remito-btn-yiqi");
+          
+          if (isOfficialRemito) {
+            remitoPdfBtn.style.display = "inline-flex";
+            remitoWaBtn.style.display = "inline-flex";
+            remitoYiqiBtn.style.display = "inline-flex";
+            
+            remitoPdfBtn.onclick = () => {
+              window.open(pdfUrl, '_blank');
+            };
+            
+            remitoWaBtn.onclick = () => {
+              const clientName = currentClientRazonSocial || currentClientName || currentClientCode;
+              const formattedFecha = remitoFecha !== "-" ? formatDate(remitoFecha) : "-";
+              let text = `*Remito Oficial - TMC*\n\n` +
+                         `Cliente: *${clientName}* (ID: ${currentClientCode})\n` +
+                         `Remito: *${cleanRemitoNum}*\n` +
+                         `Fecha: ${formattedFecha}\n` +
+                         `- *Descargar Remito PDF:* ${pdfUrl}`;
+                         
+              const matchedC = allClients.find(c => String(c.id) === String(currentClientCode));
+              let clientPhone = "";
+              if (matchedC) {
+                clientPhone = cleanPhoneNumber(matchedC.tel || matchedC.celular || matchedC.te1 || matchedC.CLIE_TE1 || "");
+              }
+              const phoneParam = clientPhone ? `phone=${clientPhone}&` : "";
+              const waUrl = `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(text)}`;
+              window.open(waUrl, "_blank");
+            };
+            
+            remitoYiqiBtn.onclick = () => {
+              window.open(`https://me.yiqi.com.ar/view/REMITO?schemaId=1491#/${remitoId}`, '_blank');
+            };
+          } else {
+            remitoPdfBtn.style.display = "none";
+            remitoWaBtn.style.display = "none";
+            remitoYiqiBtn.style.display = "none";
+          }
+
+          tabPdf.textContent = isOfficialRemito ? "📄 Remito Oficial (PDF)" : "📄 Remito (PDF)";
+
+          // Check if attachment exists
+          if (adjuntoId) {
+            tabConforme.style.display = "block";
+            const adjuntoUrl = `https://me.yiqi.com.ar/api/instancesApi/GetFile?id=${adjuntoId}&schemaId=1491`;
+            imgConforme.src = adjuntoUrl;
+            imgConforme.style.display = "inline-block";
+            imgConforme.onerror = () => {
+              imgConforme.style.display = "none";
+              iframeConforme.src = adjuntoUrl;
+              iframeConforme.style.display = "block";
+            };
+          } else {
+            tabConforme.style.display = "none";
+          }
+
+          // Helper to activate tab
+          const activateTab = (tabType) => {
+            if (tabType === "pdf") {
+              tabPdf.classList.add("active");
+              tabPdf.style.color = "#ffffff";
+              tabPdf.style.borderBottom = "2px solid #3b82f6";
+
+              tabConforme.classList.remove("active");
+              tabConforme.style.color = "#94a3b8";
+              tabConforme.style.borderBottom = "2px solid transparent";
+
+              panePdf.style.display = "block";
+              paneConforme.style.display = "none";
+            } else {
+              tabConforme.classList.add("active");
+              tabConforme.style.color = "#ffffff";
+              tabConforme.style.borderBottom = "2px solid #3b82f6";
+
+              tabPdf.classList.remove("active");
+              tabPdf.style.color = "#94a3b8";
+              tabPdf.style.borderBottom = "2px solid transparent";
+
+              panePdf.style.display = "none";
+              paneConforme.style.display = "block";
+              loader.style.display = "none";
+            }
+          };
+
+          // Wire up tab clicks
+          tabPdf.onclick = () => activateTab("pdf");
+          tabConforme.onclick = () => activateTab("conforme");
+
+          // Default tab activation
+          activateTab("pdf");
+
+          // Show modal
+          modal.style.display = "flex";
+
+          // Hide loader once PDF iframe finishes loading
+          iframePdf.onload = () => {
+            loader.style.display = "none";
+          };
+
+          // Download raw button handler
+          btnDownloadRaw.onclick = () => {
+            const isConformeActive = tabConforme.classList.contains("active");
+            if (isConformeActive && adjuntoId) {
+              window.open(`https://me.yiqi.com.ar/api/instancesApi/GetFile?id=${adjuntoId}&schemaId=1491`, '_blank');
+            } else {
+              window.open(pdfUrl, '_blank');
+            }
+          };
+
+          // Close modal handler
+          const closeRemitoModal = () => {
+            modal.style.display = "none";
+            iframePdf.src = "";
+            imgConforme.src = "";
+            iframeConforme.src = "";
+          };
+
+          document.getElementById("tmc-remito-preview-close").onclick = closeRemitoModal;
+          document.getElementById("tmc-remito-btn-close").onclick = closeRemitoModal;
+          modal.onclick = (e) => {
+            if (e.target === modal) closeRemitoModal();
+          };
         };
 
         // Cargar métricas del perfil del cliente (local + lazy products)
@@ -5354,8 +6686,11 @@
       }
     }
 
-    function getStockIndicatorHtml(disponible) {
-      if (!disponible) return "";
+    function getStockIndicatorHtml(disponible, stockDepo) {
+      if (stockDepo !== undefined && stockDepo > 0) {
+        return `<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #10b981; margin-right: 4px;" title="Con stock (Calculado: ${stockDepo})"></span>`;
+      }
+      if (!disponible) return `<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #ef4444; margin-right: 4px;" title="Sin stock"></span>`;
       if (disponible.startsWith("#")) {
         return `<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${disponible}; margin-right: 4px;" title="Color de disponibilidad en YiQi: ${disponible}"></span>`;
       }
@@ -5366,15 +6701,177 @@
       return `<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${color}; margin-right: 4px;" title="${escapeHTML(disponible)}"></span>`;
     }
 
-    async function handleItemAction(nroPedido, sku, action) {
-      event.stopPropagation(); // Evitar colapso de la tarjeta al hacer clic en botones
-      const actionLabels = {
-        'dar_de_baja': 'Dar de baja',
-        'esperar': 'Marcar para esperar',
-        'reservar': 'Reservar stock (Mover DEPO -> DEPOR)'
-      };
-      const actionLabel = actionLabels[action] || action;
-      await showCustomAlert("Acción Registrada", `Acción "${actionLabel}" para SKU ${sku} del Pedido N° ${nroPedido} registrada visualmente.\nEn la siguiente fase se conectará con el flujo de YiQi ERP.`);
+    async function handleItemAction(nroPedido, sku, action, itemId) {
+      if (window.event) window.event.stopPropagation();
+      
+      if (action === 'reservar') {
+        await showCustomAlert("Funcionalidad en Desarrollo", "Esta funcionalidad se encuentra en el área de ingeniería de YiQi ERP y estará disponible próximamente.");
+        return;
+      }
+
+      const pedidoObj = (window.currentClientPedidosPending || []).concat(window.currentClientPedidosDelivered || []).find(p => p.nroPedido === nroPedido);
+      const parentOrderId = pedidoObj ? pedidoObj.id : null;
+
+      if (action === 'liberar') {
+        if (!itemId) {
+          await showCustomAlert("Error", "No se pudo obtener el ID del artículo para realizar la liberación.");
+          return;
+        }
+        const confirmMsg = `¿Está seguro que quiere liberar Reservas para el artículo ${sku} del pedido N° ${nroPedido}?`;
+        if (await showCustomConfirm("Liberar Reservas", confirmMsg)) {
+          try {
+            showLoadingModal("Liberando reservas", `Liberando reservas para el artículo ${sku} en YiQi ERP...`);
+            const response = await fetch(CONTROL_CALIDAD_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                action: "executeBulkTransition",
+                ids: [itemId],
+                transitionId: 3395,
+                parentOrderId: parentOrderId
+              })
+            });
+
+            if (!response.ok) {
+              const err = await response.json();
+              throw new Error(err.error || `Error HTTP ${response.status}`);
+            }
+
+            logActivity(`Liberar reservas ejecutado para el artículo ${sku} del pedido: ${nroPedido}`, "info");
+
+            showLoadingModal("Refrescando...", `Acción completada con éxito. Actualizando información del cliente y pedidos...`);
+
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            const clientCodeInput = document.getElementById("clientCodeInput");
+            if (clientCodeInput && clientCodeInput.value) {
+              await cargarDatosCliente(clientCodeInput.value.trim());
+            }
+
+            hideLoadingModal();
+            await showCustomAlert("Acción Ejecutada", `✅ Liberación de reservas ejecutada con éxito para el artículo ${sku} del pedido N° ${nroPedido}.`);
+
+          } catch (err) {
+            hideLoadingModal();
+            console.error("Error al liberar reservas del artículo:", err);
+            await showCustomAlert("Error de Acción", `❌ Error al liberar reservas para el artículo ${sku} del pedido N° ${nroPedido}:\n\n${err.message}`);
+            logActivity(`Error al liberar reservas para artículo ${sku} del pedido ${nroPedido}: ${err.message}`, "error");
+          }
+        }
+        return;
+      }
+
+      if (action === 'modificar') {
+        if (!itemId) {
+          await showCustomAlert("Error", "No se pudo obtener el ID del artículo para realizar la modificación.");
+          return;
+        }
+        const inputQty = await showCustomPrompt("Modificar Reserva", "Ingrese la nueva cantidad a reservar para el artículo " + sku + ":");
+        if (inputQty === null || inputQty.trim() === "") return;
+        const qty = parseInt(inputQty.trim());
+        if (isNaN(qty) || qty <= 0) {
+          await showCustomAlert("Cantidad Inválida", "Por favor ingrese un número entero mayor a cero.");
+          return;
+        }
+
+        const confirmMsg = `¿Está seguro que quiere modificar la cantidad reservada a ${qty} para el artículo ${sku} del pedido N° ${nroPedido}?`;
+        if (await showCustomConfirm("Modificar Reserva", confirmMsg)) {
+          try {
+            showLoadingModal("Modificando reserva", `Modificando cantidad reservada a ${qty} en YiQi ERP...`);
+            const response = await fetch(CONTROL_CALIDAD_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                action: "executeBulkTransition",
+                ids: [itemId],
+                transitionId: 118677,
+                form: `8257=${qty}`,
+                parentOrderId: parentOrderId
+              })
+            });
+
+            if (!response.ok) {
+              const err = await response.json();
+              throw new Error(err.error || `Error HTTP ${response.status}`);
+            }
+
+            logActivity(`Modificar reserva ejecutado (cant: ${qty}) para el artículo ${sku} del pedido: ${nroPedido}`, "info");
+
+            showLoadingModal("Refrescando...", `Acción completada con éxito. Actualizando información del cliente y pedidos...`);
+
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            const clientCodeInput = document.getElementById("clientCodeInput");
+            if (clientCodeInput && clientCodeInput.value) {
+              await cargarDatosCliente(clientCodeInput.value.trim());
+            }
+
+            hideLoadingModal();
+            await showCustomAlert("Acción Ejecutada", `✅ Cantidad reservada modificada con éxito a ${qty} para el artículo ${sku} del pedido N° ${nroPedido}.`);
+
+          } catch (err) {
+            hideLoadingModal();
+            console.error("Error al modificar reserva del artículo:", err);
+            await showCustomAlert("Error de Acción", `❌ Error al modificar la cantidad reservada para el artículo ${sku} del pedido N° ${nroPedido}:\n\n${err.message}`);
+            logActivity(`Error al modificar reserva para artículo ${sku} del pedido ${nroPedido}: ${err.message}`, "error");
+          }
+        }
+        return;
+      }
+
+      if (action === 'eliminar') {
+        if (!itemId) {
+          await showCustomAlert("Error", "No se pudo obtener el ID del artículo para realizar la eliminación.");
+          return;
+        }
+        const confirmMsg = `¿Está seguro que quiere eliminar el artículo ${sku} del pedido N° ${nroPedido}? Esta acción no se puede deshacer.`;
+        if (await showCustomConfirm("Eliminar Artículo", confirmMsg)) {
+          try {
+            showLoadingModal("Eliminando artículo", `Eliminando artículo ${sku} en YiQi ERP...`);
+            const response = await fetch(CONTROL_CALIDAD_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                action: "deletePedidoItem",
+                itemId: itemId,
+                parentOrderId: parentOrderId
+              })
+            });
+
+            if (!response.ok) {
+              const err = await response.json();
+              throw new Error(err.error || `Error HTTP ${response.status}`);
+            }
+
+            logActivity(`Eliminar artículo ejecutado para el artículo ${sku} del pedido: ${nroPedido}`, "info");
+
+            showLoadingModal("Refrescando...", `Artículo eliminado con éxito. Actualizando información del cliente y pedidos...`);
+
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            const clientCodeInput = document.getElementById("clientCodeInput");
+            if (clientCodeInput && clientCodeInput.value) {
+              await cargarDatosCliente(clientCodeInput.value.trim());
+            }
+
+            hideLoadingModal();
+            await showCustomAlert("Acción Ejecutada", `✅ Artículo ${sku} eliminado con éxito del pedido N° ${nroPedido}.`);
+
+          } catch (err) {
+            hideLoadingModal();
+            console.error("Error al eliminar artículo:", err);
+            await showCustomAlert("Error de Acción", `❌ Error al eliminar el artículo ${sku} del pedido N° ${nroPedido}:\n\n${err.message}`);
+            logActivity(`Error al eliminar artículo ${sku} del pedido ${nroPedido}: ${err.message}`, "error");
+          }
+        }
+        return;
+      }
     }
 
     async function handlePedidoAction(nroPedido, action) {
@@ -5494,51 +6991,24 @@
           throw new Error(err.error || `Error HTTP ${response.status}`);
         }
 
-        hideLoadingModal();
-        await showCustomAlert("Acción Ejecutada", `✅ Acción "${actionLabel}" ejecutada con éxito para el pedido N° ${nroPedido}.`);
         logActivity(`Acción ${actionLabel} ejecutada para el pedido: ${nroPedido}`, "info");
 
-        showLoadingModal("Refrescando...", "Sincronizando estado con YiQi ERP...");
-        
-        // Recargar pedidos y refrescar estado de cuenta con sondeo inteligente
+        // Cambiar mensaje del modal para indicar que se está refrescando
+        showLoadingModal("Refrescando...", `Acción completada con éxito. Actualizando información del cliente y pedidos...`);
+
+        // Espera de 2 segundos para que YiQi termine de procesar el cambio de estado
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Recarga en vivo completa
         const clientCodeInput = document.getElementById("clientCodeInput");
         if (clientCodeInput && clientCodeInput.value) {
-          const cCode = clientCodeInput.value.trim();
-          
-          let attempts = 0;
-          const maxAttempts = 6;
-          const oldState = pedidoObj.estado;
-          
-          while (attempts < maxAttempts) {
-            try {
-              const response = await fetch(`${OBTENER_ESTADO_PEDIDO_URL}?orderIds=${pedidoObj.id}&_t=${Date.now()}`);
-              if (response.ok) {
-                const res = await response.json();
-                const orderData = res.orders && res.orders[0];
-                
-                if (orderData && orderData.success) {
-                  const isReservasChanged = (action === 'liberar_reservas' && orderData.items && orderData.items.every(item => (item.stockDepor || 0) === 0));
-                  const isStateChanged = orderData.estado !== oldState;
-                  
-                  if (isStateChanged || isReservasChanged) {
-                    break;
-                  }
-                }
-              }
-            } catch (pollErr) {
-              console.warn("Error en sondeo de estado:", pollErr);
-            }
-            
-            attempts++;
-            if (attempts < maxAttempts) {
-              await new Promise(r => setTimeout(r, 1500));
-            }
-          }
-          
-          // Cargar datos de forma ultra-optimizada solo para el pedido modificado
-          await actualizarPedidosLocales(pedidoObj.id);
+          await cargarDatosCliente(clientCodeInput.value.trim());
         }
+
         hideLoadingModal();
+
+        // Mostrar aviso de éxito al finalizar la recarga
+        await showCustomAlert("Acción Ejecutada", `✅ Acción "${actionLabel}" ejecutada con éxito para el pedido N° ${nroPedido}.`);
 
       } catch (err) {
         hideLoadingModal();
@@ -5687,61 +7157,25 @@
 
         await Promise.all(promises);
 
-        hideLoadingModal();
-        await showCustomAlert("Acción Ejecutada", `✅ Acción masiva "${actionLabel}" ejecutada con éxito para los ${selectedOrders.length} pedidos.`);
         logActivity(`Acción masiva de ${actionLabel} ejecutada para pedidos: ${selectedOrders.map(o => o.nro).join(", ")}`, "info");
-        
-        showLoadingModal("Refrescando...", "Sincronizando estado con YiQi ERP...");
-        
-        // Recargar pedidos y refrescar estado de cuenta con sondeo inteligente masivo
-        deselectAllPedidos();
+
+        // Cambiar mensaje del modal para indicar que se está refrescando
+        showLoadingModal("Refrescando...", `Acción masiva completada con éxito. Actualizando información del cliente y pedidos...`);
+
+        // Espera de 2 segundos para que YiQi termine de procesar el cambio de estado
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Recarga en vivo completa
         const clientCodeInput = document.getElementById("clientCodeInput");
         if (clientCodeInput && clientCodeInput.value) {
-          const cCode = clientCodeInput.value.trim();
-          
-          let attempts = 0;
-          const maxAttempts = 6;
-          
-          const oldStatesMap = {};
-          selectedOrders.forEach(o => {
-            oldStatesMap[o.nro] = o.estado;
-          });
-          
-          const selectedIds = selectedOrders.map(o => o.id).join(",");
-          while (attempts < maxAttempts) {
-            try {
-              const response = await fetch(`${OBTENER_ESTADO_PEDIDO_URL}?orderIds=${selectedIds}&_t=${Date.now()}`);
-              if (response.ok) {
-                const res = await response.json();
-                const updatedOrders = res.orders || [];
-                
-                let allChanged = true;
-                for (const o of selectedOrders) {
-                  const updated = updatedOrders.find(p => String(p.id) === String(o.id));
-                  if (updated && updated.success && updated.estado === oldStatesMap[o.nro]) {
-                    allChanged = false;
-                    break;
-                  }
-                }
-                
-                if (allChanged) {
-                  break;
-                }
-              }
-            } catch (pollErr) {
-              console.warn("Error en sondeo masivo:", pollErr);
-            }
-            
-            attempts++;
-            if (attempts < maxAttempts) {
-              await new Promise(r => setTimeout(r, 1500));
-            }
-          }
-          
-          // Actualizar de forma local y súper rápida sólo los pedidos modificados
-          await actualizarPedidosLocales(selectedIds);
+          await cargarDatosCliente(clientCodeInput.value.trim());
         }
+
+        deselectAllPedidos();
         hideLoadingModal();
+
+        // Mostrar aviso de éxito
+        await showCustomAlert("Acción Ejecutada", `✅ Acción masiva "${actionLabel}" ejecutada con éxito para los pedidos seleccionados.`);
 
       } catch (err) {
         hideLoadingModal();
@@ -5757,6 +7191,9 @@
 
     window.currentClientPedidosPending = [];
     window.currentClientPedidosDelivered = [];
+    window.currentPendingOrdersViewMode = 'cards';
+    window.currentPendingItemsSortCol = 'nroPedido';
+    window.currentPendingItemsSortAsc = true;
 
     window.filterAndRenderPedidos = () => {
       const showAnnulled = document.getElementById("tmc-pedidos-show-annulled")?.checked || false;
@@ -5766,6 +7203,7 @@
       const allPedidos = window.currentClientPedidosPending || [];
       const badge = document.getElementById("tmc-pedidos-count-badge");
       const container = document.getElementById("tmc-pedidos-list-container");
+      const tableContainer = document.getElementById("tmc-pedidos-table-container");
       const montoContainer = document.getElementById("tmc-pedidos-monto-container");
       const montoValor = document.getElementById("tmc-pedidos-monto-valor");
       const div1 = document.getElementById("tmc-divider-1");
@@ -5796,7 +7234,12 @@
       if (filteredPedidos.length > 0) {
         badge.textContent = `${filteredPedidos.length} pedidos abiertos`;
         badge.style.display = "inline-flex";
-        renderPedidos(filteredPedidos, "tmc-pedidos-list-container");
+        
+        if (window.currentPendingOrdersViewMode === 'table') {
+          renderPedidosTable(filteredPedidos);
+        } else {
+          renderPedidos(filteredPedidos, "tmc-pedidos-list-container");
+        }
 
         // Calcular monto de pedidos pendientes sin facturar (para no duplicar en saldo actual)
         let totalPedidosNoFacturados = 0;
@@ -5822,9 +7265,547 @@
             El cliente no posee pedidos pendientes que coincidan con los filtros.
           </div>
         `;
+        if (tableContainer) {
+          if (window.currentPendingOrdersViewMode === 'table') {
+            renderPedidosTable([], "El cliente no posee pedidos pendientes que coincidan con los filtros.");
+          } else {
+            tableContainer.innerHTML = `
+              <div class="text-center py-4 text-muted" style="font-size: 13px;">
+                El cliente no posee pedidos pendientes que coincidan con los filtros.
+              </div>
+            `;
+          }
+        }
         if (montoContainer) montoContainer.style.display = "none";
         if (div1) div1.style.display = "none";
       }
+    };
+
+    window.togglePendingOrdersView = (mode) => {
+      window.currentPendingOrdersViewMode = mode;
+      
+      const cardsBtn = document.getElementById("tmc-view-cards-btn");
+      const tableBtn = document.getElementById("tmc-view-table-btn");
+      const cardsContainer = document.getElementById("tmc-pedidos-list-container");
+      const tableContainer = document.getElementById("tmc-pedidos-table-container");
+      
+      if (mode === 'table') {
+        if (cardsBtn) {
+          cardsBtn.style.background = "transparent";
+          cardsBtn.style.color = "var(--text-muted)";
+        }
+        if (tableBtn) {
+          tableBtn.style.background = "var(--primary)";
+          tableBtn.style.color = "white";
+        }
+        if (cardsContainer) cardsContainer.style.display = "none";
+        if (tableContainer) tableContainer.style.display = "block";
+      } else {
+        if (cardsBtn) {
+          cardsBtn.style.background = "var(--primary)";
+          cardsBtn.style.color = "white";
+        }
+        if (tableBtn) {
+          tableBtn.style.background = "transparent";
+          tableBtn.style.color = "var(--text-muted)";
+        }
+        if (cardsContainer) cardsContainer.style.display = "flex";
+        if (tableContainer) tableContainer.style.display = "none";
+      }
+      
+      filterAndRenderPedidos();
+    };
+
+    window.sortPendingItems = (col) => {
+      if (window.currentPendingItemsSortCol === col) {
+        window.currentPendingItemsSortAsc = !window.currentPendingItemsSortAsc;
+      } else {
+        window.currentPendingItemsSortCol = col;
+        window.currentPendingItemsSortAsc = true;
+      }
+      filterAndRenderPedidos();
+    };
+
+    function getSortArrow(col) {
+      if (window.currentPendingItemsSortCol !== col) return " ⇅";
+      return window.currentPendingItemsSortAsc ? " ▲" : " ▼";
+    }
+
+    window.renderPedidosTable = (filteredPedidos) => {
+      const tableContainer = document.getElementById("tmc-pedidos-table-container");
+      if (!tableContainer) return;
+
+      let items = [];
+      filteredPedidos.forEach(p => {
+        if (p.items) {
+          p.items.forEach(item => {
+            items.push({
+              id: item.id || null,
+              orderId: p.id,
+              nroPedido: p.nroPedido || p.numero || "",
+              fecha: p.fecha || "",
+              estadoPedido: p.estado || "",
+              
+              sku: item.sku || "",
+              mateId: item.mateId || null,
+              producto: item.producto || "",
+              cantidadPedida: item.cantidadPedida || 0,
+              cantidadAEntregar: item.cantidadAEntregar || 0,
+              stockDepo: item.stockDepo !== undefined ? item.stockDepo : 0,
+              stockDepor: item.stockDepor !== undefined ? item.stockDepor : 0,
+              disponible: item.disponible || "",
+              estadoItem: item.estadoItem || "",
+              hasBOM: item.hasBOM
+            });
+          });
+        }
+      });
+
+      if (items.length === 0) {
+        tableContainer.innerHTML = `
+          <div class="text-center py-4 text-muted" style="font-size: 13px;">
+            No hay artículos pendientes para mostrar.
+          </div>
+        `;
+        return;
+      }
+
+      const col = window.currentPendingItemsSortCol || 'nroPedido';
+      const asc = window.currentPendingItemsSortAsc !== false;
+
+      items.sort((a, b) => {
+        let valA = a[col];
+        let valB = b[col];
+
+        if (col === 'nroPedido') {
+          valA = parseInt(String(valA).replace(/\D/g, '')) || 0;
+          valB = parseInt(String(valB).replace(/\D/g, '')) || 0;
+        } else if (col === 'fecha') {
+          valA = new Date(valA).getTime() || 0;
+          valB = new Date(valB).getTime() || 0;
+        } else if (col === 'cantidadPedida' || col === 'cantidadAEntregar' || col === 'stockDepo' || col === 'stockDepor') {
+          valA = parseFloat(valA) || 0;
+          valB = parseFloat(valB) || 0;
+        } else {
+          valA = String(valA).toLowerCase();
+          valB = String(valB).toLowerCase();
+        }
+
+        if (valA < valB) return asc ? -1 : 1;
+        if (valA > valB) return asc ? 1 : -1;
+        return 0;
+      });
+
+      let rowsHtml = items.map(item => {
+        const indicatorHtml = getStockIndicatorHtml(item.disponible, item.stockDepo);
+        
+        let badgeClass = "tmc-item-badge-other";
+        const estadoItemLower = (item.estadoItem || "").toLowerCase();
+        if (estadoItemLower.includes("reser")) {
+          badgeClass = "tmc-item-badge-reserved";
+        } else if (estadoItemLower.includes("falta") || estadoItemLower.includes("ingresado") || estadoItemLower.includes("pendi")) {
+          badgeClass = "tmc-item-badge-pending";
+        }
+
+        const dateText = item.fecha ? item.fecha.substring(0, 10) : "-";
+        const estadoPedidoLower = (item.estadoPedido || "").toLowerCase();
+        const isWaitingPayment = estadoPedidoLower.includes("espera de pago") || estadoPedidoLower.includes("quiebre 2") || estadoPedidoLower.includes("esperando orden de producc");
+        const isReservado = estadoItemLower.includes("reser");
+        const isIngresado = estadoItemLower.includes("ingresado") || estadoItemLower.includes("ingreso");
+
+        let actionsHtml = "";
+        if (isReservado) {
+          actionsHtml = `
+            <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(item.nroPedido)}', '${escapeHTML(item.sku)}', 'liberar', '${escapeHTML(item.id || '')}')" ${isWaitingPayment ? "" : "disabled"} style="background-color: #f59e0b; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: ${isWaitingPayment ? "pointer" : "not-allowed"}; opacity: ${isWaitingPayment ? 1 : 0.4};">
+              Liberar
+            </button>
+            <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(item.nroPedido)}', '${escapeHTML(item.sku)}', 'modificar', '${escapeHTML(item.id || '')}')" ${isWaitingPayment ? "" : "disabled"} style="background-color: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: ${isWaitingPayment ? "pointer" : "not-allowed"}; opacity: ${isWaitingPayment ? 1 : 0.4}; margin-left: 4px;">
+              Modificar
+            </button>
+          `;
+        } else if (isIngresado) {
+          actionsHtml = `
+            <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(item.nroPedido)}', '${escapeHTML(item.sku)}', 'reservar')" style="background-color: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">
+              Reservar
+            </button>
+            <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(item.nroPedido)}', '${escapeHTML(item.sku)}', 'eliminar', '${escapeHTML(item.id || '')}')" ${isWaitingPayment ? "" : "disabled"} style="background-color: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: ${isWaitingPayment ? "pointer" : "not-allowed"}; opacity: ${isWaitingPayment ? 1 : 0.4}; margin-left: 4px;">
+              Eliminar
+            </button>
+          `;
+        }
+
+        return `
+          <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.01)'" onmouseout="this.style.background='transparent'">
+            <td style="padding: 10px 16px; font-weight: 600; color: var(--text-main);">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                ${escapeHTML(item.nroPedido)}
+                <button class="tmc-yiqi-logo-btn" title="Ver en YiQi ERP" onclick="event.stopPropagation(); window.open('https://me.yiqi.com.ar/view/PEDIDO?schemaId=1491#/${item.orderId}', '_blank')">
+                  <img src="yiqi-logo.png" alt="YiQi" style="height: 14px; width: auto; object-fit: contain;">
+                </button>
+              </span>
+            </td>
+            <td style="padding: 10px 16px; color: var(--text-muted); font-size: 12px;">
+              ${escapeHTML(dateText)}
+            </td>
+            <td style="padding: 10px 16px;">
+              <code style="font-weight: 600; font-family: monospace;">${escapeHTML(item.sku)}</code>
+            </td>
+            <td style="padding: 10px 16px; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHTML(item.producto)}">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <div style="overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.producto)}</div>
+                ${item.hasBOM ? `<button class="tmc-btn-expand-op" title="Ver Orden de Producción / Insumos" onclick="event.stopPropagation(); toggleOPExpansion('${escapeHTML(item.nroPedido)}', '${escapeHTML(item.orderId)}', '${escapeHTML(item.mateId)}', '${escapeHTML(item.sku)}', '${escapeHTML(item.producto)}', ${item.cantidadAEntregar}, this)" style="background: none; border: none; color: #60a5fa; cursor: pointer; padding: 4px; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.2s; outline: none;">➕</button>` : ''}
+              </div>
+            </td>
+            <td style="padding: 10px 16px; text-align: center; font-weight: 500;">
+              ${item.cantidadPedida}
+            </td>
+            <td style="padding: 10px 16px; text-align: center; font-weight: 600; color: ${item.cantidadAEntregar > 0 ? '#f43f5e' : '#10b981'};">
+              ${item.cantidadAEntregar}
+            </td>
+            <td style="padding: 10px 16px; text-align: center; font-weight: 500;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                ${indicatorHtml}<span>${item.stockDepo}</span>
+              </div>
+            </td>
+            <td style="padding: 10px 16px; text-align: center; font-weight: 600; color: #60a5fa;">
+              ${item.stockDepor}
+            </td>
+            <td style="padding: 10px 16px; text-align: center;">
+              <span class="tmc-item-badge ${badgeClass}">${escapeHTML(item.estadoItem || 'Ingresado')}</span>
+            </td>
+            <td style="padding: 10px 16px; text-align: center; white-space: nowrap;">
+              ${actionsHtml}
+            </td>
+          </tr>
+          <tr id="tmc-op-row-${escapeHTML(item.nroPedido)}-${escapeHTML(item.sku)}" class="tmc-op-expanded-row" style="display: none;">
+            <td colspan="10" style="padding: 12px 16px; border-bottom: 1px solid var(--border);">
+              <div id="tmc-op-content-${escapeHTML(item.nroPedido)}-${escapeHTML(item.sku)}" class="tmc-op-expanded-content">
+                <div class="text-center py-2" style="color: #94a3b8; font-size: 12px;">
+                  <div class="tmc-spinner" style="margin: 0 auto 6px auto; width: 16px; height: 16px;"></div>
+                  Cargando información de producción...
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tableContainer.innerHTML = `
+        <table class="tmc-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border);">
+              <th onclick="window.sortPendingItems('nroPedido')" style="padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Nro Pedido${getSortArrow('nroPedido')}
+              </th>
+              <th onclick="window.sortPendingItems('fecha')" style="padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Fecha${getSortArrow('fecha')}
+              </th>
+              <th onclick="window.sortPendingItems('sku')" style="padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                SKU${getSortArrow('sku')}
+              </th>
+              <th onclick="window.sortPendingItems('producto')" style="padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Producto${getSortArrow('producto')}
+              </th>
+              <th onclick="window.sortPendingItems('cantidadPedida')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Cant. Pedida${getSortArrow('cantidadPedida')}
+              </th>
+              <th onclick="window.sortPendingItems('cantidadAEntregar')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Pendiente${getSortArrow('cantidadAEntregar')}
+              </th>
+              <th onclick="window.sortPendingItems('stockDepo')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Stock Disponible${getSortArrow('stockDepo')}
+              </th>
+              <th onclick="window.sortPendingItems('stockDepor')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Reservado${getSortArrow('stockDepor')}
+              </th>
+              <th onclick="window.sortPendingItems('estadoItem')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Estado Ítem${getSortArrow('estadoItem')}
+              </th>
+              <th style="padding: 12px 16px; text-align: center; color: var(--text-muted); font-weight: 600; min-width: 180px;">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+    };
+
+    window.filterAndRenderDeliveredPedidos = () => {
+      const allPedidos = window.currentClientPedidosDelivered || [];
+      const badge = document.getElementById("tmc-pedidos-entregados-count-badge");
+      const container = document.getElementById("tmc-pedidos-entregados-list-container");
+      const tableContainer = document.getElementById("tmc-pedidos-entregados-table-container");
+      const searchVal = document.getElementById("tmc-pedidos-entregados-search")?.value?.trim()?.toLowerCase() || "";
+
+      if (!badge || !container) return;
+
+      const filteredPedidos = allPedidos.filter(p => {
+        if (!searchVal) return true;
+        const nroStr = String(p.nroPedido || p.numero || p.id || "").toLowerCase();
+        if (nroStr.includes(searchVal)) return true;
+        if (p.items && Array.isArray(p.items)) {
+          return p.items.some(item => {
+            const skuStr = String(item.sku || "").toLowerCase();
+            const prodStr = String(item.producto || "").toLowerCase();
+            return skuStr.includes(searchVal) || prodStr.includes(searchVal);
+          });
+        }
+        return false;
+      });
+
+      if (filteredPedidos.length > 0) {
+        badge.textContent = `${filteredPedidos.length} pedidos entregados`;
+        badge.style.display = "inline-flex";
+
+        if (window.currentDeliveredOrdersViewMode === 'table') {
+          container.style.display = "none";
+          if (tableContainer) {
+            tableContainer.style.display = "block";
+            window.renderDeliveredPedidosTable(filteredPedidos);
+          }
+        } else {
+          container.style.display = "flex";
+          if (tableContainer) tableContainer.style.display = "none";
+          renderPedidos(filteredPedidos, "tmc-pedidos-entregados-list-container");
+        }
+      } else {
+        badge.textContent = "0";
+        badge.style.display = "none";
+        if (searchVal) {
+          container.innerHTML = `
+            <div class="text-center py-4 text-muted" style="font-size: 13px;">
+              No se encontraron pedidos entregados que coincidan con la búsqueda.
+            </div>
+          `;
+          if (tableContainer) {
+            tableContainer.style.display = "block";
+            tableContainer.innerHTML = `
+              <div class="text-center py-4 text-muted" style="font-size: 13px;">
+                No se encontraron pedidos entregados que coincidan con la búsqueda.
+              </div>
+            `;
+          }
+        } else {
+          container.innerHTML = `
+            <div class="text-center py-4 text-muted" style="font-size: 13px;">
+              El cliente no posee pedidos entregados recientemente.
+            </div>
+          `;
+          if (tableContainer) {
+            tableContainer.style.display = "none";
+            tableContainer.innerHTML = "";
+          }
+        }
+      }
+    };
+
+    window.toggleDeliveredOrdersView = (mode) => {
+      window.currentDeliveredOrdersViewMode = mode;
+      
+      const cardsBtn = document.getElementById("tmc-view-cards-btn-entregados");
+      const tableBtn = document.getElementById("tmc-view-table-btn-entregados");
+      const cardsContainer = document.getElementById("tmc-pedidos-entregados-list-container");
+      const tableContainer = document.getElementById("tmc-pedidos-entregados-table-container");
+      
+      if (mode === 'table') {
+        if (cardsBtn) {
+          cardsBtn.style.background = "transparent";
+          cardsBtn.style.color = "var(--text-muted)";
+        }
+        if (tableBtn) {
+          tableBtn.style.background = "var(--primary)";
+          tableBtn.style.color = "white";
+        }
+        if (cardsContainer) cardsContainer.style.display = "none";
+        if (tableContainer) tableContainer.style.display = "block";
+      } else {
+        if (cardsBtn) {
+          cardsBtn.style.background = "var(--primary)";
+          cardsBtn.style.color = "white";
+        }
+        if (tableBtn) {
+          tableBtn.style.background = "transparent";
+          tableBtn.style.color = "var(--text-muted)";
+        }
+        if (cardsContainer) cardsContainer.style.display = "flex";
+        if (tableContainer) tableContainer.style.display = "none";
+      }
+      
+      window.filterAndRenderDeliveredPedidos();
+    };
+
+    window.sortDeliveredItems = (col) => {
+      if (window.currentDeliveredItemsSortCol === col) {
+        window.currentDeliveredItemsSortAsc = !window.currentDeliveredItemsSortAsc;
+      } else {
+        window.currentDeliveredItemsSortCol = col;
+        window.currentDeliveredItemsSortAsc = true;
+      }
+      window.filterAndRenderDeliveredPedidos();
+    };
+
+    window.renderDeliveredPedidosTable = (filteredPedidos) => {
+      const tableContainer = document.getElementById("tmc-pedidos-entregados-table-container");
+      if (!tableContainer) return;
+
+      let items = [];
+      filteredPedidos.forEach(p => {
+        if (p.items) {
+          p.items.forEach(item => {
+            items.push({
+              orderId: p.id,
+              nroPedido: p.nroPedido || p.numero || "",
+              fecha: p.fecha || "",
+              estadoPedido: p.estado || "",
+              sku: item.sku || "",
+              producto: item.producto || "",
+              cantidadPedida: item.cantidadPedida || 0,
+              cantidadAEntregar: item.cantidadAEntregar || 0,
+              stockDepo: item.stockDepo !== undefined ? item.stockDepo : 0,
+              stockDepor: item.stockDepor !== undefined ? item.stockDepor : 0,
+              disponible: item.disponible || "",
+              estadoItem: item.estadoItem || "",
+              textoAdicional: item.textoAdicional || ""
+            });
+          });
+        }
+      });
+
+      if (items.length === 0) {
+        tableContainer.innerHTML = `
+          <div class="text-center py-4 text-muted" style="font-size: 13px;">
+            No hay artículos entregados para mostrar.
+          </div>
+        `;
+        return;
+      }
+
+      const col = window.currentDeliveredItemsSortCol || 'nroPedido';
+      const asc = window.currentDeliveredItemsSortAsc !== false;
+
+      items.sort((a, b) => {
+        let valA = a[col];
+        let valB = b[col];
+
+        if (col === 'nroPedido') {
+          valA = parseInt(String(valA).replace(/\D/g, '')) || 0;
+          valB = parseInt(String(valB).replace(/\D/g, '')) || 0;
+        } else if (col === 'fecha') {
+          valA = new Date(valA).getTime() || 0;
+          valB = new Date(valB).getTime() || 0;
+        } else if (col === 'cantidadPedida' || col === 'cantidadAEntregar' || col === 'stockDepo' || col === 'stockDepor') {
+          valA = parseFloat(valA) || 0;
+          valB = parseFloat(valB) || 0;
+        } else {
+          valA = String(valA).toLowerCase();
+          valB = String(valB).toLowerCase();
+        }
+
+        if (valA < valB) return asc ? -1 : 1;
+        if (valA > valB) return asc ? 1 : -1;
+        return 0;
+      });
+
+      const getDeliveredSortArrow = (c) => {
+        if (window.currentDeliveredItemsSortCol !== c) return " ⇅";
+        return window.currentDeliveredItemsSortAsc ? " ▲" : " ▼";
+      };
+
+      let rowsHtml = items.map(item => {
+        const indicatorHtml = getStockIndicatorHtml(item.disponible, item.stockDepo);
+        
+        let badgeClass = "tmc-item-badge-other";
+        const estadoItemLower = (item.estadoItem || "").toLowerCase();
+        if (estadoItemLower.includes("reser")) {
+          badgeClass = "tmc-item-badge-reserved";
+        } else if (estadoItemLower.includes("falta") || estadoItemLower.includes("ingresado") || estadoItemLower.includes("pendi")) {
+          badgeClass = "tmc-item-badge-pending";
+        }
+
+        const dateText = item.fecha ? item.fecha.substring(0, 10) : "-";
+
+        return `
+          <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.01)'" onmouseout="this.style.background='transparent'">
+            <td style="padding: 10px 16px; font-weight: 600; color: var(--text-main);">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                ${escapeHTML(item.nroPedido)}
+                <button class="tmc-yiqi-logo-btn" title="Ver en YiQi ERP" onclick="event.stopPropagation(); window.open('https://me.yiqi.com.ar/view/PEDIDO?schemaId=1491#/${item.orderId}', '_blank')">
+                  <img src="yiqi-logo.png" alt="YiQi" style="height: 14px; width: auto; object-fit: contain;">
+                </button>
+              </span>
+            </td>
+            <td style="padding: 10px 16px; color: var(--text-muted); font-size: 12px;">
+              ${escapeHTML(dateText)}
+            </td>
+            <td style="padding: 10px 16px;">
+              <a href="#" onclick="event.preventDefault(); verBOMItem('${escapeHTML(item.sku)}', '${escapeHTML(item.producto)}')" style="color: #60a5fa; text-decoration: underline; font-weight: 600; font-family: monospace;">${escapeHTML(item.sku)}</a>
+            </td>
+            <td style="padding: 10px 16px; max-width: 250px;" title="${escapeHTML(item.producto)}${item.textoAdicional ? ' - ' + escapeHTML(item.textoAdicional) : ''}">
+              <div style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(item.producto)}</div>
+              ${item.textoAdicional ? `<div style="font-size: 11px; color: #fbbf24; font-weight: 500; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📝 ${escapeHTML(item.textoAdicional)}</div>` : ''}
+            </td>
+            <td style="padding: 10px 16px; text-align: center; font-weight: 500;">
+              ${item.cantidadPedida}
+            </td>
+            <td style="padding: 10px 16px; text-align: center; font-weight: 600; color: ${item.cantidadAEntregar > 0 ? '#f43f5e' : '#10b981'};">
+              ${item.cantidadAEntregar}
+            </td>
+            <td style="padding: 10px 16px; text-align: center; font-weight: 500;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                ${indicatorHtml}<span>${item.stockDepo}</span>
+              </div>
+            </td>
+            <td style="padding: 10px 16px; text-align: center; font-weight: 600; color: #60a5fa;">
+              ${item.stockDepor}
+            </td>
+            <td style="padding: 10px 16px; text-align: center;">
+              <span class="tmc-item-badge ${badgeClass}">${escapeHTML(item.estadoItem || 'Entregado')}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tableContainer.innerHTML = `
+        <table class="tmc-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border);">
+              <th onclick="window.sortDeliveredItems('nroPedido')" style="padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Nro Pedido${getDeliveredSortArrow('nroPedido')}
+              </th>
+              <th onclick="window.sortDeliveredItems('fecha')" style="padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Fecha${getDeliveredSortArrow('fecha')}
+              </th>
+              <th onclick="window.sortDeliveredItems('sku')" style="padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                SKU${getDeliveredSortArrow('sku')}
+              </th>
+              <th onclick="window.sortDeliveredItems('producto')" style="padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Producto${getDeliveredSortArrow('producto')}
+              </th>
+              <th onclick="window.sortDeliveredItems('cantidadPedida')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Cant. Pedida${getDeliveredSortArrow('cantidadPedida')}
+              </th>
+              <th onclick="window.sortDeliveredItems('cantidadAEntregar')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Pendiente${getDeliveredSortArrow('cantidadAEntregar')}
+              </th>
+              <th onclick="window.sortDeliveredItems('stockDepo')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Stock Disponible${getDeliveredSortArrow('stockDepo')}
+              </th>
+              <th onclick="window.sortDeliveredItems('stockDepor')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Reservado${getDeliveredSortArrow('stockDepor')}
+              </th>
+              <th onclick="window.sortDeliveredItems('estadoItem')" style="padding: 12px 16px; text-align: center; cursor: pointer; user-select: none; color: var(--text-muted); font-weight: 600;">
+                Estado Ítem${getDeliveredSortArrow('estadoItem')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
     };
 
     async function cargarPedidosPendientes(clientCode) {
@@ -5848,6 +7829,8 @@
       wrapper.style.display = "block";
       loader.style.display = "block";
       container.innerHTML = "";
+      const tableContainer = document.getElementById("tmc-pedidos-table-container");
+      if (tableContainer) tableContainer.innerHTML = "";
       badge.textContent = "0";
       badge.style.display = "none";
       body.style.display = "block";
@@ -5897,22 +7880,7 @@
         filterAndRenderPedidos();
 
         // Renderizar entregados
-        if (entContainer && entBadge) {
-          const list = window.currentClientPedidosDelivered || [];
-          if (list.length > 0) {
-            entBadge.textContent = `${list.length} pedidos entregados`;
-            entBadge.style.display = "inline-flex";
-            renderPedidos(list, "tmc-pedidos-entregados-list-container");
-          } else {
-            entBadge.textContent = "0";
-            entBadge.style.display = "none";
-            entContainer.innerHTML = `
-              <div class="text-center py-4 text-muted" style="font-size: 13px;">
-                El cliente no posee pedidos entregados recientemente.
-              </div>
-            `;
-          }
-        }
+        window.filterAndRenderDeliveredPedidos();
       } catch (err) {
         console.error("Error al cargar pedidos pendientes:", err);
         loader.style.display = "none";
@@ -6015,24 +7983,7 @@
         // 4. Renderizar localmente las listas actualizadas
         filterAndRenderPedidos();
         
-        const entBadge = document.getElementById("tmc-pedidos-entregados-count-badge");
-        const entContainer = document.getElementById("tmc-pedidos-entregados-list-container");
-        if (entContainer && entBadge) {
-          const list = window.currentClientPedidosDelivered || [];
-          if (list.length > 0) {
-            entBadge.textContent = `${list.length} pedidos entregados`;
-            entBadge.style.display = "inline-flex";
-            renderPedidos(list, "tmc-pedidos-entregados-list-container");
-          } else {
-            entBadge.textContent = "0";
-            entBadge.style.display = "none";
-            entContainer.innerHTML = `
-              <div class="text-center py-4 text-muted" style="font-size: 13px;">
-                El cliente no posee pedidos entregados recientemente.
-              </div>
-            `;
-          }
-        }
+        window.filterAndRenderDeliveredPedidos();
       } catch (err) {
         console.error("Error al actualizar pedidos locales:", err);
       }
@@ -6116,12 +8067,50 @@
 
             return `
               <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px; font-size: 11.5px; white-space: nowrap;">
-                <span style="color: #60a5fa; text-decoration: underline; cursor: pointer;" onclick="event.stopPropagation(); verDetalleComprobante('${escapeHTML(f.numero)}')">
-                  📝 ${escapeHTML(f.numero)}
+                <span style="color: #60a5fa; text-decoration: underline; cursor: pointer;" onclick="event.stopPropagation(); verDetalleComprobante('${escapeHTML(f.numero)}', '${currentClientCode}')">
+                  📝 ${escapeHTML(cleanFXComprobante(f.numero))}
                 </span>
                 <span style="font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 600; ${badgeStyle}">
                   ${escapeHTML(stateBadge)}
                 </span>
+              </div>
+            `;
+          }).join(" ");
+        }
+
+        // Remitos clickable logic (Point 8)
+        let remitosHtml = '<span style="color: var(--text-muted); font-weight: 500;">❌ Sin Remito</span>';
+        if (p.remitos && p.remitos.length > 0) {
+          remitosHtml = p.remitos.map(r => {
+            const estLower = (r.estado || "").toLowerCase();
+            let stateBadge = r.estado || "Entregado";
+            let badgeStyle = "background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2);";
+            if (estLower.includes("anulado") || estLower.includes("anulada")) {
+              stateBadge = "Anulado";
+              badgeStyle = "background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2);";
+            } else if (estLower.includes("preparado") || estLower.includes("preparando")) {
+              stateBadge = "Preparado";
+              badgeStyle = "background: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2);";
+            } else if (estLower.includes("proceso")) {
+              stateBadge = "En Proceso";
+              badgeStyle = "background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2);";
+            }
+            
+            const adjuntoText = r.adjuntoId ? `
+              <span style="color: #10b981; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" onclick="event.stopPropagation(); descargarRemitoCompleto('${escapeHTML(r.id)}', '${escapeHTML(r.adjuntoId)}')">
+                📸 Conforme
+              </span>
+            ` : "";
+
+            return `
+              <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px; font-size: 11.5px; white-space: nowrap;">
+                <span style="color: #60a5fa; text-decoration: underline; cursor: pointer;" onclick="event.stopPropagation(); verDetalleComprobante('Remito ${escapeHTML(r.numero)}', '${currentClientCode}')">
+                  📦 ${escapeHTML(cleanFXComprobante(r.numero))}
+                </span>
+                <span style="font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 600; ${badgeStyle}">
+                  ${escapeHTML(stateBadge)}
+                </span>
+                ${adjuntoText}
               </div>
             `;
           }).join(" ");
@@ -6144,7 +8133,7 @@
             stateLabel = ` (${firstFact.estado})`;
             facturasHeaderColor = "#10b981";
           }
-          facturasHeaderText = `📝 Facturado: ${firstFact.numero}${stateLabel}`;
+          facturasHeaderText = `📝 ${cleanFXComprobante(firstFact.numero)}${stateLabel}`;
           if (p.facturas.length > 1) {
             facturasHeaderText += ` (+${p.facturas.length - 1})`;
           }
@@ -6153,7 +8142,7 @@
         const itemsHtml = p.items.map(item => {
           const cantAEntregarClass = item.cantidadAEntregar > 0 ? "tmc-item-pending" : "tmc-item-ok";
           let badgeClass = "tmc-item-badge-other";
-          const estadoItemLower = item.estadoItem.toLowerCase();
+          const estadoItemLower = (item.estadoItem || "").toLowerCase();
           if (estadoItemLower.includes("reser")) {
             badgeClass = "tmc-item-badge-reserved";
           } else if (estadoItemLower.includes("falta") || estadoItemLower.includes("ingresado") || estadoItemLower.includes("pendi")) {
@@ -6162,15 +8151,35 @@
 
           const stockDepoText = item.stockDepo !== undefined ? item.stockDepo : 0;
           const stockDeporText = item.stockDepor !== undefined ? item.stockDepor : 0;
-          const indicatorHtml = getStockIndicatorHtml(item.disponible);
+          const indicatorHtml = getStockIndicatorHtml(item.disponible, stockDepoText);
+          const estadoPedidoLower = (p.estado || "").toLowerCase();
+          const isWaitingPayment = estadoPedidoLower.includes("espera de pago") || estadoPedidoLower.includes("quiebre 2") || estadoPedidoLower.includes("esperando orden de producc");
+          const isReservado = estadoItemLower.includes("reser");
+          const isIngresado = estadoItemLower.includes("ingresado") || estadoItemLower.includes("ingreso");
 
-          // Habilitar reserva solo si hay stock en DEPO y hay cantidades pendientes de entrega y no está entregado
-          const canReserve = item.stockDepo > 0 && item.cantidadAEntregar > 0 && !isDeliveredSection && !isAnnulled;
+          let actionsHtml = "";
+          if (isReservado) {
+            actionsHtml = `
+              <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(p.nroPedido)}', '${escapeHTML(item.sku)}', 'liberar', '${escapeHTML(item.id || '')}')" ${isWaitingPayment ? "" : "disabled"} style="background-color: #f59e0b; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: ${isWaitingPayment ? "pointer" : "not-allowed"}; opacity: ${isWaitingPayment ? 1 : 0.4};">Liberar</button>
+              <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(p.nroPedido)}', '${escapeHTML(item.sku)}', 'modificar', '${escapeHTML(item.id || '')}')" ${isWaitingPayment ? "" : "disabled"} style="background-color: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: ${isWaitingPayment ? "pointer" : "not-allowed"}; opacity: ${isWaitingPayment ? 1 : 0.4}; margin-left: 4px;">Modificar</button>
+            `;
+          } else if (isIngresado) {
+            actionsHtml = `
+              <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(p.nroPedido)}', '${escapeHTML(item.sku)}', 'reservar')" style="background-color: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">Reservar</button>
+              <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(p.nroPedido)}', '${escapeHTML(item.sku)}', 'eliminar', '${escapeHTML(item.id || '')}')" ${isWaitingPayment ? "" : "disabled"} style="background-color: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: ${isWaitingPayment ? "pointer" : "not-allowed"}; opacity: ${isWaitingPayment ? 1 : 0.4}; margin-left: 4px;">Eliminar</button>
+            `;
+          }
 
           return `
             <tr>
-              <td><code style="color: #3b82f6; font-weight: 600;">${escapeHTML(item.sku)}</code></td>
-              <td>${escapeHTML(item.producto)}</td>
+              <td><code style="font-weight: 600; font-family: monospace;">${escapeHTML(item.sku)}</code></td>
+              <td>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                  <div style="font-weight: 500;">${escapeHTML(item.producto)}</div>
+                  ${item.hasBOM ? `<button class="tmc-btn-expand-op" title="Ver Orden de Producción / Insumos" onclick="event.stopPropagation(); toggleOPExpansion('${escapeHTML(p.nroPedido)}', '${escapeHTML(p.id)}', '${escapeHTML(item.mateId)}', '${escapeHTML(item.sku)}', '${escapeHTML(item.producto)}', ${item.cantidadAEntregar}, this)" style="background: none; border: none; color: #60a5fa; cursor: pointer; padding: 4px; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.2s; outline: none;">➕</button>` : ''}
+                </div>
+                ${item.textoAdicional ? `<div style="font-size: 11px; color: #fbbf24; font-weight: 500; margin-top: 2px;">📝 ${escapeHTML(item.textoAdicional)}</div>` : ''}
+              </td>
               <td class="text-center">${item.cantidadPedida}</td>
               <td class="text-center ${cantAEntregarClass}">${item.cantidadAEntregar}</td>
               <td class="text-center font-mono" style="font-weight: 500;">
@@ -6183,9 +8192,17 @@
                 <span class="tmc-item-badge ${badgeClass}">${escapeHTML(item.estadoItem || 'Ingresado')}</span>
               </td>
               <td class="text-center" style="white-space: nowrap;">
-                <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(p.nroPedido)}', '${escapeHTML(item.sku)}', 'reservar')" ${canReserve ? "" : "disabled"} style="background-color: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: ${canReserve ? "pointer" : "not-allowed"}; opacity: ${canReserve ? 1 : 0.4};">Reservar</button>
-                <button class="tmc-action-btn-mini" onclick="handleItemAction('${escapeHTML(p.nroPedido)}', '${escapeHTML(item.sku)}', 'dar_de_baja')" ${(!isDeliveredSection && !isAnnulled) ? "" : "disabled style='opacity: 0.4; cursor: not-allowed;'"} style="background-color: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: 4px;">Dar de Baja</button>
-                <button class="tmc-action-btn-mini" ${(!isDeliveredSection && !isAnnulled) ? "" : "disabled style='opacity: 0.4; cursor: not-allowed;'"} style="margin-left: 4px; background-color: #64748b; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="handleItemAction('${escapeHTML(p.nroPedido)}', '${escapeHTML(item.sku)}', 'esperar')">Esperar</button>
+                ${actionsHtml}
+              </td>
+            </tr>
+            <tr id="tmc-op-row-${escapeHTML(p.nroPedido)}-${escapeHTML(item.sku)}" class="tmc-op-expanded-row" style="display: none;">
+              <td colspan="8" style="padding: 12px 16px; border-bottom: 1px solid var(--border);">
+                <div id="tmc-op-content-${escapeHTML(p.nroPedido)}-${escapeHTML(item.sku)}" class="tmc-op-expanded-content">
+                  <div class="text-center py-2" style="color: #94a3b8; font-size: 12px;">
+                    <div class="tmc-spinner" style="margin: 0 auto 6px auto; width: 16px; height: 16px;"></div>
+                    Cargando información de producción...
+                  </div>
+                </div>
               </td>
             </tr>
           `;
@@ -6204,8 +8221,8 @@
               🔄 Reiniciar Pedido
             </button>
             ` : ""}
-            <button class="tmc-btn-secondary" style="padding: 0; width: 34px; height: 34px; justify-content: center; align-items: center; display: inline-flex;" title="Ver en YiQi ERP" onclick="event.stopPropagation(); window.open('https://me.yiqi.com.ar/view/PEDIDO?schemaId=1491#/${p.id}', '_blank')">
-              <img src="yiqi-logo.png" alt="YiQi" style="width: 20px; height: 20px; object-fit: contain;">
+            <button class="tmc-yiqi-logo-btn" title="Ver en YiQi ERP" onclick="event.stopPropagation(); window.open('https://me.yiqi.com.ar/view/PEDIDO?schemaId=1491#/${p.id}', '_blank')">
+              <img src="yiqi-logo.png" alt="YiQi" style="height: 18px; width: auto; object-fit: contain;">
             </button>
           `;
         } else {
@@ -6273,8 +8290,8 @@
 
           // 7. Ver en YiQi ERP (siempre al final)
           buttonsList.push(`
-            <button class="tmc-btn-secondary" style="padding: 0; width: 34px; height: 34px; justify-content: center; align-items: center; display: inline-flex;" title="Ver en YiQi ERP" onclick="event.stopPropagation(); window.open('https://me.yiqi.com.ar/view/PEDIDO?schemaId=1491#/${p.id}', '_blank')">
-              <img src="yiqi-logo.png" alt="YiQi" style="width: 20px; height: 20px; object-fit: contain;">
+            <button class="tmc-yiqi-logo-btn" title="Ver en YiQi ERP" onclick="event.stopPropagation(); window.open('https://me.yiqi.com.ar/view/PEDIDO?schemaId=1491#/${p.id}', '_blank')">
+              <img src="yiqi-logo.png" alt="YiQi" style="height: 18px; width: auto; object-fit: contain;">
             </button>
           `);
 
@@ -6313,8 +8330,10 @@
               <div class="tmc-pedido-actions-toolbar" style="display: flex; gap: 10px; margin-bottom: 12px; padding: 0 4px 12px 4px; border-bottom: 1px dashed rgba(255,255,255,0.08); align-items: center; flex-wrap: wrap;">
                 ${toolbarActionsHtml}
                 <div style="flex-grow: 1;"></div>
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; font-size: 12px;">
                   ${facturasHtml}
+                  <span style="color: rgba(255,255,255,0.15)">|</span>
+                  ${remitosHtml}
                 </div>
               </div>
 
@@ -8084,8 +10103,7 @@
                 cancelaciones
               };
               printCustomReceipt(record);
-            } else {
-              window.open(`${DESCARGAR_PDF_URL}?reportName=RECIBO_v1.2&instanceId=${res.cobroId}&schemaId=1491&entityName=COBRO`, '_blank');
+              window.previewPDF(`${DESCARGAR_PDF_URL}?reportName=RECIBO_v1.2&instanceId=${res.cobroId}&schemaId=1491&entityName=COBRO`, `Recibo Oficial - Nº ${res.cobroId}`);
             }
           }
         } else {
@@ -8183,6 +10201,187 @@
       }
     });
 
+    // ==========================================
+    // SECCIÓN DE ALERTAS COMPARTIDAS (QUIEBRE 2)
+    // ==========================================
+    let activeAlertsMap = {};
+
+    async function checkActiveAlerts() {
+      try {
+        const response = await fetch(`${OBTENER_ALERTAS_ACTIVAS_URL}?_t=${Date.now()}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const res = await response.json();
+        if (res.success && res.alerts) {
+          updateAlertsUI(res.alerts);
+        }
+      } catch (err) {
+        console.error("Error al obtener alertas compartidas:", err);
+      }
+    }
+
+    function updateAlertsUI(alertsList) {
+      const container = document.getElementById("tmc-global-alerts-container");
+      if (!container) return;
+
+      const currentIds = new Set(alertsList.map(a => a.id));
+
+      // Quitar alertas inactivas
+      for (const alertId in activeAlertsMap) {
+        if (!currentIds.has(alertId)) {
+          const alertObj = activeAlertsMap[alertId];
+          alertObj.domEl.style.transform = "translateX(120%)";
+          alertObj.domEl.style.opacity = "0";
+          setTimeout(() => {
+            if (alertObj.domEl.parentNode) {
+              container.removeChild(alertObj.domEl);
+            }
+          }, 350);
+          delete activeAlertsMap[alertId];
+        }
+      }
+
+      // Agregar o actualizar alertas nuevas
+      alertsList.forEach(alert => {
+        if (!activeAlertsMap[alert.id]) {
+          createAlertDOM(alert, container);
+        }
+      });
+    }
+
+    function createAlertDOM(alert, container) {
+      const div = document.createElement("div");
+      div.className = "tmc-floating-alert-card";
+      
+      div.style.cssText = `
+        background: rgba(17, 24, 39, 0.95);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border: 1px solid rgba(245, 158, 11, 0.45);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        pointer-events: auto;
+        transform: translateX(120%);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+        opacity: 0;
+      `;
+
+      let dateStr = "";
+      if (alert.creadoEn) {
+        const seconds = alert.creadoEn._seconds || alert.creadoEn.seconds;
+        if (seconds) {
+          const d = new Date(seconds * 1000);
+          dateStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+      }
+
+      div.innerHTML = `
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div class="tmc-pulse-warning" style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(245, 158, 11, 0.3);">
+            <svg style="width: 18px; height: 18px; color: #fbbf24;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+              <span style="font-weight: 700; color: #f9fafb; font-size: 14px; letter-spacing: -0.01em;">¡Quiebre en Expedición!</span>
+              <span style="font-size: 11px; color: #9ca3af; font-weight: 500;">${dateStr}</span>
+            </div>
+            <p style="margin: 4px 0 0 0; font-size: 12px; color: #d1d5db; line-height: 1.4;">
+              Pedido <strong>#${escapeHTML(alert.pedidoNro || alert.pedidoId)}</strong> para <strong>${escapeHTML(alert.clienteNombre)}</strong> (${escapeHTML(alert.clienteCode)}).
+            </p>
+            <p style="margin: 6px 0 0 0; font-size: 11px; color: #fbbf24; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.15); padding: 6px 8px; border-radius: 6px; font-style: italic; line-height: 1.3; overflow-wrap: break-word;">
+              "${escapeHTML(alert.motivo)}"
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
+          ${alert.clienteCode ? `
+            <button onclick="window.selectClientFromAlert('${alert.clienteCode}')" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; color: #f3f4f6; padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;">
+              <svg style="width: 12px; height: 12px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Ver Cuenta
+            </button>
+          ` : ''}
+          <button onclick="window.resolveAlertFromUI('${alert.id}')" style="background: #fbbf24; border: none; border-radius: 6px; color: #111827; padding: 6px 12px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;">
+            <svg style="width: 12px; height: 12px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Resolver
+          </button>
+        </div>
+      `;
+
+      container.appendChild(div);
+
+      setTimeout(() => {
+        div.style.transform = "translateX(0)";
+        div.style.opacity = "1";
+      }, 50);
+
+      activeAlertsMap[alert.id] = { domEl: div, data: alert };
+    }
+
+    window.selectClientFromAlert = function(clientCode) {
+      if (typeof window.selectClientFromSidebar === "function") {
+        window.selectClientFromSidebar(clientCode);
+      }
+    };
+
+    window.resolveAlertFromUI = async function(alertId) {
+      const alertObj = activeAlertsMap[alertId];
+      if (!alertObj) return;
+
+      const buttons = alertObj.domEl.querySelectorAll("button");
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        btn.style.cursor = "not-allowed";
+      });
+
+      try {
+        const response = await fetch(MARCAR_ALERTA_LEIDA_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ alertId })
+        });
+        
+        if (response.ok) {
+          alertObj.domEl.style.transform = "translateX(120%)";
+          alertObj.domEl.style.opacity = "0";
+          setTimeout(() => {
+            if (alertObj.domEl.parentNode) {
+              alertObj.domEl.parentNode.removeChild(alertObj.domEl);
+            }
+          }, 350);
+          delete activeAlertsMap[alertId];
+        } else {
+          buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.style.cursor = "pointer";
+          });
+          showCustomAlert("Error", "No se pudo marcar la alerta como leída.", "error");
+        }
+      } catch (err) {
+        console.error("Error al resolver alerta:", err);
+        buttons.forEach(btn => {
+          btn.disabled = false;
+          btn.style.opacity = "1";
+          btn.style.cursor = "pointer";
+        });
+        showCustomAlert("Error", "Ocurrió un error al marcar la alerta como leída.", "error");
+      }
+    };
+
     // Iniciar con la carga del consolidado
     cargarConsolidado().then(() => {
       cargarAuxiliares();
@@ -8202,7 +10401,170 @@
 
       // Iniciar con el código por defecto (Probando Tornado)
       cargarDatosCliente("10778");
+
+      // Iniciar consulta de alertas activas
+      checkActiveAlerts();
+      setInterval(checkActiveAlerts, 12000);
     });
+
+    // ==========================================
+    // TOUR DE AYUDA INTERACTIVO (ONBOARDING)
+    // ==========================================
+    let currentTourStep = 0;
+    let tempVisibleElements = [];
+
+    const tourSteps = [
+      {
+        elementId: 'tmc-sidebar-container',
+        title: '🔍 Buscador de Clientes (Sidebar)',
+        description: 'Utilice este panel lateral izquierdo para buscar a cualquier cliente por nombre, código o CUIT y cargar al instante su cuenta corriente consolidada.'
+      },
+      {
+        elementId: 'tmc-main-title',
+        title: '👑 Título y Acciones Globales',
+        description: 'Aquí puede visualizar el título principal del panel y acceder a los botones de navegación de la cabecera, alternar el tema visual oscuro/claro y recargar los datos del cliente activo.'
+      },
+      {
+        elementId: 'tmc-unapplied-alert',
+        title: '⚠️ Alerta de Saldos Sin Imputar',
+        description: 'Este aviso le indicará si el cliente posee saldos a favor huérfanos que no han sido aplicados (imputados) a ninguna factura. Cuenta con un acceso directo para realizar la imputación FIFO.'
+      },
+      {
+        elementId: 'tmc-summary-card-container',
+        title: '📈 Resumen Consolidado',
+        description: 'Muestra a simple vista el saldo total del cliente en pesos, el monto en dólares de pedidos pendientes de entrega y el promedio en días del plazo de cobro.'
+      },
+      {
+        elementId: 'tmc-summary-actions-container',
+        title: '📤 Acciones de Reporte (PDF/Compartir)',
+        description: 'Botones premium para exportar el resumen de cuenta a PDF, enviar el detalle del saldo por WhatsApp con un solo clic o compartirlo por correo Gmail.'
+      },
+      {
+        elementId: 'tmc-estado-cuenta-container',
+        title: '📜 Estado de Cuenta (Movimientos)',
+        description: 'Listado cronológico de facturas, cobros y notas de crédito. Desde aquí también puede iniciar la creación de un Cobro Manual con depósito o transferencia bancaria.'
+      },
+      {
+        elementId: 'tmc-pedidos-pendientes-wrapper',
+        title: '📦 Pedidos Abiertos',
+        description: 'Monitoreo en tiempo real de los pedidos pendientes en YiQi ERP. Cuenta con filtros interactivos de búsqueda y estados.'
+      },
+      {
+        elementId: 'tmc-view-selector-container',
+        title: '📊 Selector de Vistas',
+        description: 'Intercambie fácilmente entre el formato de Tarjetas compactas y la nueva Tabla Detallada de Artículos, que incluye el cálculo automático de stock disponible y factibilidad.'
+      }
+    ];
+
+    function forceShowElementAndAncestors(el) {
+      let current = el;
+      while (current && current !== document.body && current !== document.documentElement) {
+        const style = window.getComputedStyle(current);
+        if (style.display === 'none' || current.style.display === 'none') {
+          tempVisibleElements.push({
+            el: current,
+            origDisplay: current.style.display || ''
+          });
+          current.style.display = 'block';
+        }
+        current = current.parentElement;
+      }
+    }
+
+    window.startInteractiveTour = function() {
+      currentTourStep = 0;
+      
+      const backdrop = document.getElementById('tmc-tour-backdrop');
+      if (backdrop) backdrop.classList.add('active');
+      
+      const modal = document.getElementById('tmc-tour-modal');
+      if (modal) modal.classList.add('active');
+      
+      renderTourStep(currentTourStep);
+      
+      if (window.logActivity) {
+        window.logActivity('Guía de ayuda interactiva iniciada.', 'info');
+      }
+    };
+
+    window.exitTour = function() {
+      tempVisibleElements.forEach(item => {
+        item.el.style.display = item.origDisplay;
+      });
+      tempVisibleElements = [];
+
+      document.querySelectorAll('.tmc-tour-active-highlight').forEach(el => {
+        el.classList.remove('tmc-tour-active-highlight');
+      });
+      
+      const backdrop = document.getElementById('tmc-tour-backdrop');
+      if (backdrop) backdrop.classList.remove('active');
+      
+      const modal = document.getElementById('tmc-tour-modal');
+      if (modal) modal.classList.remove('active');
+      
+      if (window.logActivity) {
+        window.logActivity('Guía de ayuda interactiva finalizada.', 'info');
+      }
+    };
+
+    window.renderTourStep = function(stepIndex) {
+      tempVisibleElements.forEach(item => {
+        item.el.style.display = item.origDisplay;
+      });
+      tempVisibleElements = [];
+
+      document.querySelectorAll('.tmc-tour-active-highlight').forEach(el => {
+        el.classList.remove('tmc-tour-active-highlight');
+      });
+      
+      const step = tourSteps[stepIndex];
+      if (!step) return;
+      
+      const target = document.getElementById(step.elementId);
+      if (target) {
+        forceShowElementAndAncestors(target);
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('tmc-tour-active-highlight');
+      }
+      
+      document.getElementById('tmc-tour-title').innerHTML = step.title;
+      document.getElementById('tmc-tour-description').innerText = step.description;
+      
+      document.getElementById('tmc-tour-step-indicator').innerText = `Paso ${stepIndex + 1} de ${tourSteps.length}`;
+      
+      const btnPrev = document.getElementById('tmc-tour-btn-prev');
+      const btnNext = document.getElementById('tmc-tour-btn-next');
+      
+      if (btnPrev) {
+        btnPrev.disabled = stepIndex === 0;
+        btnPrev.style.opacity = stepIndex === 0 ? '0.5' : '1';
+      }
+      
+      if (btnNext) {
+        if (stepIndex === tourSteps.length - 1) {
+          btnNext.innerText = 'Finalizar';
+        } else {
+          btnNext.innerText = 'Siguiente';
+        }
+      }
+    };
+
+    window.prevTourStep = function() {
+      if (currentTourStep > 0) {
+        currentTourStep--;
+        renderTourStep(currentTourStep);
+      }
+    };
+
+    window.nextTourStep = function() {
+      if (currentTourStep < tourSteps.length - 1) {
+        currentTourStep++;
+        renderTourStep(currentTourStep);
+      } else {
+        exitTour();
+      }
+    };
   </script>
   <!-- Floating Logs Widget -->
   <div id="tmc-floating-logs-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-family: inherit;">
@@ -8235,5 +10597,20 @@
   </div>
 
   <datalist id="bancos-datalist"></datalist>
+
+  <!-- Tour de Ayuda Interactiva HTML -->
+  <div id="tmc-tour-backdrop" onclick="exitTour()"></div>
+  <div id="tmc-tour-modal">
+    <h3 id="tmc-tour-title"></h3>
+    <p id="tmc-tour-description"></p>
+    <div class="tmc-tour-footer">
+      <span class="tmc-tour-progress" id="tmc-tour-step-indicator">Paso 1 de 8</span>
+      <div class="tmc-tour-nav-btns">
+        <button class="tmc-tour-btn-skip" onclick="exitTour()">Saltar</button>
+        <button class="tmc-btn-secondary" id="tmc-tour-btn-prev" onclick="prevTourStep()" style="padding: 6px 12px; font-size: 12.5px; margin: 0;">Anterior</button>
+        <button class="tmc-btn" id="tmc-tour-btn-next" onclick="nextTourStep()" style="padding: 6px 12px; font-size: 12.5px; margin: 0;">Siguiente</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
