@@ -2528,7 +2528,10 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
                 disponible: item.DISPONIBLE || "",
                 reservadoCant: item.RESERVADO_CANT !== undefined && item.RESERVADO_CANT !== null ? parseFloat(item.RESERVADO_CANT) : 0,
                 stockFaltante: item.STOCK_FALTANTE !== undefined && item.STOCK_FALTANTE !== null ? parseFloat(item.STOCK_FALTANTE) : 0,
-                textoAdicional: item.TEXTO_ADICIONAL || ""
+                textoAdicional: item.TEXTO_ADICIONAL || "",
+                grupo: item.GRUPO_ART || "",
+                subgrupo: item.SUBGRUPO_ART || "",
+                segundo: item.SEGUNDO_SUBGRUPO_ART || ""
               };
             });
 
@@ -4127,6 +4130,7 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
     let assignedSeller = null;
     let clientId = null;
     let clientName = null;
+    let yiqiSearched = false;
 
     const chatDoc = await chatRef.get();
     if (chatDoc.exists) {
@@ -4134,6 +4138,22 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
       assignedSeller = chatData.assignedSeller;
       clientId = chatData.clientId;
       clientName = chatData.clientName;
+      yiqiSearched = chatData.yiqiSearched === true;
+    }
+
+    // 2.1 Asignación automática de vendedor basado en la instancia de WhatsApp de Z-API que recibe el mensaje
+    if ((!assignedSeller || assignedSeller === "No asignado") && body.instanceId) {
+      try {
+        const waConfigsSnap = await db.collection("crm_whatsapp_configs").get();
+        waConfigsSnap.forEach(doc => {
+          const cfg = doc.data();
+          if (cfg.apiUrl && cfg.apiUrl.includes(body.instanceId)) {
+            assignedSeller = cfg.seller;
+          }
+        });
+      } catch (err) {
+        console.error("Error al buscar configuración de WhatsApp para mapear vendedor:", err);
+      }
     }
 
     if (!assignedSeller || !clientId) {
@@ -4177,7 +4197,7 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
       });
 
       if (matchedFollowup) {
-        if (!assignedSeller) assignedSeller = matchedFollowup.vendedor;
+        if (!assignedSeller || assignedSeller === "No asignado") assignedSeller = matchedFollowup.vendedor;
         if (!clientId) {
           clientId = matchedFollowup.clientId;
           clientName = matchedFollowup.clientName;
@@ -4185,12 +4205,68 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
       }
     }
 
+    // 2.2 Si aún no está vinculado y no se buscó en YiQi para este chat, buscar en YiQi ERP
+    if (!clientId && !yiqiSearched) {
+      console.log(`Buscando número de WhatsApp ${phone} en YiQi ERP...`);
+      try {
+        const cleanPhone = String(phone).replace(/\D/g, "");
+        const standardize = (p) => {
+          let res = p;
+          if (res.startsWith("549")) res = res.substring(3);
+          else if (res.startsWith("54")) res = res.substring(2);
+          if (res.startsWith("0")) res = res.substring(1);
+          if (res.length === 12 && res.substring(2, 4) === "15") {
+            res = res.substring(0, 2) + res.substring(4);
+          } else if (res.length === 10 && res.startsWith("15")) {
+            res = res.substring(2);
+          }
+          return res;
+        };
+        const searchNumber = standardize(cleanPhone);
+        
+        if (searchNumber) {
+          const token = await getYiQiToken();
+          const url = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=345&schemaId=1491&smartieId=2603";
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              page: 1,
+              pageSize: 5,
+              search: searchNumber
+            })
+          });
+          if (response.ok) {
+            const json = await response.json();
+            const rows = json.data || json.rows || json.instances || [];
+            if (rows.length > 0) {
+              const matchedClient = rows[0];
+              clientId = matchedClient.ID || matchedClient.id;
+              clientName = matchedClient.CLIE_RAZON_SOCIAL || matchedClient.CLIE_NOMBRE;
+              console.log(`Cliente encontrado automáticamente en YiQi ERP: ID=${clientId}, Nombre=${clientName}`);
+            } else {
+              console.log(`No se encontró ningún cliente en YiQi para el número: ${searchNumber}`);
+            }
+          } else {
+            console.error(`Error de API YiQi: ${response.status} - ${await response.text()}`);
+          }
+        }
+      } catch (err) {
+        console.error("Error buscando cliente en YiQi ERP:", err);
+      }
+      yiqiSearched = true; // Marcamos como buscado independientemente del resultado para no repetir la llamada API
+    }
+
     // 3. Actualizar chat principal
     const chatUpdate = {
       phone: phone,
       lastMessage: text,
       lastUpdated: timestamp,
-      assignedSeller: assignedSeller || "No asignado"
+      assignedSeller: assignedSeller || "No asignado",
+      yiqiSearched: yiqiSearched
     };
 
     if (clientId) {
