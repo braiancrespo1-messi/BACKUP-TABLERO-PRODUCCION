@@ -4226,7 +4226,7 @@ exports.receiveWhatsAppWebhook = onRequest({ cors: true }, async (req, res) => {
         
         if (searchNumber) {
           const token = await getYiQiToken();
-          const url = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=345&schemaId=1491&smartieId=2603";
+          const url = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=345&schemaId=1491&smartieId=2666";
           const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -5044,9 +5044,9 @@ exports.altaClienteProxy = onRequest({ cors: true }, async (req, res) => {
     // 1. Obtener Token de YiQi ERP
     const token = await getYiQiToken();
 
-    // 2. Control de duplicados en YiQi ERP (Smartie 2603, entityId: 345)
+    // 2. Control de duplicados en YiQi ERP (Smartie 2666, entityId: 345)
     console.log(`[Proxy] Comprobando ${docTypeLabel} duplicado en YiQi...`);
-    const queryUrl = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=345&schemaId=1491&smartieId=2603";
+    const queryUrl = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=345&schemaId=1491&smartieId=2666";
     const queryBody = {
       page: 1,
       pageSize: 5,
