@@ -6,7 +6,7 @@
 const CONFIG = {
     SCHEMA_ID: 1491,
     ENTITY_CLIENTE: "345",
-    SMARTIE_CLIENTE: 2603,
+    SMARTIE_CLIENTE: 2666,
     ENTITY_ARTICULOS: "782",
     SMARTIE_ARTICULOS: 2744,
     ENTITY_PEDIDOS: "1231",
@@ -74,6 +74,90 @@ let clientSearchTimeout = null;
 let selectedClient = null;
 let activePlanToExpand = null;
 let cart = [];
+let servicesCart = [];
+let currentCartTab = "productos";
+
+// --- DEFAULT SERVICES CATALOG FROM SMARTIE 2802 (ENTITY 460) ---
+const DEFAULT_SERVICES_CATALOG = [
+  {"ID": 45, "COFA_NOMBRE": "Enlozado Negro", "SEYI_CODIGO": "ENLOZ", "SEYI_TIPO_SERVICIO": "Enlozado Negro"},
+  {"ID": 44, "COFA_NOMBRE": "Manual - self_service TMC B2B", "SEYI_CODIGO": "Manual - self_service TMC B2B", "SEYI_TIPO_SERVICIO": "Manual - self_service TMC B2B"},
+  {"ID": 43, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR LATA ALUMINIZADA 60X40X2", "SEYI_CODIGO": "TNE-LALZ60402", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR LATA ALUMINIZADA 60X40X2"},
+  {"ID": 42, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR LATA ALUMINIZADA 45X35X2", "SEYI_CODIGO": "TNE-LALZ45352", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR LATA ALUMINIZADA 45X35X2"},
+  {"ID": 41, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR LATA ALUMINIZADA 40X30X2", "SEYI_CODIGO": "TNE-LALZ40302", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR LATA ALUMINIZADA 40X30X2"},
+  {"ID": 40, "COFA_NOMBRE": "RECICLADO SOBRE BANDEJA DE 90X70 - TEFLÓN NEGRO", "SEYI_CODIGO": "REC9070", "SEYI_TIPO_SERVICIO": "RECICLADO SOBRE BANDEJA DE 90X70 - TEFLÓN NEGRO"},
+  {"ID": 39, "COFA_NOMBRE": "RECICLADO SOBRE BANDEJA DE 80X60 - TEFLÓN NEGRO", "SEYI_CODIGO": "REC8060", "SEYI_TIPO_SERVICIO": "RECICLADO SOBRE BANDEJA DE 80X60 - TEFLÓN NEGRO"},
+  {"ID": 38, "COFA_NOMBRE": "RECICLADO SOBRE BANDEJA DE 70X45 - TEFLÓN NEGRO", "SEYI_CODIGO": "REC7045", "SEYI_TIPO_SERVICIO": "RECICLADO SOBRE BANDEJA DE 70X45 - TEFLÓN NEGRO"},
+  {"ID": 37, "COFA_NOMBRE": "RECICLADO SOBRE BANDEJA DE 60X40 - TEFLÓN NEGRO", "SEYI_CODIGO": "REC6040", "SEYI_TIPO_SERVICIO": "RECICLADO SOBRE BANDEJA DE 60X40 - TEFLÓN NEGRO"},
+  {"ID": 36, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BANDEJA APILABLE ALUMINIO 70X45X1,5", "SEYI_CODIGO": "TNE-BAA7045", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BANDEJA APILABLE ALUMINIO 70X45X1,5"},
+  {"ID": 35, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BANDEJA APILABLE ALUMINIO 60X40X1,5", "SEYI_CODIGO": "TNE-BAA6040", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BANDEJA APILABLE ALUMINIO 60X40X1,5"},
+  {"ID": 34, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BANDEJA PLANA ALUMINIO 60X40", "SEYI_CODIGO": "TNE-BPA6040", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BANDEJA PLANA ALUMINIO 60X40"},
+  {"ID": 32, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BANDEJA PLANA ALUMINIO 44X32", "SEYI_CODIGO": "TNE-BPA4432", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BANDEJA PLANA ALUMINIO 44X32"},
+  {"ID": 31, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 32X22", "SEYI_CODIGO": "TNE-BAG3222", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 32X22"},
+  {"ID": 30, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 44X32", "SEYI_CODIGO": "TNE-BAG4432", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 44X32"},
+  {"ID": 29, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR LACTAL ALUMINIZADO 30X10X10", "SEYI_CODIGO": "TNE-PLA301010", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR LACTAL ALUMINIZADO 30X10X10"},
+  {"ID": 28, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR LACTAL ALUMINIZADO 24X10X10", "SEYI_CODIGO": "TNE-PLA241010", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR LACTAL ALUMINIZADO 24X10X10"},
+  {"ID": 27, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR LACTAL ALUMINIZADO 20X10X10", "SEYI_CODIGO": "TNE-PLA201010", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR LACTAL ALUMINIZADO 20X10X10"},
+  {"ID": 26, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BANDEJA ALUMINIO 70X45X2", "SEYI_CODIGO": "TNE-BA70452", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BANDEJA ALUMINIO 70X45X2"},
+  {"ID": 25, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BANDEJA ALUMINIO 60X40X2", "SEYI_CODIGO": "TNE-BA60402", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BANDEJA ALUMINIO 60X40X2"},
+  {"ID": 24, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 90X70", "SEYI_CODIGO": "TNE-BAG9070", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 90X70"},
+  {"ID": 23, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 80X60", "SEYI_CODIGO": "TNE-BAG8060", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 80X60"},
+  {"ID": 22, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 60X40", "SEYI_CODIGO": "TNE-BAG6040", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 60X40"},
+  {"ID": 21, "COFA_NOMBRE": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 70X45", "SEYI_CODIGO": "TNE-BAG7045", "SEYI_TIPO_SERVICIO": "TEFLONADO NEGRO ESTANDAR BAGUETTERA 70X45"},
+  {"ID": 20, "COFA_NOMBRE": "Sin Nombre", "SEYI_CODIGO": "Sin Nombre", "SEYI_TIPO_SERVICIO": "Sin Nombre"},
+  {"ID": 19, "COFA_NOMBRE": "Zona 4 - Tercer Cordón", "SEYI_CODIGO": "Zona4", "SEYI_TIPO_SERVICIO": "Zona 4 - Tercer Cordón"},
+  {"ID": 18, "COFA_NOMBRE": "Zona 3 - Segundo Cordón", "SEYI_CODIGO": "Zona3", "SEYI_TIPO_SERVICIO": "Zona 3 - Segundo Cordón"},
+  {"ID": 17, "COFA_NOMBRE": "Zona 2 - Primer Cordon", "SEYI_CODIGO": "Zona2", "SEYI_TIPO_SERVICIO": "Zona 2 - Primer Cordon"},
+  {"ID": 16, "COFA_NOMBRE": "Zona 1 - CABA", "SEYI_CODIGO": "Zona1", "SEYI_TIPO_SERVICIO": "Zona 1 - CABA"},
+  {"ID": 14, "COFA_NOMBRE": "Manual - Retira", "SEYI_CODIGO": "Manual - Retira", "SEYI_TIPO_SERVICIO": "Manual - Retira"},
+  {"ID": 13, "COFA_NOMBRE": "Manual - self_service TMC", "SEYI_CODIGO": "Manual - self_service TMC", "SEYI_TIPO_SERVICIO": "Manual - self_service TMC"},
+  {"ID": 12, "COFA_NOMBRE": "Manual - Transporte Expreso", "SEYI_CODIGO": "Manual - Transporte Expreso", "SEYI_TIPO_SERVICIO": "Manual - Transporte Expreso"},
+  {"ID": 11, "COFA_NOMBRE": "FLEX PRUEBA", "SEYI_CODIGO": "PRUEBA", "SEYI_TIPO_SERVICIO": "PRUEBA"},
+  {"ID": 10, "COFA_NOMBRE": "Prioritario a sucursal de correo", "SEYI_CODIGO": "Prioritario a sucursal de correo", "SEYI_TIPO_SERVICIO": "Prioritario a sucursal de correo"},
+  {"ID": 9, "COFA_NOMBRE": "Prioritario", "SEYI_CODIGO": "Prioritario", "SEYI_TIPO_SERVICIO": "Prioritario"},
+  {"ID": 8, "COFA_NOMBRE": "Express a sucursal de correo", "SEYI_CODIGO": "Express a sucursal de correo", "SEYI_TIPO_SERVICIO": "Express a sucursal de correo"},
+  {"ID": 7, "COFA_NOMBRE": "Estándar a sucursal de correo", "SEYI_CODIGO": "Estándar a sucursal de correo", "SEYI_TIPO_SERVICIO": "Estándar a sucursal de correo"},
+  {"ID": 6, "COFA_NOMBRE": "Retiro en sucursal OCA Prioritario", "SEYI_CODIGO": "Retiro en sucursal OCA Prioritario", "SEYI_TIPO_SERVICIO": "Retiro en sucursal OCA Prioritario"},
+  {"ID": 5, "COFA_NOMBRE": "Normal a domicilio", "SEYI_CODIGO": "Normal a domicilio", "SEYI_TIPO_SERVICIO": "Normal a domicilio"},
+  {"ID": 4, "COFA_NOMBRE": "Estándar a domicilio", "SEYI_CODIGO": "Estándar a domicilio", "SEYI_TIPO_SERVICIO": "Estándar a domicilio"},
+  {"ID": 3, "COFA_NOMBRE": "Retiro en una sucursal", "SEYI_CODIGO": "Retiro en una sucursal", "SEYI_TIPO_SERVICIO": "Retiro en una sucursal"},
+  {"ID": 2, "COFA_NOMBRE": "Prioritario a domicilio", "SEYI_CODIGO": "Prioritario a domicilio", "SEYI_TIPO_SERVICIO": "Prioritario a domicilio"},
+  {"ID": 1, "COFA_NOMBRE": "Express a domicilio", "SEYI_CODIGO": "Express a domicilio", "SEYI_TIPO_SERVICIO": "Express a domicilio"}
+];
+
+// --- DEFAULT SERVICES PRICES CATALOG FROM SMARTIE 2803 (ENTITY 1230) ---
+const DEFAULT_SERVICES_PRICES = [
+  {
+    "SEYI_CODIGO": "Estándar a domicilio",
+    "SEYI_TIPO_SERVICIO": "Estándar a domicilio",
+    "PSPL_PRECIO": 4987.0,
+    "LIDP_NOMBRE": "Minorista"
+  },
+  {
+    "SEYI_CODIGO": "Zona1",
+    "SEYI_TIPO_SERVICIO": "Zona 1 - CABA",
+    "PSPL_PRECIO": 5994.0,
+    "LIDP_NOMBRE": "Minorista"
+  },
+  {
+    "SEYI_CODIGO": "Zona2",
+    "SEYI_TIPO_SERVICIO": "Zona 2 - Primer Cordon",
+    "PSPL_PRECIO": 7192.5,
+    "LIDP_NOMBRE": "Minorista"
+  },
+  {
+    "SEYI_CODIGO": "Zona3",
+    "SEYI_TIPO_SERVICIO": "Zona 3 - Segundo Cordón",
+    "PSPL_PRECIO": 9720.0,
+    "LIDP_NOMBRE": "Minorista"
+  },
+  {
+    "SEYI_CODIGO": "Zona4",
+    "SEYI_TIPO_SERVICIO": "Zona 4 - Tercer Cordón",
+    "PSPL_PRECIO": 14580.0,
+    "LIDP_NOMBRE": "Minorista"
+  }
+];
+
 let globalDiscount = 0.0;
 let newPlanSteps = [];
 let editingVersionOfDocId = null;
@@ -400,10 +484,17 @@ function renderClientSearchResults(rows, resultsContainer) {
         const rawSocial = client.CLIE_RAZON_SOCIAL || client.CLIE_NOMBRE;
         const cuit = client.CLIE_CUIT || "Sin CUIT";
         
+        // ML Nickname badge
+        const nickname = client.CLIE_NICKNAME_ML ? client.CLIE_NICKNAME_ML.trim() : "";
+        const mlBadge = nickname ? `<span class="ml-nickname-badge" style="background: rgba(241, 196, 15, 0.12); color: #c29d0b; border: 1px solid rgba(241, 196, 15, 0.25); font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: auto;">ML: ${nickname}</span>` : "";
+        
         html += `
-            <div class="autocomplete-item" onclick="selectClient('${client.ID}', '${rawSocial.replace(/'/g, "\\'")}')">
-                <div class="item-title">${rawSocial}</div>
-                <div class="item-meta">
+            <div class="autocomplete-item" onclick="selectClient('${client.ID}', '${rawSocial.replace(/'/g, "\\'")}')" style="display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;">
+                <div class="item-title" style="display: flex; align-items: center; width: 100%;">
+                    <span style="font-weight: 600; color: var(--text-primary);">${rawSocial}</span>
+                    ${mlBadge}
+                </div>
+                <div class="item-meta" style="display: flex; gap: 12px; font-size: 0.75rem; color: var(--text-secondary);">
                     <span>CUIT: ${cuit}</span>
                     <span>Lista: ${listName}</span>
                 </div>
@@ -1252,9 +1343,11 @@ function renderCart() {
     const table = document.getElementById("cart-table");
     const emptyState = document.getElementById("cart-empty");
     const formContainer = document.getElementById("cart-form-container");
+    const servicesContainer = document.getElementById("services-cart-container");
     
-    if (cart.length === 0) {
+    if (cart.length === 0 && servicesCart.length === 0) {
         table.style.display = "none";
+        if (servicesContainer) servicesContainer.style.display = "none";
         formContainer.style.display = "none";
         emptyState.style.display = "flex";
         
@@ -1272,6 +1365,7 @@ function renderCart() {
     let totalDiscountedNet = 0.0;
     let totalIva = 0.0;
     
+    // 1. Render Products
     cart.forEach(item => {
         // Price after client type discount (Client Net) or manual override of Base Price
         const basePrice = (item.manualBasePrice !== null && item.manualBasePrice !== undefined)
@@ -1317,6 +1411,54 @@ function renderCart() {
         `;
     });
     
+    if (tbody) {
+        tbody.innerHTML = html;
+    }
+    
+    // 2. Render Services
+    const servicesTbody = document.getElementById("services-cart-tbody");
+    let servicesHtml = "";
+    
+    servicesCart.forEach(item => {
+        const basePrice = item.priceListNet || 0.0;
+        const lineNetPrice = basePrice * (1 - (item.discount || 0.0) / 100);
+        const lineTotalNet = lineNetPrice * item.qty;
+        
+        const lineNetAfterGlobal = lineTotalNet * (1 - globalDiscount / 100);
+        const lineIva = lineNetAfterGlobal * (item.vatPercent / 100);
+        
+        // Sums
+        subtotalNet += lineNetPrice * item.qty;
+        totalDiscountedNet += lineTotalNet;
+        totalIva += lineIva;
+        
+        servicesHtml += `
+            <tr class="fade-in">
+                <td style="text-align: left;">
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.85rem;">${item.name}</div>
+                    <input type="text" class="form-input additional-text-input" placeholder="Texto adicional (ej. dirección)..." value="${item.additionalText || ''}" onchange="updateServiceAdditionalText(${item.id}, this.value)" style="width: 100%; font-size: 0.78rem; margin-top: 4px; padding: 4px 8px;">
+                </td>
+                <td class="text-right price-cell">
+                    <input type="text" class="manual-price-field" style="width: 95px; text-align: right;" value="${formatArgentinianNumber(basePrice)}" onchange="updateServicePrice(${item.id}, this.value)">
+                </td>
+                <td class="text-center">
+                    <input type="number" class="quantity-field" min="1" value="${item.qty}" onchange="updateServiceQty(${item.id}, this.value)" style="width: 55px; text-align: center;">
+                </td>
+                <td class="text-center">
+                    <input type="number" class="manual-price-field" min="0" max="99" value="${item.discount || 0}" onchange="updateServiceDiscount(${item.id}, this.value)" style="width: 55px; text-align: center;">
+                </td>
+                <td class="text-right price-cell color-net">${formatCurrency(lineTotalNet)}</td>
+                <td class="text-center">
+                    <button class="btn-remove-item" onclick="removeServiceFromCart(${item.id})" title="Quitar servicio">✕</button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    if (servicesTbody) {
+        servicesTbody.innerHTML = servicesHtml;
+    }
+    
     // Global discount is calculated on the total line-net amount
     const globalDiscountAmount = totalDiscountedNet * (globalDiscount / 100);
     const finalAmount = (totalDiscountedNet - globalDiscountAmount) + totalIva;
@@ -1337,12 +1479,234 @@ function renderCart() {
     document.getElementById("total-iva-amount").textContent = formatCurrency(totalIva);
     document.getElementById("total-final-amount").textContent = formatCurrency(finalAmount);
     
-    tbody.innerHTML = html;
-    table.style.display = "table";
+    // Apply Tab Visibility
+    switchCartTab(currentCartTab);
+    
     formContainer.style.display = "block";
     emptyState.style.display = "none";
     updateCartHeader();
 }
+
+// --- CART TABS SWITCHING ---
+function switchCartTab(tab) {
+    currentCartTab = tab;
+    
+    const btnProducts = document.getElementById("btn-cart-tab-products");
+    const btnServices = document.getElementById("btn-cart-tab-services");
+    const productsTable = document.getElementById("cart-table");
+    const servicesContainer = document.getElementById("services-cart-container");
+    
+    if (tab === "productos") {
+        if (btnProducts) {
+            btnProducts.classList.remove("btn-secondary");
+            btnProducts.classList.add("btn-primary");
+        }
+        if (btnServices) {
+            btnServices.classList.remove("btn-primary");
+            btnServices.classList.add("btn-secondary");
+        }
+        if (productsTable) {
+            productsTable.style.display = cart.length > 0 ? "table" : "none";
+        }
+        if (servicesContainer) {
+            servicesContainer.style.display = "none";
+        }
+    } else {
+        if (btnProducts) {
+            btnProducts.classList.remove("btn-primary");
+            btnProducts.classList.add("btn-secondary");
+        }
+        if (btnServices) {
+            btnServices.classList.remove("btn-secondary");
+            btnServices.classList.add("btn-primary");
+        }
+        if (productsTable) {
+            productsTable.style.display = "none";
+        }
+        if (servicesContainer) {
+            servicesContainer.style.display = "flex";
+        }
+    }
+}
+window.switchCartTab = switchCartTab;
+
+// --- SERVICES MANIPULATION HELPERS ---
+function updateServiceAdditionalText(id, val) {
+    const item = servicesCart.find(s => s.id === id);
+    if (item) {
+        item.additionalText = val;
+    }
+}
+window.updateServiceAdditionalText = updateServiceAdditionalText;
+
+function updateServicePrice(id, val) {
+    const item = servicesCart.find(s => s.id === id);
+    if (!item) return;
+    let price = parseArgentinianNumber(val);
+    if (isNaN(price) || price < 0) price = 0.0;
+    item.priceListNet = price;
+    renderCart();
+}
+window.updateServicePrice = updateServicePrice;
+
+function updateServiceQty(id, val) {
+    const item = servicesCart.find(s => s.id === id);
+    if (!item) return;
+    let qty = parseInt(val);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    item.qty = qty;
+    renderCart();
+}
+window.updateServiceQty = updateServiceQty;
+
+function updateServiceDiscount(id, val) {
+    const item = servicesCart.find(s => s.id === id);
+    if (!item) return;
+    let disc = parseFloat(val);
+    if (isNaN(disc) || disc < 0) disc = 0.0;
+    if (disc > 99) disc = 99.0;
+    item.discount = disc;
+    renderCart();
+}
+window.updateServiceDiscount = updateServiceDiscount;
+
+function removeServiceFromCart(id) {
+    servicesCart = servicesCart.filter(s => s.id !== id);
+    renderCart();
+}
+window.removeServiceFromCart = removeServiceFromCart;
+
+// --- ADD SERVICE DIALOG ---
+function openAddServiceModal() {
+    let enabledIds = [];
+    try {
+        enabledIds = JSON.parse(localStorage.getItem("tmc_crm_enabled_services") || "[]");
+    } catch(e) {}
+    
+    if (enabledIds.length === 0) {
+        showModal({
+            title: "Atención",
+            content: `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">⚠️</div>
+                    <p style="margin: 0; color: var(--text-primary); font-weight: 600;">No hay servicios de envío habilitados.</p>
+                    <p style="margin: 6px 0 0 0; font-size: 0.82rem; color: var(--text-secondary);">Por favor, vaya a la pestaña <strong>Configuración ➔ Servicios de Envío</strong> para habilitar los servicios que desea usar.</p>
+                </div>
+            `,
+            actions: [
+                { text: "Entendido", class: "btn-secondary" }
+            ]
+        });
+        return;
+    }
+    
+    let allServices = [];
+    try {
+        allServices = JSON.parse(localStorage.getItem("tmc_crm_all_services_catalog"));
+    } catch(e) {}
+    if (!allServices || allServices.length === 0) {
+        allServices = DEFAULT_SERVICES_CATALOG;
+    }
+    
+    const enabledServices = allServices.filter(s => enabledIds.includes(s.ID));
+    enabledServices.sort((a, b) => (a.COFA_NOMBRE || "").localeCompare(b.COFA_NOMBRE || ""));
+    
+    let modalContent = `
+        <div style="padding: 10px 0; text-align: left;">
+            <p style="margin: 0 0 14px 0; font-size: 0.85rem; color: var(--text-secondary);">Selecciona un servicio para agregarlo a la cotización:</p>
+            <div style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+    `;
+    
+    enabledServices.forEach(s => {
+        modalContent += `
+            <button class="btn btn-secondary" onclick="addServiceToCart(${s.ID}, '${escapeJsString(s.COFA_NOMBRE || s.SEYI_TIPO_SERVICIO)}', '${escapeJsString(s.SEYI_CODIGO || '')}')" style="text-align: left; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); background: var(--bg-card); transition: all 0.15s; font-size: 0.85rem; font-weight: 500; width: 100%;">
+                <span>${s.COFA_NOMBRE || s.SEYI_TIPO_SERVICIO}</span>
+                <span style="font-size: 0.7rem; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color);">${s.SEYI_CODIGO || 'SIN CÓDIGO'}</span>
+            </button>
+        `;
+    });
+    
+    modalContent += `
+            </div>
+        </div>
+    `;
+    
+    showModal({
+        title: "Agregar Servicio de Envío",
+        content: modalContent,
+        actions: [
+            { text: "Cancelar", class: "btn-secondary" }
+        ]
+    });
+}
+window.openAddServiceModal = openAddServiceModal;
+
+function escapeJsString(str) {
+    return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+function isClientFacturaX() {
+    if (!selectedClient) return false;
+    const checkName = (selectedClient.name || "").toLowerCase();
+    return checkName.includes("fx") || /\bx\b/.test(checkName);
+}
+
+function addServiceToCart(id, name, code) {
+    const existing = servicesCart.find(s => s.id === id);
+    if (existing) {
+        existing.qty += 1;
+        showAppNotification("Servicios", `Se incrementó la cantidad de ${name}.`, "success");
+    } else {
+        const isFX = isClientFacturaX();
+        
+        let priceListNet = 0.0;
+        try {
+            let cachedPrices = [];
+            const cachedPricesStr = localStorage.getItem("tmc_crm_services_prices");
+            if (cachedPricesStr) {
+                cachedPrices = JSON.parse(cachedPricesStr);
+            }
+            if (!cachedPrices || cachedPrices.length === 0) {
+                cachedPrices = DEFAULT_SERVICES_PRICES;
+            }
+            
+            const searchCode = (code || "").trim().toLowerCase();
+            const searchName = (name || "").trim().toLowerCase();
+            
+            const matched = cachedPrices.find(p => {
+                const pCode = (p.SEYI_CODIGO || "").trim().toLowerCase();
+                const pName = (p.SEYI_TIPO_SERVICIO || "").trim().toLowerCase();
+                return (searchCode && pCode === searchCode) || 
+                       (searchName && pName === searchName) ||
+                       (searchCode && pName === searchCode) ||
+                       (searchName && pCode === searchName);
+            });
+            
+            if (matched) {
+                priceListNet = parseFloat(matched.PSPL_PRECIO) || 0.0;
+            }
+        } catch(err) {
+            console.error("Error matching service price in cart:", err);
+        }
+        
+        const clientTypeDiscount = selectedClient ? (parseFloat(selectedClient.typeDiscount) || 0.0) : 0.0;
+        servicesCart.push({
+            id: id,
+            name: name,
+            code: code,
+            qty: 1,
+            priceListNet: priceListNet,
+            discount: clientTypeDiscount,
+            additionalText: "",
+            alicuotaId: isFX ? 1 : 3, // ID 1 = 0%, ID 3 = 21%
+            vatPercent: isFX ? 0.0 : 21.0
+        });
+        showAppNotification("Servicios", `Se agregó ${name} a la canasta.`, "success");
+    }
+    closeModal();
+    renderCart();
+}
+window.addServiceToCart = addServiceToCart;
 
 // --- DOCUMENT SUBMISSION (QUOTES AND ORDERS) ---
 // Helper to execute a workflow transition with retry pattern to avoid lock/race conditions
@@ -1395,14 +1759,43 @@ async function getQuoteDisplayNumber(quoteId) {
 
 // --- DOCUMENT SUBMISSION (QUOTES AND ORDERS) ---
 async function submitDocument(type) {
-    if (!selectedClient || cart.length === 0) {
+    if (!selectedClient || (cart.length === 0 && servicesCart.length === 0)) {
         showAppNotification("Error", "Debe seleccionar un cliente y agregar ítems a la canasta.", "danger");
         return;
     }
     
     const isOrder = type === "RESERVAR";
-    const actionText = isOrder ? "Cargar Pedido de Venta" : "Guardar Cotización";
     
+    // Warn user if trying to save a direct sales order with services
+    if (isOrder && servicesCart.length > 0) {
+        showLoader("");
+        hideLoader();
+        showModal({
+            title: "Atención: Servicios en Pedido",
+            content: `
+                <div style="text-align: left; padding: 10px 0;">
+                    <p style="margin: 0; color: var(--text-primary); font-weight: 600;">Los pedidos de venta directos no admiten ítems de servicios.</p>
+                    <p style="margin: 8px 0 0 0; font-size: 0.85rem; color: var(--text-secondary);">Si continúa, <strong>solo se guardarán los productos</strong> en el pedido. Para cobrar el envío de forma integrada, guarde el documento como una <strong>Cotización</strong> y luego apruébela.</p>
+                </div>
+            `,
+            actions: [
+                {
+                    text: "Guardar solo Productos",
+                    class: "btn-primary",
+                    onClick: () => {
+                        const tempServices = [...servicesCart];
+                        servicesCart = [];
+                        submitDocument(type);
+                        servicesCart = tempServices;
+                    }
+                },
+                { text: "Volver a Cotizar", class: "btn-secondary" }
+            ]
+        });
+        return;
+    }
+    
+    const actionText = isOrder ? "Cargar Pedido de Venta" : "Guardar Cotización";
     showLoader(`Iniciando carga de documento (${actionText})...`);
     
     try {
@@ -1412,6 +1805,7 @@ async function submitDocument(type) {
         // Calculate document total net and final for the CRM plan
         let totalDiscountedNet = 0.0;
         let totalIva = 0.0;
+        
         cart.forEach(item => {
             const basePrice = (item.manualBasePrice !== null && item.manualBasePrice !== undefined)
                 ? item.manualBasePrice
@@ -1424,6 +1818,18 @@ async function submitDocument(type) {
             totalDiscountedNet += lineTotalNet;
             totalIva += lineIva;
         });
+        
+        servicesCart.forEach(item => {
+            const basePrice = item.priceListNet || 0.0;
+            const lineNetPrice = basePrice * (1 - (item.discount || 0.0) / 100);
+            const lineTotalNet = lineNetPrice * item.qty;
+            const lineNetAfterGlobal = lineTotalNet * (1 - globalDiscount / 100);
+            const lineIva = lineNetAfterGlobal * (item.vatPercent / 100);
+            
+            totalDiscountedNet += lineTotalNet;
+            totalIva += lineIva;
+        });
+        
         const globalDiscountAmount = totalDiscountedNet * (globalDiscount / 100);
         const finalDocTotal = (totalDiscountedNet - globalDiscountAmount) + totalIva;
 
@@ -1462,6 +1868,17 @@ async function submitDocument(type) {
                 };
             });
             
+            const quoteServices = servicesCart.map(item => {
+                return {
+                    SEYI_ID_SEYI: item.id,
+                    SERV_CANTIDAD: item.qty,
+                    SERV_PRECIO_UNITARIO: item.priceListNet || 0,
+                    SERV_DTO_ADICIONAL: item.discount || 0,
+                    SERV_TEXTO_ADICIONAL: item.additionalText || "",
+                    ALIV_ID_ALIV: item.alicuotaId || 1
+                };
+            });
+            
             const mailAdicionalInput = document.getElementById("doc-mail-adicional");
             const mailAdicionalVal = mailAdicionalInput ? mailAdicionalInput.value.trim() : "";
 
@@ -1482,7 +1899,8 @@ async function submitDocument(type) {
                     COCO_OBSERVACIONES: cleanObs,
                     COVE_ID_COVE: selectedCove,
                     COCO_DTO_GLOBAL: globalDiscount,
-                    Productos: quoteProducts
+                    Productos: quoteProducts,
+                    Servicios: quoteServices
                 }
             };
             if (selectedBranchId) {
@@ -1517,6 +1935,21 @@ async function submitDocument(type) {
                 } catch (delErr) {
                     console.error("Error deleting old items before update:", delErr);
                     throw new Error("No se pudieron limpiar los artículos anteriores de la cotización: " + delErr.message);
+                }
+
+                // Fetch and delete existing service lines
+                try {
+                    const servChildUrl = `https://api.yiqi.com.ar/api/childrenApi/GetChildList?entityId=865&schemaId=${CONFIG.SCHEMA_ID}&childId=365&instanceId=${editingVersionOfDocId}`;
+                    const servChildRes = await apiCall(servChildUrl, "GET");
+                    const existingServLines = servChildRes.data || servChildRes.rows || servChildRes.instances || [];
+                    const servIdsToDelete = existingServLines.map(l => l.id || l.ID).filter(id => id).join(",");
+                    if (servIdsToDelete) {
+                        console.log(`Deleting existing service lines before update: ${servIdsToDelete}`);
+                        await apiCall(`https://api.yiqi.com.ar/api/instancesApi/Delete?schemaId=${CONFIG.SCHEMA_ID}&entityId=1032&ids=${servIdsToDelete}`, "GET");
+                    }
+                } catch (delErr) {
+                    console.error("Error deleting old services before update:", delErr);
+                    throw new Error("No se pudieron limpiar los servicios anteriores de la cotización: " + delErr.message);
                 }
             }
             
@@ -1671,7 +2104,7 @@ async function submitDocument(type) {
         hideLoader();
         const successMsg = isOrder 
             ? `Se generó el Pedido N° ${docDisplayNum} correctamente en estado "A Reservar" y se impactó el stock.`
-            : `Se registró la Cotización N° ${docDisplayNum} en YiQi con éxito.`;
+            : `Se registró la Cotización N° ${docDisplayNum} con éxito.`;
             
         const docType = isOrder ? "PEDIDO" : "COTIZACION";
         if (isEditingPreparation && plan) {
@@ -1735,7 +2168,7 @@ async function submitDocument(type) {
                     <div style="font-size: 3rem; margin-bottom: 12px;">✅</div>
                     <p style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Documento N° ${docDisplayNum}</p>
                     <p class="text-secondary">${successMsg}</p>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 14px;">Puede visualizar este documento ingresando a YiQi ERP.</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 14px;">Puede visualizar este documento ingresando al ERP.</p>
                 </div>
             `,
             actions: modalActions
@@ -1772,6 +2205,8 @@ function updateCartHeader() {
 
 function resetCart() {
     cart = [];
+    servicesCart = [];
+    currentCartTab = "productos";
     document.getElementById("doc-observations").value = "";
     editingVersionOfDocId = null;
     editingVersionOfPlanId = null;
@@ -2860,6 +3295,17 @@ async function loadCrmPlanItems(planId, docId, docType, isHistory = false) {
         const res = await apiCall(url, "GET");
         const rows = res.data || res.rows || res.instances || [];
         
+        let serviceRows = [];
+        if (isQuote) {
+            try {
+                const servUrl = `https://api.yiqi.com.ar/api/childrenApi/GetChildList?entityId=865&schemaId=${CONFIG.SCHEMA_ID}&childId=365&instanceId=${docId}`;
+                const servRes = await apiCall(servUrl, "GET");
+                serviceRows = servRes.data || servRes.rows || servRes.instances || [];
+            } catch (servErr) {
+                console.warn("Could not fetch service lines for plan details:", servErr);
+            }
+        }
+        
         // Fetch instance header details
         const instanceUrl = `https://api.yiqi.com.ar/api/instancesApi/GetInstance?entityId=${entityId}&schemaId=${CONFIG.SCHEMA_ID}&id=${docId}`;
         const instanceRes = await apiCall(instanceUrl, "GET");
@@ -2908,6 +3354,32 @@ async function loadCrmPlanItems(planId, docId, docType, isHistory = false) {
                     calculatedIva += parseFloat(item.DEDP_IVA || 0);
                 }
             });
+
+            if (isQuote) {
+                serviceRows.forEach(item => {
+                    const qty = parseFloat(item.SERV_CANTIDAD || 0);
+                    const price = parseFloat(item.SERV_PRECIO_UNITARIO || 0);
+                    const disc = parseFloat(item.SERV_DTO_ADICIONAL || 0);
+                    const lineNet = price * qty * (1 - disc / 100);
+                    calculatedNeto += lineNet;
+                    
+                    let vatPct = 0.0;
+                    const alicName = item.ALIV_NOMBRE || "";
+                    if (alicName.includes("21")) {
+                        vatPct = 21.0;
+                    } else if (alicName.includes("10.5") || alicName.includes("10,5")) {
+                        vatPct = 10.5;
+                    } else if (alicName.includes("27")) {
+                        vatPct = 27.0;
+                    } else {
+                        vatPct = 21.0;
+                    }
+                    
+                    const discPct = parseFloat(atts["11909"]?.value || 0);
+                    const lineNetAfterGlobal = lineNet * (1 - (discPct / 100));
+                    calculatedIva += lineNetAfterGlobal * (vatPct / 100);
+                });
+            }
             
             const discPct = isQuote ? parseFloat(atts["11909"]?.value || 0) : parseFloat(atts["12188"]?.value || 0);
             
@@ -3047,6 +3519,39 @@ async function loadCrmPlanItems(planId, docId, docType, isHistory = false) {
             `;
         });
         
+        if (isQuote && serviceRows.length > 0) {
+            const allServices = JSON.parse(localStorage.getItem("tmc_crm_all_services_catalog") || "[]");
+            serviceRows.forEach(item => {
+                const serviceId = item.SEYI_ID_SEYI;
+                const serviceObj = allServices.find(s => String(s.ID) === String(serviceId));
+                
+                const code = serviceObj ? (serviceObj.SEYI_CODIGO || "FLETE") : "FLETE";
+                const name = serviceObj ? serviceObj.COFA_NOMBRE : (item.SEYI_TIPO_SERVICIO || "Servicio");
+                const qty = parseFloat(item.SERV_CANTIDAD || 0);
+                const price = parseFloat(item.SERV_PRECIO_UNITARIO || 0);
+                const disc = parseFloat(item.SERV_DTO_ADICIONAL || 0);
+                const lineNet = price * qty * (1 - disc / 100);
+                const additionalText = item.SERV_TEXTO_ADICIONAL || "";
+                
+                const unitNetPrice = qty > 0 ? (lineNet / qty) : (price * (1 - disc / 100));
+                
+                rowsHtml += `
+                    <tr style="border-top: 1px dashed var(--border-color); background: rgba(59, 130, 246, 0.02);">
+                        <td style="padding: 6px 8px; font-size: 0.75rem;"><span class="sku-code" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">${code}</span></td>
+                        <td style="padding: 6px 8px; font-size: 0.75rem; max-width: 220px; line-height: 1.25;">
+                            <div style="font-weight: 600; color: var(--text-primary);">🚚 ${name}</div>
+                            ${additionalText ? `<div style="font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin-top: 2px;" title="${additionalText}">${additionalText}</div>` : ''}
+                        </td>
+                        <td style="padding: 6px 8px; font-size: 0.75rem; text-align: center;">${qty}</td>
+                        <td style="padding: 6px 8px; font-size: 0.75rem; text-align: right; font-family: var(--font-mono);">${formatCurrency(price)}</td>
+                        <td style="padding: 6px 8px; font-size: 0.75rem; text-align: center; color: var(--warning); font-weight: 600;">${disc.toFixed(1)}%</td>
+                        <td style="padding: 6px 8px; font-size: 0.75rem; text-align: right; color: var(--text-secondary); font-family: var(--font-mono);">${formatCurrency(unitNetPrice)}</td>
+                        <td style="padding: 6px 8px; font-size: 0.75rem; text-align: right; font-weight: 600; color: var(--primary); font-family: var(--font-mono);">${formatCurrency(lineNet)}</td>
+                    </tr>
+                `;
+            });
+        }
+        
         container.innerHTML = `
             <div style="margin-top: 0;">
                 ${pdfBtnHtml}
@@ -3160,6 +3665,9 @@ function renderClientCrmPlan() {
                 </button>
                 <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 5px 10px; border: 1px solid var(--border-color); background: var(--bg-card);" onclick="event.stopPropagation(); window.open('${pdfUrl}', '_blank')" title="Descargar Cotización (PDF)">
                     📥 PDF
+                </button>
+                <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 5px 10px; border: 1px solid var(--border-color); background: var(--bg-card);" onclick="event.stopPropagation(); window.open('https://me.yiqi.com.ar/view/COTIZACION_COMERCIAL?schemaId=${CONFIG.SCHEMA_ID}#/${activePlan.docId}', '_blank')" title="Ver en YiQi ERP">
+                    🔗 YiQi
                 </button>
                 <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 5px 10px; border: 1px solid var(--border-color); background: var(--bg-card);" onclick="event.stopPropagation(); shareQuoteOrOrderWhatsApp('${activePlan.id}')" title="Compartir por WhatsApp">
                     🟢
@@ -4232,20 +4740,33 @@ async function loadQuoteIntoCartForEditing(quoteId) {
         const condVentaId = quoteObj.atts["10349"]?.value || ""; // Payment Condition
         const trloId = quoteObj.atts["11372"]?.value || ""; // Transportista
         
+        const yiqiClientName = quoteObj.attsFkTexts ? (quoteObj.attsFkTexts["7079"] || "") : "";
         // Find corresponding client in local client list or set it
         if (!selectedClient || String(selectedClient.id) !== String(yiqiClientId)) {
             showLoader("Cargando cliente...");
-            await loadCrmClientData(yiqiClientId);
+            await selectClient(yiqiClientId, yiqiClientName);
         }
         
-        // 2. Fetch lines
+        // 2. Fetch lines (Products)
         showLoader("Cargando artículos de la cotización...");
         const childUrl = `https://api.yiqi.com.ar/api/childrenApi/GetChildList?entityId=865&schemaId=${CONFIG.SCHEMA_ID}&childId=249&instanceId=${quoteId}`;
         const childRes = await apiCall(childUrl, "GET");
         const lines = childRes.data || childRes.rows || childRes.instances || [];
         
+        // 2b. Fetch lines (Services)
+        showLoader("Cargando servicios de la cotización...");
+        const servChildUrl = `https://api.yiqi.com.ar/api/childrenApi/GetChildList?entityId=865&schemaId=${CONFIG.SCHEMA_ID}&childId=365&instanceId=${quoteId}`;
+        let serviceLines = [];
+        try {
+            const servChildRes = await apiCall(servChildUrl, "GET");
+            serviceLines = servChildRes.data || servChildRes.rows || servChildRes.instances || [];
+        } catch(e) {
+            console.warn("Could not load services for quote:", e);
+        }
+        
         // 3. Clear/Reset cart
         resetCart();
+        servicesCart = [];
         
         // Ensure articles are loaded
         if (articlesCache.length === 0) {
@@ -4297,6 +4818,29 @@ async function loadQuoteIntoCartForEditing(quoteId) {
                 });
                 matchedCount++;
             }
+        });
+
+        // 4b. Match services lines and populate servicesCart
+        serviceLines.forEach(item => {
+            const serviceId = item.SEYI_ID_SEYI;
+            const allServices = JSON.parse(localStorage.getItem("tmc_crm_all_services_catalog") || "[]");
+            const serviceObj = allServices.find(s => String(s.ID) === String(serviceId));
+            
+            const name = serviceObj ? serviceObj.COFA_NOMBRE : (item.SEYI_TIPO_SERVICIO || "Servicio");
+            const code = serviceObj ? serviceObj.SEYI_CODIGO : "";
+            const vatVal = (item.ALIV_NOMBRE !== undefined && item.ALIV_NOMBRE !== null && !isNaN(parseFloat(item.ALIV_NOMBRE))) ? parseFloat(item.ALIV_NOMBRE) : 21.0;
+            
+            servicesCart.push({
+                id: serviceId,
+                name: name,
+                code: code,
+                qty: parseFloat(item.SERV_CANTIDAD) || 1,
+                priceListNet: parseFloat(item.SERV_PRECIO_UNITARIO) || 0.0,
+                discount: parseFloat(item.SERV_DTO_ADICIONAL) || 0.0,
+                additionalText: item.SERV_TEXTO_ADICIONAL || "",
+                alicuotaId: item.ALIV_ID_ALIV || 1,
+                vatPercent: vatVal
+            });
         });
         
         // Set global discount
@@ -5608,6 +6152,7 @@ function renderCrmConfig() {
     let activeMotivosClass = currentConfigSubTab === "motivos" ? "btn-primary" : "btn-secondary";
     let activeMensajesClass = currentConfigSubTab === "mensajes" ? "btn-primary" : "btn-secondary";
     let activeWhatsappClass = currentConfigSubTab === "whatsapp" ? "btn-primary" : "btn-secondary";
+    let activeServiciosClass = currentConfigSubTab === "servicios" ? "btn-primary" : "btn-secondary";
     
     let html = `
         <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: var(--radius-md); text-align: left;">
@@ -5616,6 +6161,7 @@ function renderCrmConfig() {
                 <button class="btn ${activeMotivosClass}" style="font-size: 0.82rem; padding: 6px 14px;" onclick="switchConfigSubTab('motivos')">❌ Motivos de Rechazo</button>
                 <button class="btn ${activeMensajesClass}" style="font-size: 0.82rem; padding: 6px 14px;" onclick="switchConfigSubTab('mensajes')">💬 Mensajes Compartidos</button>
                 <button class="btn ${activeWhatsappClass}" style="font-size: 0.82rem; padding: 6px 14px;" onclick="switchConfigSubTab('whatsapp')">🔌 API de WhatsApp</button>
+                <button class="btn ${activeServiciosClass}" style="font-size: 0.82rem; padding: 6px 14px;" onclick="switchConfigSubTab('servicios')">🚚 Servicios de Envío</button>
             </div>
             
             <div id="crm-config-subtab-content">
@@ -5629,6 +6175,8 @@ function renderCrmConfig() {
         html += renderCrmSharedMessagesHtml();
     } else if (currentConfigSubTab === "whatsapp") {
         html += renderCrmWhatsappConfigHtml();
+    } else if (currentConfigSubTab === "servicios") {
+        html += renderCrmServicesConfigHtml();
     }
     
     html += `
@@ -5637,6 +6185,158 @@ function renderCrmConfig() {
     `;
     container.innerHTML = html;
 }
+
+// --- SHIPPING SERVICES CONFIGURATION VIEW & SYNCHRONIZATION ---
+let configServicesSearchVal = "";
+function filterConfigServices(val) {
+    configServicesSearchVal = val.toLowerCase();
+    const rows = document.querySelectorAll(".config-service-row");
+    rows.forEach(row => {
+        const name = row.getAttribute("data-name").toLowerCase();
+        const code = row.getAttribute("data-code").toLowerCase();
+        if (name.includes(configServicesSearchVal) || code.includes(configServicesSearchVal)) {
+            row.style.display = "flex";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+window.filterConfigServices = filterConfigServices;
+
+function renderCrmServicesConfigHtml() {
+    let allServices = [];
+    try {
+        allServices = JSON.parse(localStorage.getItem("tmc_crm_all_services_catalog"));
+    } catch(e) {}
+    if (!allServices || !Array.isArray(allServices) || allServices.length === 0) {
+        allServices = DEFAULT_SERVICES_CATALOG;
+        localStorage.setItem("tmc_crm_all_services_catalog", JSON.stringify(allServices));
+    }
+    
+    let enabledServices = [];
+    try {
+        enabledServices = JSON.parse(localStorage.getItem("tmc_crm_enabled_services") || "[]");
+    } catch(e) {}
+    
+    let servicesHtml = `
+        <div style="margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div>
+                    <h3 style="margin: 0; color: var(--text-primary); font-size: 0.95rem; font-family: var(--font-title); font-weight: 700;">Habilitar Servicios de Envío</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: var(--text-secondary);">Selecciona los servicios del catálogo del ERP que querés habilitar para la canasta de ventas.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="syncServicesCatalogFromYiQi()" style="font-size: 0.8rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                    🔄 Sincronizar
+                </button>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="config-services-search" class="form-input" placeholder="🔍 Buscar servicio por nombre o código..." oninput="filterConfigServices(this.value)" style="width: 100%; font-size: 0.82rem; padding: 8px 12px;">
+            </div>
+            
+            <div style="max-height: 350px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-input); padding: 10px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;">
+    `;
+    
+    const sortedServices = [...allServices].sort((a, b) => (a.COFA_NOMBRE || "").localeCompare(b.COFA_NOMBRE || ""));
+    
+    sortedServices.forEach(s => {
+        const isChecked = enabledServices.includes(s.ID) ? "checked" : "";
+        servicesHtml += `
+            <div class="config-service-row" data-id="${s.ID}" data-name="${s.COFA_NOMBRE || s.SEYI_TIPO_SERVICIO || ''}" data-code="${s.SEYI_CODIGO || ''}" style="display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: var(--radius-xs); border: 1px solid transparent; transition: background 0.15s; text-align: left; background: var(--bg-card);">
+                <input type="checkbox" id="chk-service-${s.ID}" class="service-enable-checkbox" data-id="${s.ID}" ${isChecked} style="cursor: pointer; width: 15px; height: 15px; flex-shrink: 0;">
+                <label for="chk-service-${s.ID}" style="cursor: pointer; font-size: 0.82rem; color: var(--text-primary); flex-grow: 1; margin: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%;">
+                    <span style="font-weight: 500;">${s.COFA_NOMBRE || s.SEYI_TIPO_SERVICIO}</span>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-family: monospace;">${s.SEYI_CODIGO || 'SIN CÓDIGO'}</span>
+                </label>
+            </div>
+        `;
+    });
+    
+    servicesHtml += `
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="saveEnabledServicesConfig()" style="font-size: 0.82rem; padding: 8px 16px; font-weight: 600;">💾 Guardar Habilitados</button>
+            </div>
+        </div>
+    `;
+    
+    return servicesHtml;
+}
+window.renderCrmServicesConfigHtml = renderCrmServicesConfigHtml;
+
+async function syncServicesCatalogFromYiQi() {
+    showLoader("Sincronizando catálogo de servicios del ERP...");
+    try {
+        const url = `${CONFIG.GETLIST_BASE}?entityId=460&schemaId=${CONFIG.SCHEMA_ID}&smartieId=2802`;
+        const body = {
+            page: 1,
+            pageSize: 200
+        };
+        const response = await apiCall(url, "POST", body);
+        const rows = response.data || response.rows || response.instances || [];
+        
+        if (rows.length > 0) {
+            localStorage.setItem("tmc_crm_all_services_catalog", JSON.stringify(rows));
+            
+            // Sincronizar precios de los servicios
+            let pricesLoaded = 0;
+            try {
+                showLoader("Sincronizando precios de servicios del ERP...");
+                const priceUrl = `${CONFIG.GETLIST_BASE}?entityId=1230&schemaId=${CONFIG.SCHEMA_ID}&smartieId=2803`;
+                const priceBody = {
+                    page: 1,
+                    pageSize: 200
+                };
+                const priceResponse = await apiCall(priceUrl, "POST", priceBody);
+                const priceRows = priceResponse.data || priceResponse.rows || priceResponse.instances || [];
+                if (priceRows && priceRows.length > 0) {
+                    localStorage.setItem("tmc_crm_services_prices", JSON.stringify(priceRows));
+                    pricesLoaded = priceRows.length;
+                    console.log("Sincronizados precios de servicios:", pricesLoaded);
+                }
+            } catch(priceErr) {
+                console.error("Error syncing service prices:", priceErr);
+            }
+            
+            hideLoader();
+            const priceMsg = pricesLoaded > 0 ? ` y ${pricesLoaded} precios` : " (sin precios)";
+            showAppNotification("Catálogo Sincronizado", `Se cargaron ${rows.length} servicios${priceMsg} desde el ERP.`, "success");
+            renderCrmConfig();
+        } else {
+            throw new Error("No se recibieron filas del catálogo.");
+        }
+    } catch(err) {
+        hideLoader();
+        console.error("Error syncing services catalog:", err);
+        showAppNotification("Error de Sincronización", "No se pudo obtener el catálogo de servicios: " + err.message, "danger");
+    }
+}
+window.syncServicesCatalogFromYiQi = syncServicesCatalogFromYiQi;
+
+async function saveEnabledServicesConfig() {
+    const checkboxes = document.querySelectorAll(".service-enable-checkbox");
+    const enabledIds = [];
+    checkboxes.forEach(chk => {
+        if (chk.checked) {
+            enabledIds.push(parseInt(chk.getAttribute("data-id")));
+        }
+    });
+    
+    localStorage.setItem("tmc_crm_enabled_services", JSON.stringify(enabledIds));
+    
+    showLoader("Sincronizando servicios habilitados con Firestore...");
+    try {
+        await saveCrmDataOnBackend("saveTemplate", { id: "enabled_services", services: enabledIds });
+        hideLoader();
+        showAppNotification("Configuración Guardada", "Los servicios habilitados se guardaron y sincronizaron con Firestore.", "success");
+    } catch(err) {
+        hideLoader();
+        console.error("Error saving enabled services:", err);
+        showAppNotification("Guardado Parcial", "Se guardó localmente pero falló la sincronización con Firestore.", "warning");
+    }
+}
+window.saveEnabledServicesConfig = saveEnabledServicesConfig;
 
 // Render configuration templates view content
 function renderCrmPlanConfigHtml() {
@@ -5995,6 +6695,10 @@ async function syncCrmWithFirestore() {
                         if (t.messages) {
                             localStorage.setItem("tmc_crm_shared_messages", JSON.stringify(t.messages));
                         }
+                    } else if (t.id === "enabled_services") {
+                        if (t.services && Array.isArray(t.services)) {
+                            localStorage.setItem("tmc_crm_enabled_services", JSON.stringify(t.services));
+                        }
                     } else if (!["standard", "express", "longterm"].includes(t.id)) {
                         allTemplates.push(t);
                     }
@@ -6207,77 +6911,49 @@ async function preloadCrmPlanItems(activePlan, stepIndex) {
 }
 
 async function sendWhatsAppMessage(phone, message, sellerName = null) {
-    let apiUrl = localStorage.getItem("tmc_whatsapp_api_url");
-    let apiToken = localStorage.getItem("tmc_whatsapp_api_token");
-    
-    // Si tenemos un vendedor específico, buscamos su configuración en la base de datos de configuraciones (en localStorage)
-    if (sellerName) {
-        try {
-            const configs = JSON.parse(localStorage.getItem("tmc_whatsapp_configs") || "{}");
-            const sellerKey = String(sellerName).trim().toUpperCase();
-            if (configs[sellerKey] && configs[sellerKey].apiUrl) {
-                apiUrl = configs[sellerKey].apiUrl;
-                apiToken = configs[sellerKey].apiToken || "";
-                console.log(`Usando configuración dinámica de WhatsApp para vendedor ${sellerName}: ${apiUrl}`);
-            }
-        } catch (e) {
-            console.error("Error al leer tmc_whatsapp_configs:", e);
-        }
-    }
-    
     const phoneCleaned = cleanPhoneNumber(phone || "");
     
-    if (apiUrl) {
-        showLoader("Enviando por API de WhatsApp...");
-        try {
-            const payload = {
-                phone: phoneCleaned,
-                message: message
-            };
-            
-            const headers = {
+    showLoader("Enviando WhatsApp por API...");
+    try {
+        const payload = {
+            phone: phoneCleaned,
+            message: message,
+            sellerName: sellerName
+        };
+        
+        const response = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/enviarWhatsApp`, {
+            method: "POST",
+            headers: {
                 "Content-Type": "application/json"
-            };
-            if (apiToken) {
-                headers["Authorization"] = apiToken.startsWith("Bearer ") ? apiToken : `Bearer ${apiToken}`;
-            }
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        hideLoader();
+        if (response.ok) {
+            showAppNotification("Mensaje Enviado", "El mensaje se envió automáticamente vía API de WhatsApp.", "success");
+            return true;
+        } else {
+            const errRes = await response.json().catch(() => ({}));
+            console.error("WhatsApp Cloud Function API error response:", errRes);
+            showAppNotification("Error API WhatsApp", "No se pudo enviar automáticamente. Reintentando por WhatsApp Web...", "warning");
             
-            const response = await fetch(apiUrl, {
-                method: "POST",
-                headers: headers,
-                body: JSON.stringify(payload)
-            });
-            
-            hideLoader();
-            if (response.ok) {
-                showAppNotification("Mensaje Enviado", "El mensaje de seguimiento se envió automáticamente vía API.", "success");
-                return true;
-            } else {
-                const text = await response.text().catch(() => "");
-                console.error("WhatsApp API error response:", text);
-                showAppNotification("Error API WhatsApp", "La API respondió con error. Reintentando por WhatsApp Web...", "warning");
-                // Fallback to standard WhatsApp Web
-                const phoneParam = phoneCleaned ? `phone=${phoneCleaned}&` : "";
-                const waUrl = `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(message)}`;
-                window.open(waUrl, "_blank");
-                return false;
-            }
-        } catch (err) {
-            hideLoader();
-            console.error("WhatsApp API connection error:", err);
-            showAppNotification("Error de Conexión API", "No se pudo conectar a la API. Reintentando por WhatsApp Web...", "warning");
             // Fallback to standard WhatsApp Web
             const phoneParam = phoneCleaned ? `phone=${phoneCleaned}&` : "";
             const waUrl = `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(message)}`;
             window.open(waUrl, "_blank");
             return false;
         }
-    } else {
+    } catch (err) {
+        hideLoader();
+        console.error("WhatsApp API proxy connection error:", err);
+        showAppNotification("Error de Conexión", "No se pudo conectar al servidor de envío. Reintentando por WhatsApp Web...", "warning");
+        
         // Fallback to standard WhatsApp Web
         const phoneParam = phoneCleaned ? `phone=${phoneCleaned}&` : "";
         const waUrl = `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(message)}`;
         window.open(waUrl, "_blank");
-        return true;
+        return false;
     }
 }
 window.sendWhatsAppMessage = sendWhatsAppMessage;

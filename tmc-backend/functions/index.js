@@ -5549,6 +5549,79 @@ exports.gestionarProduccionOP = onRequest({ cors: true }, async (req, res) => {
   }
 });
 
+/**
+ * Cloud Function Proxy para enviar mensajes de WhatsApp evitando CORS.
+ */
+exports.enviarWhatsApp = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const { phone, message, sellerName } = req.body || req.query || {};
+    if (!phone || !message) {
+      return res.status(400).json({ error: "Faltan parámetros requeridos: phone y message" });
+    }
+
+    const db = admin.firestore();
+    let apiUrl = null;
+    let apiToken = null;
+
+    if (sellerName) {
+      const sellerKey = String(sellerName).trim().toUpperCase();
+      const doc = await db.collection("crm_whatsapp_configs").doc(sellerKey).get();
+      if (doc.exists) {
+        const data = doc.data();
+        apiUrl = data.apiUrl;
+        apiToken = data.apiToken;
+      }
+    }
+
+    // Fallback a FABRICA si no se especificó vendedor o si no se encontró config para él
+    if (!apiUrl) {
+      const doc = await db.collection("crm_whatsapp_configs").doc("FABRICA").get();
+      if (doc.exists) {
+        const data = doc.data();
+        apiUrl = data.apiUrl;
+        apiToken = data.apiToken;
+      }
+    }
+
+    if (!apiUrl) {
+      return res.status(400).json({ error: "No se encontró configuración de WhatsApp para el vendedor ni para FABRICA" });
+    }
+
+    // Limpiar el teléfono para la API
+    const cleanedPhone = phone.replace(/\D/g, "");
+
+    const payload = {
+      phone: cleanedPhone,
+      message: message
+    };
+
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (apiToken) {
+      headers["Authorization"] = apiToken.startsWith("Bearer ") ? apiToken : `Bearer ${apiToken}`;
+    }
+
+    console.log(`[Proxy WhatsApp] Enviando mensaje a ${cleanedPhone} usando API: ${apiUrl}`);
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+
+    const responseText = await response.text();
+    if (response.ok) {
+      return res.json({ success: true, detail: responseText });
+    } else {
+      console.error(`[Proxy WhatsApp] Error de Z-API (${response.status}):`, responseText);
+      return res.status(response.status).json({ error: "La API de WhatsApp devolvió un error", detail: responseText });
+    }
+  } catch (err) {
+    console.error("[Proxy WhatsApp] Excepción:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 

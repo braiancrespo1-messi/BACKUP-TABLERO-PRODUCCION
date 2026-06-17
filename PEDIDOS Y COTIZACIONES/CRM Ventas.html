@@ -43,7 +43,7 @@
                 <button id="btn-nav-home" class="btn btn-secondary" onclick="goToHomeCrm()" style="display: none;" title="Volver al CRM General">
                     🏠 Inicio CRM
                 </button>
-                <div id="sync-indicator" class="sync-indicator offline" title="Estado de Conexión YiQi">
+                <div id="sync-indicator" class="sync-indicator offline" title="Estado de Conexión ERP">
                     <span class="indicator-dot"></span>
                     <span id="sync-text" class="indicator-text">Desconectado</span>
                 </div>
@@ -296,7 +296,7 @@
                         <span class="panel-header-icon" style="display: inline-flex; align-items: center;">
                             <img src="yiqi-logo.png" alt="YiQi" style="width: 18px; height: 18px; object-fit: contain;">
                         </span>
-                        <h2 class="panel-header-title">Ficha de Cliente (YiQi)</h2>
+                        <h2 class="panel-header-title">Ficha de Cliente</h2>
                     </div>
                     <div id="client-details-container" style="padding: 20px; overflow-y: auto; max-height: calc(100vh - 180px);">
                         <!-- Rendered by renderClientCard() -->
@@ -480,6 +480,12 @@
 
                     <!-- Cart Items Container -->
                     <div class="cart-items-wrapper">
+                        <!-- Tabs to alternate between Products and Services -->
+                        <div class="cart-tabs" style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                            <button class="btn btn-primary" id="btn-cart-tab-products" onclick="switchCartTab('productos')" style="font-size: 0.82rem; padding: 6px 14px; flex: 1; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">📦 Productos</button>
+                            <button class="btn btn-secondary" id="btn-cart-tab-services" onclick="switchCartTab('servicios')" style="font-size: 0.82rem; padding: 6px 14px; flex: 1; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">🚚 Servicios</button>
+                        </div>
+
                         <div id="cart-empty" class="empty-state">
                             <div class="empty-icon">🛒</div>
                             <p class="empty-title">Canasta vacía</p>
@@ -500,6 +506,28 @@
                             </thead>
                             <tbody id="cart-tbody"></tbody>
                         </table>
+
+                        <!-- Services Table Container -->
+                        <div id="services-cart-container" style="display: none; flex-direction: column; gap: 12px; width: 100%;">
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="button" class="btn btn-primary" onclick="openAddServiceModal()" style="font-size: 0.8rem; padding: 6px 14px; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                                    ➕ Agregar Servicio de Envío
+                                </button>
+                            </div>
+                            <table class="data-table" id="services-cart-table" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Servicio</th>
+                                        <th class="text-right" style="width: 110px;">P. Neto</th>
+                                        <th class="text-center" style="width: 65px;">Cant</th>
+                                        <th class="text-center" style="width: 65px;">Dto %</th>
+                                        <th class="text-right" style="width: 105px;">Total Neto</th>
+                                        <th class="text-center" style="width: 35px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="services-cart-tbody"></tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Document Form Details -->
