@@ -5622,6 +5622,129 @@ exports.enviarWhatsApp = onRequest({ cors: true }, async (req, res) => {
   }
 });
 
+/**
+ * Cloud Function para validar el login de un vendedor.
+ */
+exports.loginUsuario = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const { username, password } = req.body || req.query || {};
+    if (!username || !password) {
+      return res.status(400).json({ error: "Faltan parámetros requeridos: username y password" });
+    }
+
+    const db = admin.firestore();
+    const userKey = String(username).trim().toLowerCase();
+
+    // Bootstrap: Si no hay ningún usuario en la colección, creamos el admin por defecto
+    const userCountSnap = await db.collection("crm_users").limit(1).get();
+    if (userCountSnap.empty) {
+      console.log("Bootstrap: Creando usuario Administrador por defecto...");
+      await db.collection("crm_users").doc("admin").set({
+        username: "admin",
+        name: "Administrador",
+        password: "TmcAdmin2026Messi",
+        role: "ADMIN",
+        active: true,
+        sellerName: "FABRICA"
+      });
+    }
+
+    const userDoc = await db.collection("crm_users").doc(userKey).get();
+
+    if (!userDoc.exists) {
+      return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+    }
+
+    const userData = userDoc.data();
+    if (userData.password !== password) {
+      return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+    }
+
+    if (userData.active === false) {
+      return res.status(403).json({ error: "El usuario se encuentra inactivo o suspendido" });
+    }
+
+    return res.json({
+      success: true,
+      user: {
+        username: userData.username,
+        name: userData.name,
+        role: userData.role || "MINORISTA",
+        sellerName: userData.sellerName || ""
+      }
+    });
+  } catch (err) {
+    console.error("Error en loginUsuario:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Cloud Function para listar todos los usuarios del CRM (solo para ADMIN).
+ */
+exports.listarUsuarios = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const db = admin.firestore();
+    const snap = await db.collection("crm_users").get();
+    const list = [];
+    snap.forEach(doc => {
+      const data = doc.data();
+      list.push({
+        username: doc.id,
+        name: data.name,
+        role: data.role || "MINORISTA",
+        active: data.active !== false,
+        sellerName: data.sellerName || ""
+      });
+    });
+    return res.json({ success: true, users: list });
+  } catch (err) {
+    console.error("Error en listarUsuarios:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Cloud Function para guardar/modificar/suspender un usuario (solo para ADMIN).
+ */
+exports.guardarUsuario = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const { username, name, password, role, active, sellerName } = req.body || {};
+    if (!username) {
+      return res.status(400).json({ error: "Falta parámetro requerido: username" });
+    }
+
+    const db = admin.firestore();
+    const userKey = String(username).trim().toLowerCase();
+    
+    // Obtenemos si ya existe para ver si actualizamos o creamos nuevo
+    const userDoc = await db.collection("crm_users").doc(userKey).get();
+    
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (password !== undefined && password !== "") updateData.password = password;
+    if (role !== undefined) updateData.role = role;
+    if (active !== undefined) updateData.active = active === true || active === "true";
+    if (sellerName !== undefined) updateData.sellerName = sellerName;
+    updateData.username = userKey;
+
+    if (!userDoc.exists) {
+      // Si es nuevo, la contraseña es obligatoria
+      if (!password) {
+        return res.status(400).json({ error: "La contraseña es obligatoria para nuevos usuarios" });
+      }
+      updateData.active = active !== false; // por defecto activo
+    }
+
+    await db.collection("crm_users").doc(userKey).set(updateData, { merge: true });
+
+    return res.json({ success: true, message: `Usuario ${username} guardado correctamente` });
+  } catch (err) {
+    console.error("Error en guardarUsuario:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 

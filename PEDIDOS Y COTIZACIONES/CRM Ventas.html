@@ -9,12 +9,76 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        .login-overlay-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #0b0f19; /* Fondo oscuro elegante */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999; /* Por encima de todo */
+        }
+        .login-card {
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 35px 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+            animation: loginFadeIn 0.3s ease-out;
+        }
+        @keyframes loginFadeIn {
+            from { opacity: 0; transform: translateY(-15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-error-text {
+            color: #f87171;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
     <!-- App Loader Overlay -->
     <div id="app-loader" class="loader-overlay" style="display: none;">
         <div class="loader-spinner"></div>
         <div id="loader-text" class="loader-text">Cargando...</div>
+    </div>
+
+    <!-- Login Overlay Screen -->
+    <div id="login-overlay" class="login-overlay-screen" style="display: none;">
+        <div class="login-card">
+            <div class="login-brand" style="text-align: center; margin-bottom: 25px;">
+                <span style="font-size: 3.2rem; display: block; margin-bottom: 8px;">💼</span>
+                <h2 style="margin: 0 0 4px 0; color: var(--text-primary); font-family: var(--font-title); font-weight: 700; font-size: 1.4rem;">CRM & Pedidos</h2>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.82rem;">TMC Respo — Acceso Restringido</p>
+            </div>
+            
+            <form id="login-form" onsubmit="handleLoginSubmit(event)" style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 6px; display: block; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Usuario</label>
+                    <input type="text" id="login-username" class="form-input" placeholder="Nombre de usuario..." required autocomplete="username" style="width: 100%; font-size: 0.9rem; padding: 11px 14px; border-radius: var(--radius-sm); background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
+                </div>
+                
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 6px; display: block; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Contraseña</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password" style="width: 100%; font-size: 0.9rem; padding: 11px 14px; border-radius: var(--radius-sm); background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
+                </div>
+                
+                <div id="login-error-msg" class="login-error-text" style="display: none;"></div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 0.92rem; font-weight: 600; margin-top: 10px; border-radius: var(--radius-sm); border: none; cursor: pointer;">
+                    Ingresar al Sistema
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Modal Notifications -->
@@ -54,6 +118,7 @@
                     🔄 Refrescar CRM
                 </button>
                 <button id="btn-theme-toggle" class="btn btn-icon" onclick="toggleTheme()" title="Cambiar Tema">☀️</button>
+                <button id="btn-logout" class="btn btn-icon" onclick="logoutUsuario()" title="Cerrar Sesión">🚪</button>
                 <button class="btn btn-icon" onclick="location.reload()" title="Refrescar Aplicación">🔄</button>
             </div>
         </header>

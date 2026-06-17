@@ -158,6 +158,7 @@ const DEFAULT_SERVICES_PRICES = [
   }
 ];
 
+let loggedUser = null;
 let globalDiscount = 0.0;
 let newPlanSteps = [];
 let editingVersionOfDocId = null;
@@ -218,8 +219,99 @@ if (savedConfig) {
     }
 }
 
-// --- INITIALIZATION ---
+// --- INITIALIZATION & LOGIN LOGIC ---
 document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Verificar si hay sesión de usuario guardada
+    const savedUser = localStorage.getItem("tmc_crm_logged_user");
+    if (savedUser) {
+        try {
+            loggedUser = JSON.parse(savedUser);
+            // Mostrar la interfaz principal del CRM (ocultando el overlay)
+            document.getElementById("login-overlay").style.display = "none";
+            // Continuar con la inicialización normal
+            await startCrmApp();
+        } catch(err) {
+            console.error("Error al cargar sesión guardada:", err);
+            showLoginOverlay();
+        }
+    } else {
+        showLoginOverlay();
+    }
+});
+
+function showLoginOverlay() {
+    document.getElementById("login-overlay").style.display = "flex";
+    hideLoader();
+}
+
+async function handleLoginSubmit(event) {
+    event.preventDefault();
+    const usernameInput = document.getElementById("login-username");
+    const passwordInput = document.getElementById("login-password");
+    const errorMsgDiv = document.getElementById("login-error-msg");
+    
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+    
+    errorMsgDiv.style.display = "none";
+    showLoader("Verificando credenciales...");
+    
+    try {
+        const response = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/loginUsuario`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
+        });
+        
+        hideLoader();
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            loggedUser = data.user;
+            localStorage.setItem("tmc_crm_logged_user", JSON.stringify(loggedUser));
+            
+            // Ocultamos el login overlay
+            document.getElementById("login-overlay").style.display = "none";
+            showAppNotification("Bienvenido", `Sesión iniciada como ${loggedUser.name}.`, "success");
+            
+            // Inicializar el CRM
+            await startCrmApp();
+        } else {
+            errorMsgDiv.textContent = data.error || "Usuario o contraseña incorrectos.";
+            errorMsgDiv.style.display = "block";
+        }
+    } catch(err) {
+        hideLoader();
+        console.error("Error al iniciar sesión:", err);
+        errorMsgDiv.textContent = "Error al conectar con el servidor.";
+        errorMsgDiv.style.display = "block";
+    }
+}
+window.handleLoginSubmit = handleLoginSubmit;
+
+function logoutUsuario() {
+    localStorage.removeItem("tmc_crm_logged_user");
+    loggedUser = null;
+    location.reload(); // Recarga la página y vuelve al overlay de Login
+}
+window.logoutUsuario = logoutUsuario;
+
+function applyRoleRestrictions() {
+    if (!loggedUser) return;
+    
+    const btnConfig = document.getElementById("tab-btn-configuracion");
+    if (btnConfig) {
+        if (loggedUser.role === "ADMIN") {
+            btnConfig.style.display = "block";
+        } else {
+            btnConfig.style.display = "none";
+        }
+    }
+}
+
+async function startCrmApp() {
     showLoader("Autenticando con YiQi ERP...");
     try {
         await checkAuth();
@@ -271,14 +363,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             fetchStockCompletoInBackground();
         }
+        
+        // Aplicar restricciones basadas en el rol
+        applyRoleRestrictions();
+        
     } catch (e) {
         console.error("Auth initialization error:", e);
         updateSyncIndicator(false, "Error de Conexión");
-        showAppNotification("Error de Autenticación", "No se pudo iniciar sesión en YiQi ERP. Revise las credenciales en el archivo logica.js.", "danger");
+        showAppNotification("Error de Autenticación", "No se pudo iniciar sesión en YiQi ERP. Revise las credenciales.", "danger");
     } finally {
         hideLoader();
     }
-});
+}
 
 // --- AUTHENTICATION ---
 async function checkAuth() {
@@ -6143,7 +6239,6 @@ function switchConfigSubTab(tab) {
     renderCrmConfig();
 }
 
-// Render the unified Config tab content
 function renderCrmConfig() {
     const container = document.getElementById("crm-plan-config-container");
     if (!container) return;
@@ -6153,6 +6248,7 @@ function renderCrmConfig() {
     let activeMensajesClass = currentConfigSubTab === "mensajes" ? "btn-primary" : "btn-secondary";
     let activeWhatsappClass = currentConfigSubTab === "whatsapp" ? "btn-primary" : "btn-secondary";
     let activeServiciosClass = currentConfigSubTab === "servicios" ? "btn-primary" : "btn-secondary";
+    let activeUsuariosClass = currentConfigSubTab === "usuarios" ? "btn-primary" : "btn-secondary";
     
     let html = `
         <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: var(--radius-md); text-align: left;">
@@ -6162,6 +6258,7 @@ function renderCrmConfig() {
                 <button class="btn ${activeMensajesClass}" style="font-size: 0.82rem; padding: 6px 14px;" onclick="switchConfigSubTab('mensajes')">💬 Mensajes Compartidos</button>
                 <button class="btn ${activeWhatsappClass}" style="font-size: 0.82rem; padding: 6px 14px;" onclick="switchConfigSubTab('whatsapp')">🔌 API de WhatsApp</button>
                 <button class="btn ${activeServiciosClass}" style="font-size: 0.82rem; padding: 6px 14px;" onclick="switchConfigSubTab('servicios')">🚚 Servicios de Envío</button>
+                <button class="btn ${activeUsuariosClass}" style="font-size: 0.82rem; padding: 6px 14px;" onclick="switchConfigSubTab('usuarios')">👥 Gestión de Usuarios</button>
             </div>
             
             <div id="crm-config-subtab-content">
@@ -6177,6 +6274,8 @@ function renderCrmConfig() {
         html += renderCrmWhatsappConfigHtml();
     } else if (currentConfigSubTab === "servicios") {
         html += renderCrmServicesConfigHtml();
+    } else if (currentConfigSubTab === "usuarios") {
+        html += renderCrmUsersConfigHtml();
     }
     
     html += `
@@ -6184,6 +6283,220 @@ function renderCrmConfig() {
         </div>
     `;
     container.innerHTML = html;
+}
+window.renderCrmConfig = renderCrmConfig;
+
+function renderCrmUsersConfigHtml() {
+    setTimeout(loadCrmUsersList, 50);
+    return `
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h3 style="margin: 0; color: var(--text-primary); font-size: 0.95rem; font-family: var(--font-title); font-weight: 700;">Gestión de Usuarios</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: var(--text-secondary);">Crea, edita o suspende cuentas de acceso para tus vendedores.</p>
+                </div>
+                <button class="btn btn-primary" onclick="openAddUserModal()" style="font-size: 0.8rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                    ➕ Nuevo Usuario
+                </button>
+            </div>
+            
+            <div id="users-list-container" style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow-x: auto; background: var(--bg-input);">
+                <div style="padding: 20px; text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
+                    Cargando usuarios...
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function loadCrmUsersList() {
+    const container = document.getElementById("users-list-container");
+    if (!container) return;
+    
+    try {
+        const response = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/listarUsuarios`);
+        if (!response.ok) throw new Error("Error del servidor");
+        const data = await response.json();
+        
+        if (!data.success || !data.users) {
+            container.innerHTML = `<div style="padding: 20px; text-align: center; color: #f87171;">Error al cargar usuarios.</div>`;
+            return;
+        }
+        
+        if (data.users.length === 0) {
+            container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No hay usuarios registrados.</div>`;
+            return;
+        }
+        
+        let tableHtml = `
+            <table class="crm-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; min-width: 600px;">
+                <thead>
+                    <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-color);">
+                        <th style="padding: 12px 15px; color: var(--text-secondary); font-weight: 600;">Usuario</th>
+                        <th style="padding: 12px 15px; color: var(--text-secondary); font-weight: 600;">Nombre</th>
+                        <th style="padding: 12px 15px; color: var(--text-secondary); font-weight: 600;">Vendedor Asignado</th>
+                        <th style="padding: 12px 15px; color: var(--text-secondary); font-weight: 600;">Rol</th>
+                        <th style="padding: 12px 15px; color: var(--text-secondary); font-weight: 600; text-align: center;">Estado</th>
+                        <th style="padding: 12px 15px; color: var(--text-secondary); font-weight: 600; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        data.users.forEach(u => {
+            const roleBadge = u.role === "ADMIN" 
+                ? `<span class="badge-value" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">Admin</span>`
+                : u.role === "MAYORISTA"
+                ? `<span class="badge-value" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">Mayorista</span>`
+                : `<span class="badge-value" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">Minorista</span>`;
+                
+            const statusBadge = u.active
+                ? `<span class="badge-value" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">Activo</span>`
+                : `<span class="badge-value" style="background: rgba(239, 68, 68, 0.15); color: #f87171; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">Suspendido</span>`;
+            
+            tableHtml += `
+                <tr style="border-bottom: 1px solid var(--border-color); background: var(--bg-card);">
+                    <td style="padding: 10px 15px; font-weight: 600; color: var(--text-primary);">${u.username}</td>
+                    <td style="padding: 10px 15px; color: var(--text-primary);">${u.name}</td>
+                    <td style="padding: 10px 15px; color: var(--text-secondary);">${u.sellerName || "-"}</td>
+                    <td style="padding: 10px 15px;">${roleBadge}</td>
+                    <td style="padding: 10px 15px; text-align: center;">${statusBadge}</td>
+                    <td style="padding: 10px 15px; text-align: center;">
+                        <button class="btn btn-secondary" onclick="openEditUserModal('${u.username}', '${u.name.replace(/'/g, "\\'")}', '${u.role}', ${u.active}, '${u.sellerName.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 4px 8px;">Editar</button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tableHtml += `
+                </tbody>
+            </table>
+        `;
+        
+        container.innerHTML = tableHtml;
+    } catch(err) {
+        console.error("Error loading users list:", err);
+        container.innerHTML = `<div style="padding: 20px; text-align: center; color: #f87171;">Error al cargar la lista: ${err.message}</div>`;
+    }
+}
+window.loadCrmUsersList = loadCrmUsersList;
+
+function openAddUserModal() {
+    showUserFormModal();
+}
+window.openAddUserModal = openAddUserModal;
+
+function openEditUserModal(username, name, role, active, sellerName) {
+    showUserFormModal({ username, name, role, active, sellerName });
+}
+window.openEditUserModal = openEditUserModal;
+
+function showUserFormModal(user = null) {
+    const isEdit = !!user;
+    const title = isEdit ? "📝 Editar Usuario" : "➕ Nuevo Usuario";
+    
+    let contentHtml = `
+        <div style="max-height: 400px; overflow-y: auto; padding: 5px 15px 5px 5px; text-align: left;">
+            <form id="user-config-form" style="display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Nombre de Usuario</label>
+                    <input type="text" id="form-user-username" class="form-input" placeholder="ej: augusto" required ${isEdit ? "disabled" : ""} value="${isEdit ? user.username : ""}" style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: ${isEdit ? 'var(--bg-input)' : 'var(--bg-card)'}; color: var(--text-primary); border: 1px solid var(--border-color);">
+                </div>
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Nombre Completo</label>
+                    <input type="text" id="form-user-name" class="form-input" placeholder="ej: Augusto Crespo" required value="${isEdit ? user.name : ""}" style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                </div>
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Contraseña ${isEdit ? "(dejar vacío para no cambiar)" : ""}</label>
+                    <input type="password" id="form-user-password" class="form-input" placeholder="••••••••" ${isEdit ? "" : "required"} style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                </div>
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Rol del Usuario</label>
+                    <select id="form-user-role" class="form-input" style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                        <option value="MINORISTA" ${isEdit && user.role === "MINORISTA" ? "selected" : ""}>Minorista (Vendedor Básico)</option>
+                        <option value="MAYORISTA" ${isEdit && user.role === "MAYORISTA" ? "selected" : ""}>Mayorista</option>
+                        <option value="ADMIN" ${isEdit && user.role === "ADMIN" ? "selected" : ""}>Administrador</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Vendedor Asignado (coincidir con config de WhatsApp/YiQi)</label>
+                    <input type="text" id="form-user-sellerName" class="form-input" placeholder="ej: AUGUSTO, FABRICA..." value="${isEdit ? user.sellerName : ""}" style="width: 100%; font-size: 0.85rem; padding: 8px 12px; text-transform: uppercase; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                </div>
+    `;
+    
+    if (isEdit) {
+        contentHtml += `
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                    <input type="checkbox" id="form-user-active" ${user.active ? "checked" : ""} style="width: 16px; height: 16px; cursor: pointer;">
+                    <label for="form-user-active" style="font-size: 0.8rem; color: var(--text-primary); cursor: pointer; font-weight: 600;">Usuario Habilitado / Activo</label>
+                </div>
+        `;
+    }
+    
+    contentHtml += `
+            </form>
+        </div>
+    `;
+    
+    showModal({
+        title: title,
+        content: contentHtml,
+        actions: [
+            {
+                text: isEdit ? "Guardar Cambios" : "Crear Usuario",
+                class: "btn-primary",
+                onClick: async () => {
+                    const username = document.getElementById("form-user-username").value.trim().toLowerCase();
+                    const name = document.getElementById("form-user-name").value.trim();
+                    const password = document.getElementById("form-user-password").value;
+                    const role = document.getElementById("form-user-role").value;
+                    const sellerName = document.getElementById("form-user-sellerName").value.trim().toUpperCase();
+                    const active = isEdit ? document.getElementById("form-user-active").checked : true;
+                    
+                    if (!username || !name || (!isEdit && !password)) {
+                        showAppNotification("Atención", "Complete todos los campos obligatorios.", "warning");
+                        return false;
+                    }
+                    
+                    showLoader("Guardando usuario...");
+                    try {
+                        const payload = { username, name, role, active, sellerName };
+                        if (password) payload.password = password;
+                        
+                        const response = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/guardarUsuario`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        hideLoader();
+                        if (response.ok) {
+                            showAppNotification("Éxito", `El usuario ${username} se guardó correctamente.`, "success");
+                            loadCrmUsersList();
+                            closeModal();
+                            return true;
+                        } else {
+                            const errData = await response.json().catch(() => ({}));
+                            showAppNotification("Error", errData.error || "No se pudo guardar el usuario.", "danger");
+                            return false;
+                        }
+                    } catch(err) {
+                        hideLoader();
+                        console.error("Error saving user:", err);
+                        showAppNotification("Error de Conexión", "No se pudo comunicar con el servidor.", "danger");
+                        return false;
+                    }
+                },
+                close: false
+            },
+            {
+                text: "Cancelar",
+                class: "btn-secondary",
+                onClick: () => true,
+                close: true
+            }
+        ]
+    });
 }
 
 // --- SHIPPING SERVICES CONFIGURATION VIEW & SYNCHRONIZATION ---
