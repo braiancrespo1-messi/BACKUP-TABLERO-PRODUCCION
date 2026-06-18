@@ -7902,11 +7902,21 @@ function renderConversationsList() {
                 timeStr = "";
             }
         }
+
+        const sellerLower = (chat.assignedSeller || "").trim().toLowerCase();
+        let sellerBadge = "";
+        if (sellerLower === "fábrica") {
+            sellerBadge = `<span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; margin-left: 8px; border: 1px solid rgba(59, 130, 246, 0.25);">Mayorista</span>`;
+        } else if (sellerLower === "augusto") {
+            sellerBadge = `<span style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; margin-left: 8px; border: 1px solid rgba(245, 158, 11, 0.25);">Minorista</span>`;
+        }
         
         html += `
             <div class="inbox-chat-item ${isActive}" onclick="openCrmChat('${chat.phone}')">
                 <div class="inbox-chat-item-header">
-                    <span class="inbox-chat-item-name">${displayName}</span>
+                    <span class="inbox-chat-item-name" style="display: flex; align-items: center; flex-wrap: wrap;">
+                        ${displayName} ${sellerBadge}
+                    </span>
                     <span class="inbox-chat-item-time">${timeStr}</span>
                 </div>
                 <div class="inbox-chat-item-body">
@@ -8079,13 +8089,13 @@ function renderCrmInboxClientProfile(phone) {
     }
     
     // Set active chat header info
-    document.getElementById("inbox-chat-client-name").textContent = clientName || `+${phone}`;
+    const contactLabel = chat.contactName ? ` (${chat.contactName})` : "";
+    document.getElementById("inbox-chat-client-name").textContent = clientName ? `${clientName}${contactLabel}` : `+${phone}`;
     document.getElementById("inbox-chat-client-phone").textContent = `+${phone}`;
     
     const badge = document.getElementById("inbox-chat-seller-badge");
     if (badge) {
         badge.textContent = assignedSeller;
-        // Styles based on seller
         if (assignedSeller.toLowerCase().includes("augusto")) {
             badge.style.background = "rgba(52, 152, 219, 0.15)";
             badge.style.color = "#3498db";
@@ -8102,16 +8112,28 @@ function renderCrmInboxClientProfile(phone) {
     }
 
     if (clientId) {
-        // Fetch quick historic stats from local storage followups
         const followups = getCrmFollowups().filter(f => String(f.clientId) === String(clientId));
         const activeCount = followups.filter(f => f.status === "ABIERTO").length;
         const totalCount = followups.length;
+        
+        let contactHtml = "";
+        if (chat.contactName) {
+            contactHtml = `
+                <div style="background: rgba(255, 255, 255, 0.02); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                    <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Contacto</div>
+                    <div style="font-weight: 700; color: var(--text-primary); font-size: 0.85rem; margin-top: 2px;">👤 ${chat.contactName}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Área: ${chat.contactPosition || "Compras"}</div>
+                </div>
+            `;
+        }
         
         sidebar.innerHTML = `
             <div>
                 <h3 class="inbox-profile-title">Ficha del Cliente</h3>
                 <div style="font-weight: 700; color: var(--text-primary); font-size: 1rem; margin-bottom: 4px; line-height: 1.3;">${clientName}</div>
                 <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px;">ID Cliente YiQi: <strong>${clientId}</strong></div>
+                
+                ${contactHtml}
                 
                 <div class="inbox-profile-info-row">
                     <span class="inbox-profile-label">Celular / Teléfono</span>
@@ -8203,7 +8225,7 @@ async function searchClientForLink(query) {
             const seller = row.VEHA_ID_VEHA_TEXT || "No asignado";
             
             html += `
-                <div class="autocomplete-item" onclick="linkChatWithClient('${activeChatPhone}', '${row.id}', '${name.replace(/'/g, "\\'")}', '${seller.replace(/'/g, "\\'")}')" style="padding: 8px 10px;">
+                <div class="autocomplete-item" onclick="openLinkConfirmationModal('${activeChatPhone}', '${row.id}', '${name.replace(/'/g, "\\'")}', '${seller.replace(/'/g, "\\'")}')" style="padding: 8px 10px;">
                     <div style="font-weight: 700; font-size: 0.8rem; color: var(--text-primary);">${name}</div>
                     <div style="font-size: 0.72rem; color: var(--text-secondary); display: flex; justify-content: space-between; margin-top: 2px;">
                         <span>Code: ${code} | CUIT: ${cuit}</span>
@@ -8218,6 +8240,136 @@ async function searchClientForLink(query) {
         resultsContainer.innerHTML = `<div style="padding: 10px; font-size: 0.78rem; color: var(--danger); text-align: center;">Error al consultar</div>`;
     }
 }
+
+// Open confirmation modal for linking and sync contact to YiQi ERP
+function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
+    const resultsContainer = document.getElementById("inbox-link-search-results");
+    if (resultsContainer) resultsContainer.style.display = "none";
+    const searchInput = document.getElementById("inbox-search-client-input");
+    if (searchInput) searchInput.value = "";
+    
+    const activeChat = chatsList.find(c => c.phone === phone);
+    const defaultContactName = activeChat && activeChat.senderName && !activeChat.senderName.startsWith("+") 
+        ? activeChat.senderName 
+        : "Encargado de Compras";
+        
+    let contentHtml = `
+        <div style="text-align: left; display: flex; flex-direction: column; gap: 12px; padding: 5px 0;">
+            <div>
+                <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 2px;">CLIENTE SELECCIONADO</span>
+                <span style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem;">${clientName}</span>
+            </div>
+            
+            <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Nombre del Contacto</label>
+                <input type="text" id="link-contact-name" class="form-input" value="${defaultContactName}" placeholder="ej: Juan Carlos, Compras..." style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+            </div>
+            
+            <div>
+                <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Puesto / Área</label>
+                <input type="text" id="link-contact-position" class="form-input" value="Compras" placeholder="ej: Compras, Administración..." style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px; background: rgba(59, 130, 246, 0.05); padding: 10px; border-radius: var(--radius-sm); border: 1px dashed rgba(59, 130, 246, 0.2);">
+                <input type="checkbox" id="link-sync-yiqi" checked style="width: 16px; height: 16px; cursor: pointer;">
+                <label for="link-sync-yiqi" style="font-size: 0.8rem; color: var(--text-primary); cursor: pointer; font-weight: 600; line-height: 1.3;">
+                    Registrar en la solapa de Contactos de la Empresa en YiQi ERP 🚚
+                </label>
+            </div>
+        </div>
+    `;
+    
+    showModal({
+        title: "🔗 Vincular Chat con Cliente",
+        content: contentHtml,
+        actions: [
+            {
+                text: "Confirmar Vinculación",
+                class: "btn-primary",
+                onClick: async () => {
+                    const contactName = document.getElementById("link-contact-name").value.trim();
+                    const contactPosition = document.getElementById("link-contact-position").value.trim();
+                    const syncYiqi = document.getElementById("link-sync-yiqi").checked;
+                    
+                    if (!contactName) {
+                        showAppNotification("Atención", "Por favor, complete el nombre del contacto.", "warning");
+                        return false;
+                    }
+                    
+                    showLoader("Vinculando cliente...");
+                    try {
+                        if (syncYiqi) {
+                            const cleanPhoneDigits = String(phone).replace(/\D/g, "");
+                            let localPhone = cleanPhoneDigits;
+                            if (localPhone.startsWith("549")) localPhone = localPhone.substring(3);
+                            else if (localPhone.startsWith("54")) localPhone = localPhone.substring(2);
+                            if (localPhone.startsWith("0")) localPhone = localPhone.substring(1);
+                            
+                            const saveChildUrl = `https://api.yiqi.com.ar/api/childrenApi/SaveChild?parentId=${clientId}&childId=`;
+                            await apiCall(saveChildUrl, "POST", {
+                                schemaId: CONFIG.SCHEMA_ID,
+                                childId: 38,
+                                entityId: null,
+                                parentId: String(clientId),
+                                form: `1056=${encodeURIComponent(contactName)}&1060=${encodeURIComponent(contactPosition)}&1094=${encodeURIComponent(localPhone)}&1636=on&1650=on`,
+                                uploads: ""
+                            });
+                            console.log("Contacto guardado en YiQi.");
+                        }
+                        
+                        const response = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/guardarDatosCrm`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "saveClientLink",
+                                data: {
+                                    phone: phone,
+                                    clientId: clientId,
+                                    clientName: clientName,
+                                    assignedSeller: sellerName || "No asignado",
+                                    contactName: contactName,
+                                    contactPosition: contactPosition
+                                }
+                            })
+                        });
+                        
+                        if (!response.ok) throw new Error("HTTP " + response.status);
+                        
+                        const chatObj = chatsList.find(c => c.phone === phone);
+                        if (chatObj) {
+                            chatObj.clientId = clientId;
+                            chatObj.clientName = clientName;
+                            chatObj.assignedSeller = sellerName || "No asignado";
+                            chatObj.contactName = contactName;
+                            chatObj.contactPosition = contactPosition;
+                        }
+                        
+                        hideLoader();
+                        showAppNotification("Cliente Vinculado", "El chat se vinculó correctamente y se guardó en YiQi ERP.", "success");
+                        closeModal();
+                        
+                        renderConversationsList();
+                        renderCrmInboxClientProfile(phone);
+                        return true;
+                    } catch(err) {
+                        hideLoader();
+                        console.error("Error linking chat:", err);
+                        showAppNotification("Error al Vincular", "No se pudo vincular el chat con el cliente: " + err.message, "danger");
+                        return false;
+                    }
+                },
+                close: false
+            },
+            {
+                text: "Cancelar",
+                class: "btn-secondary",
+                onClick: () => true,
+                close: true
+            }
+        ]
+    });
+}
+window.openLinkConfirmationModal = openLinkConfirmationModal;
 
 // Link chat to a customer
 async function linkChatWithClient(phone, clientId, clientName, sellerName) {

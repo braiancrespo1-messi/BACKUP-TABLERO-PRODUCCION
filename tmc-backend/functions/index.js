@@ -3616,13 +3616,16 @@ exports.guardarDatosCrm = onRequest({ cors: true }, async (req, res) => {
       return res.json({ success: true, message: `Configuración de WhatsApp para ${seller} guardada` });
       
     } else if (action === "saveClientLink") {
-      const { phone, clientId, clientName, assignedSeller } = data;
+      const { phone, clientId, clientName, assignedSeller, contactName, contactPosition } = data;
       if (!phone) return res.status(400).json({ error: "Falta phone" });
-      await db.collection("crm_chats").doc(String(phone)).set({
+      const updateData = {
         clientId,
         clientName,
         assignedSeller: assignedSeller || "No asignado"
-      }, { merge: true });
+      };
+      if (contactName) updateData.contactName = contactName;
+      if (contactPosition) updateData.contactPosition = contactPosition;
+      await db.collection("crm_chats").doc(String(phone)).set(updateData, { merge: true });
       return res.json({ success: true, message: `Chat ${phone} vinculado con cliente ${clientName}` });
       
     } else {
