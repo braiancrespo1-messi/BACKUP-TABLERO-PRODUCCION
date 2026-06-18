@@ -3616,7 +3616,12 @@ exports.guardarDatosCrm = onRequest({ cors: true }, async (req, res) => {
       return res.json({ success: true, message: `Configuración de WhatsApp para ${seller} guardada` });
       
     } else if (action === "saveClientLink") {
-      const { phone, clientId, clientName, assignedSeller, contactName, contactPosition } = data;
+      const { 
+        phone, clientId, clientName, assignedSeller, 
+        contactName, contactPosition, contactEmail, 
+        contactFacturacion, contactCobranzas, contactPagos, contactCompras,
+        contactOrigin
+      } = data;
       if (!phone) return res.status(400).json({ error: "Falta phone" });
       const updateData = {
         clientId,
@@ -3625,6 +3630,12 @@ exports.guardarDatosCrm = onRequest({ cors: true }, async (req, res) => {
       };
       if (contactName) updateData.contactName = contactName;
       if (contactPosition) updateData.contactPosition = contactPosition;
+      if (contactEmail) updateData.contactEmail = contactEmail;
+      if (contactFacturacion !== undefined) updateData.contactFacturacion = contactFacturacion;
+      if (contactCobranzas !== undefined) updateData.contactCobranzas = contactCobranzas;
+      if (contactPagos !== undefined) updateData.contactPagos = contactPagos;
+      if (contactCompras !== undefined) updateData.contactCompras = contactCompras;
+      if (contactOrigin) updateData.contactOrigin = contactOrigin;
       await db.collection("crm_chats").doc(String(phone)).set(updateData, { merge: true });
       return res.json({ success: true, message: `Chat ${phone} vinculado con cliente ${clientName}` });
       

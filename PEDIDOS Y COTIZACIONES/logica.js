@@ -8118,11 +8118,33 @@ function renderCrmInboxClientProfile(phone) {
         
         let contactHtml = "";
         if (chat.contactName) {
+            let badgesHtml = "";
+            if (chat.contactFacturacion === true || chat.contactFacturacion === "S" || chat.contactFacturacion === "on") {
+                badgesHtml += `<span style="background: rgba(34, 197, 94, 0.12); color: #4ade80; padding: 2px 5px; border-radius: 3px; font-size: 0.62rem; font-weight: 600; border: 1px solid rgba(34, 197, 94, 0.2); margin-top: 4px; display: inline-block;">Facturación</span> `;
+            }
+            if (chat.contactCobranzas === true || chat.contactCobranzas === "S" || chat.contactCobranzas === "on") {
+                badgesHtml += `<span style="background: rgba(168, 85, 247, 0.12); color: #c084fc; padding: 2px 5px; border-radius: 3px; font-size: 0.62rem; font-weight: 600; border: 1px solid rgba(168, 85, 247, 0.2); margin-top: 4px; display: inline-block;">Cobranzas</span> `;
+            }
+            if (chat.contactPagos === true || chat.contactPagos === "S" || chat.contactPagos === "on") {
+                badgesHtml += `<span style="background: rgba(59, 130, 246, 0.12); color: #60a5fa; padding: 2px 5px; border-radius: 3px; font-size: 0.62rem; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.2); margin-top: 4px; display: inline-block;">Pagos</span> `;
+            }
+            if (chat.contactCompras === true || chat.contactCompras === "S" || chat.contactCompras === "on") {
+                badgesHtml += `<span style="background: rgba(234, 179, 8, 0.12); color: #facc15; padding: 2px 5px; border-radius: 3px; font-size: 0.62rem; font-weight: 600; border: 1px solid rgba(234, 179, 8, 0.2); margin-top: 4px; display: inline-block;">Compras</span> `;
+            }
+            
+            let emailRow = chat.contactEmail ? `<div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px; word-break: break-all;">✉️ ${chat.contactEmail}</div>` : "";
+            let originRow = chat.contactOrigin && !chat.contactOrigin.includes("--") && !chat.contactOrigin.includes("Cargando") ? `<div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px;">📍 Origen: <strong>${chat.contactOrigin}</strong></div>` : "";
+            
             contactHtml = `
-                <div style="background: rgba(255, 255, 255, 0.02); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                    <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Contacto</div>
-                    <div style="font-weight: 700; color: var(--text-primary); font-size: 0.85rem; margin-top: 2px;">👤 ${chat.contactName}</div>
-                    <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Área: ${chat.contactPosition || "Compras"}</div>
+                <div style="background: rgba(255, 255, 255, 0.02); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px; text-align: left;">
+                    <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Contacto CRM</div>
+                    <div style="font-weight: 700; color: var(--text-primary); font-size: 0.85rem;">👤 ${chat.contactName}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Puesto: <strong>${chat.contactPosition || "Compras"}</strong></div>
+                    ${emailRow}
+                    ${originRow}
+                    <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
+                        ${badgesHtml}
+                    </div>
                 </div>
             `;
         }
@@ -8254,25 +8276,57 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
         : "Encargado de Compras";
         
     let contentHtml = `
-        <div style="text-align: left; display: flex; flex-direction: column; gap: 12px; padding: 5px 0;">
+        <div style="text-align: left; display: flex; flex-direction: column; gap: 10px; padding: 5px 0;">
             <div>
                 <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 2px;">CLIENTE SELECCIONADO</span>
                 <span style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem;">${clientName}</span>
             </div>
             
-            <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
-                <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Nombre del Contacto</label>
-                <input type="text" id="link-contact-name" class="form-input" value="${defaultContactName}" placeholder="ej: Juan Carlos, Compras..." style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Nombre del Contacto *</label>
+                    <input type="text" id="link-contact-name" class="form-input" value="${defaultContactName}" placeholder="ej: Juan Carlos..." style="width: 100%; font-size: 0.82rem; padding: 6px 10px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                </div>
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Puesto / Área</label>
+                    <input type="text" id="link-contact-position" class="form-input" value="Compras" placeholder="ej: Compras, Administración..." style="width: 100%; font-size: 0.82rem; padding: 6px 10px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                </div>
             </div>
-            
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Correo Electrónico</label>
+                    <input type="email" id="link-contact-email" class="form-input" placeholder="ej: compras@cliente.com" style="width: 100%; font-size: 0.82rem; padding: 6px 10px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                </div>
+                <div>
+                    <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Origen del Contacto</label>
+                    <select id="link-contact-origin" class="form-input" style="width: 100%; font-size: 0.82rem; padding: 6px 10px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                        <option value="">Cargando orígenes...</option>
+                    </select>
+                </div>
+            </div>
+
             <div>
-                <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Puesto / Área</label>
-                <input type="text" id="link-contact-position" class="form-input" value="Compras" placeholder="ej: Compras, Administración..." style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                <label style="font-size: 0.72rem; margin-bottom: 4px; display: block; color: var(--text-secondary); font-weight: 600;">Comportamiento / Permisos de Notificación</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-input); padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-primary); cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="link-contact-facturacion" checked style="cursor: pointer; width: 14px; height: 14px;"> Facturación (recibe facturas)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-primary); cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="link-contact-cobranzas" checked style="cursor: pointer; width: 14px; height: 14px;"> Cobranzas (recibe recibos)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-primary); cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="link-contact-pagos" style="cursor: pointer; width: 14px; height: 14px;"> Contacto de Pagos
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-primary); cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="link-contact-compras" checked style="cursor: pointer; width: 14px; height: 14px;"> Contacto de Compras
+                    </label>
+                </div>
             </div>
             
-            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px; background: rgba(59, 130, 246, 0.05); padding: 10px; border-radius: var(--radius-sm); border: 1px dashed rgba(59, 130, 246, 0.2);">
-                <input type="checkbox" id="link-sync-yiqi" checked style="width: 16px; height: 16px; cursor: pointer;">
-                <label for="link-sync-yiqi" style="font-size: 0.8rem; color: var(--text-primary); cursor: pointer; font-weight: 600; line-height: 1.3;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px; background: rgba(59, 130, 246, 0.04); padding: 8px; border-radius: var(--radius-sm); border: 1px dashed rgba(59, 130, 246, 0.15);">
+                <input type="checkbox" id="link-sync-yiqi" checked style="width: 15px; height: 15px; cursor: pointer;">
+                <label for="link-sync-yiqi" style="font-size: 0.78rem; color: var(--text-primary); cursor: pointer; font-weight: 600; line-height: 1.2; margin: 0;">
                     Registrar en la solapa de Contactos de la Empresa en YiQi ERP 🚚
                 </label>
             </div>
@@ -8289,6 +8343,17 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                 onClick: async () => {
                     const contactName = document.getElementById("link-contact-name").value.trim();
                     const contactPosition = document.getElementById("link-contact-position").value.trim();
+                    const contactEmail = document.getElementById("link-contact-email").value.trim();
+                    const selectOrigin = document.getElementById("link-contact-origin");
+                    const contactOrigin = selectOrigin ? selectOrigin.value : "";
+                    const contactOriginText = selectOrigin && selectOrigin.selectedIndex >= 0 && selectOrigin.options[selectOrigin.selectedIndex].value
+                        ? selectOrigin.options[selectOrigin.selectedIndex].text 
+                        : "";
+                        
+                    const contactFacturacion = document.getElementById("link-contact-facturacion").checked;
+                    const contactCobranzas = document.getElementById("link-contact-cobranzas").checked;
+                    const contactPagos = document.getElementById("link-contact-pagos").checked;
+                    const contactCompras = document.getElementById("link-contact-compras").checked;
                     const syncYiqi = document.getElementById("link-sync-yiqi").checked;
                     
                     if (!contactName) {
@@ -8305,13 +8370,31 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                             else if (localPhone.startsWith("54")) localPhone = localPhone.substring(2);
                             if (localPhone.startsWith("0")) localPhone = localPhone.substring(1);
                             
+                            // Form date string DD/MM/YYYY
+                            const today = new Date();
+                            const dd = String(today.getDate()).padStart(2, '0');
+                            const mm = String(today.getMonth() + 1).padStart(2, '0');
+                            const yyyy = today.getFullYear();
+                            const todayStr = `${dd}/${mm}/${yyyy}`;
+                            
+                            let formPayload = `1056=${encodeURIComponent(contactName)}&1060=${encodeURIComponent(contactPosition)}&1094=${encodeURIComponent(localPhone)}&1058=${encodeURIComponent(contactEmail)}&1061=${encodeURIComponent(todayStr)}`;
+                            
+                            formPayload += `&1636=${contactFacturacion ? 'on' : 'off'}`;
+                            formPayload += `&1650=${contactCobranzas ? 'on' : 'off'}`;
+                            formPayload += `&10165=${contactPagos ? 'on' : 'off'}`;
+                            formPayload += `&12517=${contactCompras ? 'on' : 'off'}`;
+                            
+                            if (contactOrigin) {
+                                formPayload += `&1098=${contactOrigin}`;
+                            }
+                            
                             const saveChildUrl = `https://api.yiqi.com.ar/api/childrenApi/SaveChild?parentId=${clientId}&childId=`;
                             await apiCall(saveChildUrl, "POST", {
                                 schemaId: CONFIG.SCHEMA_ID,
                                 childId: 38,
                                 entityId: null,
                                 parentId: String(clientId),
-                                form: `1056=${encodeURIComponent(contactName)}&1060=${encodeURIComponent(contactPosition)}&1094=${encodeURIComponent(localPhone)}&1636=on&1650=on`,
+                                form: formPayload,
                                 uploads: ""
                             });
                             console.log("Contacto guardado en YiQi.");
@@ -8328,7 +8411,13 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                                     clientName: clientName,
                                     assignedSeller: sellerName || "No asignado",
                                     contactName: contactName,
-                                    contactPosition: contactPosition
+                                    contactPosition: contactPosition,
+                                    contactEmail: contactEmail,
+                                    contactFacturacion: contactFacturacion,
+                                    contactCobranzas: contactCobranzas,
+                                    contactPagos: contactPagos,
+                                    contactCompras: contactCompras,
+                                    contactOrigin: contactOriginText
                                 }
                             })
                         });
@@ -8342,6 +8431,12 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                             chatObj.assignedSeller = sellerName || "No asignado";
                             chatObj.contactName = contactName;
                             chatObj.contactPosition = contactPosition;
+                            chatObj.contactEmail = contactEmail;
+                            chatObj.contactFacturacion = contactFacturacion;
+                            chatObj.contactCobranzas = contactCobranzas;
+                            chatObj.contactPagos = contactPagos;
+                            chatObj.contactCompras = contactCompras;
+                            chatObj.contactOrigin = contactOriginText;
                         }
                         
                         hideLoader();
@@ -8368,6 +8463,37 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
             }
         ]
     });
+    
+    // Asynchronously load contact origins from YiQi ERP smartie 2805
+    async function fetchContactOrigins() {
+        try {
+            const res = await apiCall("https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=372&schemaId=1491&smartieId=2805", "POST", { page: 1, pageSize: 50 });
+            const rows = res.data || res.rows || res.instances || [];
+            const select = document.getElementById("link-contact-origin");
+            if (select) {
+                let html = `<option value="">-- Seleccionar Origen --</option>`;
+                rows.forEach(r => {
+                    const originName = r.ORCO_ORIGENCONTACTO || r.ORCO_ORIGENDELCONTACTO || "Origen sin nombre";
+                    html += `<option value="${r.id || r.ID}">${originName}</option>`;
+                });
+                select.innerHTML = html;
+            }
+        } catch(e) {
+            console.error("Error loading contact origins:", e);
+            const select = document.getElementById("link-contact-origin");
+            if (select) {
+                select.innerHTML = `
+                    <option value="">-- Seleccionar Origen --</option>
+                    <option value="1">Recomendación</option>
+                    <option value="2">Web</option>
+                    <option value="3">Campaña Facebook</option>
+                    <option value="4">Instagram</option>
+                    <option value="5">Google Adwords</option>
+                `;
+            }
+        }
+    }
+    fetchContactOrigins();
 }
 window.openLinkConfirmationModal = openLinkConfirmationModal;
 
