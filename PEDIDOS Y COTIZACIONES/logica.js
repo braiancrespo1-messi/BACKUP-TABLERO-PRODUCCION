@@ -645,6 +645,13 @@ async function selectClient(clientId, clientName) {
         }
         
         // Set initial selected client state
+        let initialBalance = 0.0;
+        if (atts["9226"]?.value !== undefined) {
+            initialBalance = parseFloat(atts["9226"].value) || 0.0;
+        } else if (atts["9228"]?.value !== undefined) {
+            initialBalance = parseFloat(atts["9228"].value) || 0.0;
+        }
+
         selectedClient = {
             id: clientId,
             name: clientName,
@@ -663,7 +670,7 @@ async function selectClient(clientId, clientName) {
             typeName: clientTypeName,
             typeId: clientTypeId,
             typeDiscount: typeDiscount,
-            balance: 0.0,
+            balance: initialBalance,
             suggestedDiscount: 0.0,
             branches: []
         };
@@ -699,7 +706,7 @@ async function selectClient(clientId, clientName) {
             const ccRes = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/obtenerEstadoCuenta?clientCode=${clientId}`);
             if (ccRes.ok) {
                 const ccData = await ccRes.json();
-                selectedClient.balance = ccData.saldoNoImputadoYiqi || 0.0;
+                selectedClient.balance = ccData.saldoNoImputadoYiqi !== undefined ? ccData.saldoNoImputadoYiqi : (ccData.totalDeudaPendiente !== undefined ? ccData.totalDeudaPendiente : initialBalance);
             }
         } catch (ccErr) {
             console.error("Could not fetch CC account balance via proxy:", ccErr);
@@ -911,8 +918,9 @@ function renderClientCard() {
     
     container.innerHTML = `
         <div class="client-info-card">
-            <div class="client-name-header">
-                <h3 class="client-title">${selectedClient.name}</h3>
+            <div class="client-name-header" style="text-align: center;">
+                <h3 class="client-title" style="margin-bottom: 2px;">${selectedClient.name}</h3>
+                <div style="font-size: 0.76rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">ID Cliente: <strong>${selectedClient.id}</strong></div>
                 <div class="client-meta-label">Cliente Seleccionado</div>
             </div>
             
@@ -7913,11 +7921,12 @@ function renderConversationsList() {
         
         html += `
             <div class="inbox-chat-item ${isActive}" onclick="openCrmChat('${chat.phone}')">
-                <div class="inbox-chat-item-header">
-                    <span class="inbox-chat-item-name" style="display: flex; align-items: center; flex-wrap: wrap;">
-                        ${displayName} ${sellerBadge}
+                <div class="inbox-chat-item-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
+                    <span class="inbox-chat-item-name" style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; margin: 0;">
+                        <span style="overflow: hidden; text-transform: none; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;">${displayName}</span>
+                        ${sellerBadge}
                     </span>
-                    <span class="inbox-chat-item-time">${timeStr}</span>
+                    <span class="inbox-chat-item-time" style="flex-shrink: 0; white-space: nowrap; font-size: 0.72rem; color: var(--text-muted);">${timeStr}</span>
                 </div>
                 <div class="inbox-chat-item-body">
                     <span class="inbox-chat-item-snippet" title="${lastMsgText.replace(/"/g, '&quot;')}">${lastMsgText}</span>
@@ -8315,12 +8324,6 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                     <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-primary); cursor: pointer; margin: 0;">
                         <input type="checkbox" id="link-contact-cobranzas" checked style="cursor: pointer; width: 14px; height: 14px;"> Cobranzas (recibe recibos)
                     </label>
-                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-primary); cursor: pointer; margin: 0;">
-                        <input type="checkbox" id="link-contact-pagos" style="cursor: pointer; width: 14px; height: 14px;"> Contacto de Pagos
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-primary); cursor: pointer; margin: 0;">
-                        <input type="checkbox" id="link-contact-compras" checked style="cursor: pointer; width: 14px; height: 14px;"> Contacto de Compras
-                    </label>
                 </div>
             </div>
             
@@ -8352,8 +8355,6 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                         
                     const contactFacturacion = document.getElementById("link-contact-facturacion").checked;
                     const contactCobranzas = document.getElementById("link-contact-cobranzas").checked;
-                    const contactPagos = document.getElementById("link-contact-pagos").checked;
-                    const contactCompras = document.getElementById("link-contact-compras").checked;
                     const syncYiqi = document.getElementById("link-sync-yiqi").checked;
                     
                     if (!contactName) {
@@ -8381,8 +8382,7 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                             
                             formPayload += `&1636=${contactFacturacion ? 'on' : 'off'}`;
                             formPayload += `&1650=${contactCobranzas ? 'on' : 'off'}`;
-                            formPayload += `&10165=${contactPagos ? 'on' : 'off'}`;
-                            formPayload += `&12517=${contactCompras ? 'on' : 'off'}`;
+                            formPayload += `&10165=off&12517=off`;
                             
                             if (contactOrigin) {
                                 formPayload += `&1098=${contactOrigin}`;
@@ -8415,8 +8415,8 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                                     contactEmail: contactEmail,
                                     contactFacturacion: contactFacturacion,
                                     contactCobranzas: contactCobranzas,
-                                    contactPagos: contactPagos,
-                                    contactCompras: contactCompras,
+                                    contactPagos: false,
+                                    contactCompras: false,
                                     contactOrigin: contactOriginText
                                 }
                             })
@@ -8434,8 +8434,8 @@ function openLinkConfirmationModal(phone, clientId, clientName, sellerName) {
                             chatObj.contactEmail = contactEmail;
                             chatObj.contactFacturacion = contactFacturacion;
                             chatObj.contactCobranzas = contactCobranzas;
-                            chatObj.contactPagos = contactPagos;
-                            chatObj.contactCompras = contactCompras;
+                            chatObj.contactPagos = false;
+                            chatObj.contactCompras = false;
                             chatObj.contactOrigin = contactOriginText;
                         }
                         
@@ -8540,46 +8540,90 @@ async function linkChatWithClient(phone, clientId, clientName, sellerName) {
 window.linkChatWithClient = linkChatWithClient;
 
 // Desvincular chat del cliente
-async function unlinkChatFromClient(phone) {
-    if (!confirm("¿Seguro que deseas desvincular este chat de su ficha de cliente?")) return;
-    
-    try {
-        showLoader("Desvinculando cliente...");
-        const response = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/guardarDatosCrm`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                action: "saveClientLink",
-                data: {
-                    phone: phone,
-                    clientId: null,
-                    clientName: null,
-                    assignedSeller: "No asignado"
-                }
-            })
-        });
-        
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        
-        // Update local chatsList
-        const chat = chatsList.find(c => c.phone === phone);
-        if (chat) {
-            delete chat.clientId;
-            delete chat.clientName;
-            chat.assignedSeller = "No asignado";
-        }
-        
-        hideLoader();
-        showAppNotification("Cliente Desvinculado", "El chat ya no está asociado a ningún cliente.", "success");
-        
-        // Reload list and profile
-        renderConversationsList();
-        renderCrmInboxClientProfile(phone);
-    } catch (e) {
-        hideLoader();
-        console.error("Error unlinking chat:", e);
-        showAppNotification("Error al Desvincular", "No se pudo desvincular el chat. Reintente.", "danger");
-    }
+function unlinkChatFromClient(phone) {
+    showModal({
+        title: "✕ Desvincular Cliente",
+        content: `
+            <div style="text-align: left; padding: 10px 0;">
+                <p style="font-size: 0.88rem; color: var(--text-primary); margin-bottom: 12px; line-height: 1.5;">
+                    ¿Seguro que deseas desvincular este chat de su ficha de cliente?
+                </p>
+                <p style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4; background: rgba(239, 68, 68, 0.05); border: 1px dashed rgba(239, 68, 68, 0.2); padding: 8px; border-radius: var(--radius-sm);">
+                    ⚠️ Al desvincularlo, el chat volverá a mostrarse por su número y perderá el contacto asignado en el CRM.
+                </p>
+            </div>
+        `,
+        actions: [
+            {
+                text: "Sí, Desvincular",
+                class: "btn-danger",
+                onClick: async () => {
+                    showLoader("Desvinculando cliente...");
+                    try {
+                        const response = await fetch(`${CONFIG.CLOUD_FUNCTIONS_BASE}/guardarDatosCrm`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "saveClientLink",
+                                data: {
+                                    phone: phone,
+                                    clientId: null,
+                                    clientName: null,
+                                    assignedSeller: "No asignado",
+                                    contactName: null,
+                                    contactPosition: null,
+                                    contactEmail: null,
+                                    contactFacturacion: null,
+                                    contactCobranzas: null,
+                                    contactPagos: null,
+                                    contactCompras: null,
+                                    contactOrigin: null
+                                }
+                            })
+                        });
+                        
+                        if (!response.ok) throw new Error("HTTP " + response.status);
+                        
+                        const chat = chatsList.find(c => c.phone === phone);
+                        if (chat) {
+                            delete chat.clientId;
+                            delete chat.clientName;
+                            chat.assignedSeller = "No asignado";
+                            delete chat.contactName;
+                            delete chat.contactPosition;
+                            delete chat.contactEmail;
+                            delete chat.contactFacturacion;
+                            delete chat.contactCobranzas;
+                            delete chat.contactPagos;
+                            delete chat.contactCompras;
+                            delete chat.contactOrigin;
+                        }
+                        
+                        hideLoader();
+                        showAppNotification("Cliente Desvinculado", "El chat ya no está asociado a ningún cliente.", "success");
+                        closeModal();
+                        
+                        // Reload list and profile
+                        renderConversationsList();
+                        renderCrmInboxClientProfile(phone);
+                        return true;
+                    } catch (e) {
+                        hideLoader();
+                        console.error("Error unlinking chat:", e);
+                        showAppNotification("Error al Desvincular", "No se pudo desvincular el chat. Reintente.", "danger");
+                        return false;
+                    }
+                },
+                close: false
+            },
+            {
+                text: "Cancelar",
+                class: "btn-secondary",
+                onClick: () => true,
+                close: true
+            }
+        ]
+    });
 }
 window.unlinkChatFromClient = unlinkChatFromClient;
 
