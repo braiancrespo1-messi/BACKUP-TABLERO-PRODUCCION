@@ -1,0 +1,1591 @@
+<!--
+  WIDGET PREMIUM: CONSULTA DE ESTADO DE CUENTA (B2B PRODUCTION)
+  Para integrar en distribuidores.tmconline.com.ar
+-->
+<!-- Mantener este párrafo para que Tornado inyecte el nombre y código sin errores y podamos leerlos -->
+<p style="font-size: 2rem; color: #1e293b; font-family: 'Outfit', sans-serif; margin-bottom: 24px;">Hola, <span id="nomCli" style="color: var(--color-marca5); font-weight: 600;"></span> tu código de cliente es <span id="codCli" style="color: var(--color-marca5); font-weight: 600;"></span>.</p>
+
+<div id="tmc-estado-cuenta-container" class="tmc-widget-wrapper">
+  <!-- Tarjeta de Resumen / Saldo -->
+  <div class="tmc-summary-card">
+    <div class="tmc-summary-info">
+      <div id="tmc-cliente-greeting" class="tmc-client-greeting"></div>
+      <span class="tmc-label">SALDO ACTUAL</span>
+      <h2 id="tmc-saldo-valor" class="tmc-value">Cargando...</h2>
+    </div>
+    <div class="tmc-summary-actions">
+      <button id="tmc-btn-download-pdf" class="tmc-btn tmc-btn-primary" disabled>
+        <span class="tmc-btn-icon">📄</span> Descargar PDF Oficial
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabla de Movimientos -->
+  <div class="tmc-table-wrapper">
+    <!-- Cabecera compacta que unifica filtros y buscador, eliminando el título grande -->
+    <div class="tmc-table-header">
+      <div class="tmc-filters-inline-group">
+        <!-- Filtro Desde -->
+        <div class="tmc-filter-group-inline">
+          <label for="tmc-filter-desde">Desde</label>
+          <input type="date" id="tmc-filter-desde" class="tmc-input-date" style="padding: 6px 10px; font-size: 13px;">
+        </div>
+        
+        <!-- Filtro Hasta -->
+        <div class="tmc-filter-group-inline">
+          <label for="tmc-filter-hasta">Hasta</label>
+          <input type="date" id="tmc-filter-hasta" class="tmc-input-date" style="padding: 6px 10px; font-size: 13px;">
+        </div>
+        
+        <!-- Buscador de texto (Lupita) -->
+        <div class="tmc-search-input-wrapper">
+          <span class="tmc-search-icon">🔍</span>
+          <input type="text" id="tmc-filter-search" class="tmc-search-input" placeholder="Buscar comprobante, importe o fecha...">
+        </div>
+
+        <button id="tmc-btn-clear-filters" class="tmc-btn-secondary" style="display: none; padding: 6px 12px; font-size: 12px; align-self: center;">
+          Limpiar Filtros
+        </button>
+      </div>
+      
+      <span id="tmc-movimientos-count" class="tmc-badge">...</span>
+    </div>
+
+    <div class="tmc-table-responsive">
+      <table id="tmc-tabla-movimientos">
+        <thead>
+          <tr>
+            <th>FECHA</th>
+            <th>COMPROBANTE</th>
+            <th class="text-right">DEBE</th>
+            <th class="text-right">HABER</th>
+            <th class="text-right">SALDO ACUM.</th>
+            <th class="text-center">ACCIÓN</th>
+          </tr>
+        </thead>
+        <tbody id="tmc-tabla-body">
+          <tr>
+            <td colspan="6" class="text-center py-5">
+              <div class="tmc-spinner"></div>
+              <p class="mt-2 text-muted">Cargando movimientos...</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal para Reportar Comprobante (Reclamos) -->
+  <div id="tmc-modal-claim" class="tmc-modal-overlay" style="display: none;">
+    <div class="tmc-modal-content">
+      <div class="tmc-modal-header">
+        <h3 id="tmc-modal-title">💬 Reportar Comprobante</h3>
+        <button id="tmc-modal-close" class="tmc-modal-close-btn">&times;</button>
+      </div>
+      
+      <!-- Paso 1: Escribir Comentarios -->
+      <div id="tmc-modal-step-1">
+        <div class="tmc-modal-body">
+          <div class="tmc-transaction-details-box">
+            <p><strong>Comprobante:</strong> <span id="tmc-modal-detail-comp"></span></p>
+            <p><strong>Fecha:</strong> <span id="tmc-modal-detail-fecha"></span></p>
+            <p><strong>Debe:</strong> <span id="tmc-modal-detail-debe"></span> | <strong>Haber:</strong> <span id="tmc-modal-detail-haber"></span></p>
+          </div>
+          <div class="tmc-form-group">
+            <label for="tmc-modal-comment">Especificar el problema / Comentarios adicionales:</label>
+            <textarea id="tmc-modal-comment" rows="4" class="tmc-textarea" placeholder="Describa el motivo del reclamo..."></textarea>
+          </div>
+        </div>
+        <div class="tmc-modal-footer">
+          <button id="tmc-modal-btn-cancel" class="tmc-btn-secondary" style="padding: 10px 16px; font-size: 13px;">Cancelar</button>
+          <button id="tmc-modal-btn-next" class="tmc-btn tmc-btn-primary" style="padding: 10px 16px; font-size: 13px; margin: 0; display: inline-flex;">Aceptar</button>
+        </div>
+      </div>
+
+      <!-- Paso 2: Elegir Canal de Envío -->
+      <div id="tmc-modal-step-2" style="display: none;">
+        <div class="tmc-modal-body">
+          <p style="margin-top: 0; font-size: 14px; font-weight: 500; color: #475569;">¿Por qué medio desea enviar este reclamo?</p>
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+            <button id="tmc-modal-btn-whatsapp" class="tmc-btn-modal-wa" style="justify-content: center; padding: 14px; font-size: 14px; border-radius: 10px; width: 100%;">
+              🟢 Enviar por WhatsApp
+            </button>
+            <button id="tmc-modal-btn-gmail" class="tmc-btn-modal-gmail" style="justify-content: center; padding: 14px; font-size: 14px; border-radius: 10px; width: 100%;">
+              📧 Enviar por Gmail (Web)
+            </button>
+            <button id="tmc-modal-btn-email" class="tmc-btn-modal-email" style="justify-content: center; padding: 14px; font-size: 14px; border-radius: 10px; width: 100%;">
+              ✉️ Enviar por Correo del Sistema
+            </button>
+          </div>
+        </div>
+        <div class="tmc-modal-footer" style="justify-content: flex-start;">
+          <button id="tmc-modal-btn-back" class="tmc-btn-secondary" style="padding: 8px 14px; font-size: 12px;">← Volver</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Detalle de Comprobante (Artículos / Desglose de Pago) -->
+  <div id="tmc-modal-detail-doc" class="tmc-modal-overlay" style="display: none;">
+    <div class="tmc-modal-content" style="max-width: 600px;">
+      <div class="tmc-modal-header">
+        <h3 id="tmc-modal-detail-title">📄 Detalle del Comprobante</h3>
+        <button id="tmc-modal-detail-close" class="tmc-modal-close-btn">&times;</button>
+      </div>
+      <div class="tmc-modal-body" style="padding: 16px; max-height: 70vh; overflow-y: auto;">
+        <!-- Cabecera de información rápida -->
+        <div class="tmc-transaction-details-box" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; flex-grow: 1;">
+            <div><strong>Comprobante:</strong> <span id="tmc-detail-nro">-</span></div>
+            <div><strong>Fecha:</strong> <span id="tmc-detail-fecha">-</span></div>
+            <div><strong>Total:</strong> <span id="tmc-detail-total">-</span></div>
+          </div>
+          <button id="tmc-btn-download-doc-pdf" class="tmc-btn tmc-btn-primary" style="padding: 6px 12px; font-size: 12px; margin: 0; display: none;">
+            📥 Descargar PDF
+          </button>
+        </div>
+        
+        <p id="tmc-detail-obs" style="font-size: 13px; color: #475569; margin: 0 0 12px 0; font-style: italic; display: none;"></p>
+
+        <!-- Loader interno -->
+        <div id="tmc-detail-loader" class="text-center py-5">
+          <div class="tmc-spinner"></div>
+          <p class="mt-2 text-muted">Cargando detalles...</p>
+        </div>
+
+        <!-- Mensaje de error -->
+        <div id="tmc-detail-error" class="text-center py-5 text-danger" style="display: none;">
+          ❌ Error al cargar los detalles del comprobante.
+        </div>
+
+        <!-- Tabla de ítems/desglose -->
+        <div id="tmc-detail-table-wrapper" style="display: none; border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto;">
+          <table id="tmc-detail-table" style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+            <thead id="tmc-detail-table-head" style="background-color: #f8fafc; border-bottom: 2px solid #edf2f7;">
+              <!-- Cargado dinámicamente -->
+            </thead>
+            <tbody id="tmc-detail-table-body">
+              <!-- Cargado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totales de la factura -->
+        <div id="tmc-detail-totals-wrapper" style="display: none; margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 13px; color: #334155;">
+          <!-- Cargado dinámicamente -->
+        </div>
+      </div>
+      <div class="tmc-modal-footer">
+        <button id="tmc-modal-detail-btn-close" class="tmc-btn-secondary" style="padding: 8px 16px; font-size: 13px;">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (async function() {
+    // Inyectar estilos dinámicamente para que el CMS de Tornado no los elimine
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+    /* Ocultar el título de la página nativa de Tornado para subir el widget */
+    h1, .tituloSeccion, .titulo-seccion, .titulo-nota {
+      display: none !important;
+    }
+
+    .tmc-widget-wrapper {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+      margin: 24px 0;
+      max-width: 100%;
+      animation: tmcFadeIn 0.5s ease-out;
+    }
+
+    /* Tarjeta de Resumen */
+    .tmc-summary-card {
+      background: linear-gradient(135deg, #1e40af 0%, #0f172a 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 25px -5px rgba(30, 64, 175, 0.15), 0 8px 10px -6px rgba(30, 64, 175, 0.15);
+      margin-bottom: 24px;
+      transition: transform 0.3s ease;
+    }
+
+    .tmc-summary-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .tmc-summary-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tmc-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: #93c5fd;
+      text-transform: uppercase;
+    }
+
+    .tmc-value {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.5px;
+      color: #ffffff !important;
+    }
+
+    /* Botones */
+    .tmc-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .tmc-btn-primary {
+      background-color: #2563eb;
+      color: #ffffff;
+    }
+
+    .tmc-btn-primary:hover:not(:disabled) {
+      background-color: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+    }
+
+    .tmc-btn:disabled {
+      background-color: #64748b;
+      color: #cbd5e1;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Tabla de Movimientos */
+    .tmc-table-wrapper {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .tmc-table-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .tmc-filters-inline-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      flex-grow: 1;
+    }
+
+    .tmc-filter-group-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tmc-filter-group-inline label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .tmc-search-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      flex-grow: 1;
+      max-width: 280px;
+      min-width: 160px;
+    }
+
+    .tmc-search-icon {
+      position: absolute;
+      left: 10px;
+      color: #94a3b8;
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    .tmc-search-input {
+      width: 100%;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 10px 6px 32px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #1e293b;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .tmc-search-input:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    .tmc-badge {
+      background-color: #f1f5f9;
+      color: #475569;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .tmc-input-date {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #1e293b;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .tmc-input-date:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    .tmc-btn-secondary {
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid #cbd5e1;
+      background-color: #ffffff;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      align-self: center;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .tmc-btn-secondary:hover {
+      background-color: #f1f5f9;
+      color: #1e293b;
+      border-color: #94a3b8;
+    }
+
+    .tmc-table-responsive {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 550px;
+    }
+
+    #tmc-tabla-movimientos {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    #tmc-tabla-movimientos th {
+      position: sticky;
+      top: 0;
+      background-color: #f8fafc;
+      color: #64748b;
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 2px solid #edf2f7;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      z-index: 10;
+    }
+
+    #tmc-tabla-movimientos td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+      vertical-align: middle;
+    }
+
+    #tmc-tabla-movimientos tbody tr {
+      transition: background-color 0.2s ease;
+      cursor: pointer;
+    }
+
+    #tmc-tabla-movimientos tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    .tmc-no-wrap {
+      white-space: nowrap !important;
+    }
+
+    .tmc-client-greeting {
+      font-size: 15px;
+      font-weight: 600;
+      color: #93c5fd;
+      margin-bottom: 6px;
+      display: none;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tmc-btn-report {
+      background-color: #eff6ff;
+      color: #2563eb;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tmc-btn-report:hover {
+      background-color: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    /* Modal styles */
+    .tmc-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+      animation: tmcFadeIn 0.25s ease-out;
+    }
+
+    .tmc-modal-content {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 95%;
+      max-width: 480px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      animation: tmcSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: left;
+    }
+
+    .tmc-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f8fafc;
+    }
+
+    .tmc-modal-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .tmc-modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #64748b;
+      transition: color 0.2s ease;
+      line-height: 1;
+    }
+
+    .tmc-modal-close-btn:hover {
+      color: #0f172a;
+    }
+
+    .tmc-modal-body {
+      padding: 20px;
+      color: #1e293b;
+    }
+
+    .tmc-transaction-details-box {
+      background-color: #f1f5f9;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .tmc-transaction-details-box p {
+      margin: 4px 0;
+    }
+
+    .tmc-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tmc-form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .tmc-textarea {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      color: #1e293b;
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.2s ease;
+      background-color: #ffffff;
+    }
+
+    .tmc-textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    .tmc-modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      background-color: #f8fafc;
+    }
+
+    .tmc-btn-modal-wa {
+      background-color: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.2s ease;
+    }
+
+    .tmc-btn-modal-wa:hover {
+      background-color: #15803d;
+    }
+
+    .tmc-btn-modal-gmail {
+      background-color: #ea4335;
+      color: #ffffff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.2s ease;
+    }
+
+    .tmc-btn-modal-gmail:hover {
+      background-color: #d93025;
+    }
+
+    .tmc-btn-modal-email {
+      background-color: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.2s ease;
+    }
+
+    .tmc-btn-modal-email:hover {
+      background-color: #1d4ed8;
+    }
+
+    .tmc-copy-btn {
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #2563eb;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+    }
+    
+    .tmc-copy-btn:hover {
+      background: #eff6ff;
+      border-color: #2563eb;
+    }
+
+    @keyframes tmcSlideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Clases de utilidad */
+    .text-right { text-align: right !important; }
+    .text-center { text-align: center !important; }
+    .text-muted { color: #64748b; }
+    .text-success { color: #16a34a; font-weight: 600; }
+    .text-danger { color: #dc2626; font-weight: 600; }
+    .py-5 { padding-top: 40px !important; padding-bottom: 40px !important; }
+    .mt-2 { margin-top: 8px; }
+    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    /* Spinner */
+    .tmc-spinner {
+      border: 3px solid #e2e8f0;
+      border-top: 3px solid #2563eb;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: tmcSpin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes tmcSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes tmcFadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Adaptación Responsiva para Celulares / Tabletas */
+    @media (max-width: 640px) {
+      .tmc-summary-card {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        gap: 16px;
+        padding: 16px;
+      }
+      .tmc-summary-info {
+        align-items: center;
+      }
+      .tmc-summary-actions {
+        display: flex;
+        justify-content: center;
+      }
+      .tmc-btn-primary {
+        width: 100%;
+        justify-content: center;
+      }
+      .tmc-filter-group {
+        flex: 1 1 130px;
+      }
+      .tmc-input-date {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .tmc-btn-report {
+        padding: 8px 12px;
+        font-size: 13px;
+        width: 100%;
+        justify-content: center;
+        margin-top: 4px;
+      }
+
+      /* Convertir tabla a cards verticales sin scroll horizontal */
+      #tmc-tabla-movimientos thead {
+        display: none;
+      }
+      #tmc-tabla-movimientos, 
+      #tmc-tabla-movimientos tbody, 
+      #tmc-tabla-movimientos tr, 
+      #tmc-tabla-movimientos td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      #tmc-tabla-movimientos tr {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      }
+      #tmc-tabla-movimientos td:not([colspan]) {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+        text-align: right;
+      }
+      #tmc-tabla-movimientos td:not([colspan]):last-child {
+        border-bottom: none;
+        justify-content: center;
+        padding-top: 10px;
+      }
+      #tmc-tabla-movimientos td:not([colspan]):nth-child(1)::before { content: "FECHA"; font-weight: 700; color: #64748b; font-size: 10px; }
+      #tmc-tabla-movimientos td:not([colspan]):nth-child(2)::before { content: "COMPROBANTE"; font-weight: 700; color: #64748b; font-size: 10px; }
+      #tmc-tabla-movimientos td:not([colspan]):nth-child(3)::before { content: "DEBE"; font-weight: 700; color: #64748b; font-size: 10px; }
+      #tmc-tabla-movimientos td:not([colspan]):nth-child(4)::before { content: "HABER"; font-weight: 700; color: #64748b; font-size: 10px; }
+      #tmc-tabla-movimientos td:not([colspan]):nth-child(5)::before { content: "SALDO ACUM."; font-weight: 700; color: #64748b; font-size: 10px; }
+
+      /* Convertir tabla de detalle a cards en celular */
+      #tmc-detail-table thead {
+        display: none;
+      }
+      #tmc-detail-table, 
+      #tmc-detail-table tbody, 
+      #tmc-detail-table tr, 
+      #tmc-detail-table td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      #tmc-detail-table tr {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+      }
+      #tmc-detail-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid #edf2f7;
+        text-align: right;
+      }
+      #tmc-detail-table td:last-child {
+        border-bottom: none;
+      }
+      #tmc-detail-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #64748b;
+        font-size: 10px;
+        text-align: left;
+      }
+    }`;
+    document.head.appendChild(styleEl);
+
+    // URL de la Cloud Function
+    const CLOUD_FUNCTION_BASE = "https://us-central1-tmc-backend-2f5c4.cloudfunctions.net";
+    const OBTENER_ESTADO_URL = `${CLOUD_FUNCTION_BASE}/obtenerEstadoCuenta`;
+    const DESCARGAR_PDF_URL = `${CLOUD_FUNCTION_BASE}/descargarReportePDF`;
+
+    // Elementos del DOM
+    const saldoEl = document.getElementById("tmc-saldo-valor");
+    const tbodyEl = document.getElementById("tmc-tabla-body");
+    const countEl = document.getElementById("tmc-movimientos-count");
+    const btnDownload = document.getElementById("tmc-btn-download-pdf");
+
+    const filterDesdeEl = document.getElementById("tmc-filter-desde");
+    const filterHastaEl = document.getElementById("tmc-filter-hasta");
+    const btnClearFilters = document.getElementById("tmc-btn-clear-filters");
+
+    let cachedMovements = [];
+    let selectedTransaction = null;
+    let currentClientCode = "";
+    let currentClientName = "";
+    let currentClientRazonSocial = "";
+
+    // Formateadores
+    const formatCurrency = (val) => {
+      if (val === null || val === undefined || isNaN(val)) return "-";
+      return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+    };
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return "-";
+      try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      } catch (e) {
+        return dateStr.split('T')[0];
+      }
+    };
+
+    // Aplicar política de TMC en cliente: Ocultar prefijo "Fac X" / "FX" y variaciones
+    const cleanFXComprobante = (comprobante) => {
+      if (!comprobante) return "-";
+      const regexFX = /^(?:factura\s+x|fac\.?\s+x|fx)\s*(?:n[°o]|nro\.?|#)?\s*/i;
+      if (regexFX.test(comprobante)) {
+        return comprobante.replace(regexFX, "").trim();
+      }
+      return comprobante;
+    };
+
+    // Modal navigation/events
+    const closeModal = () => {
+      document.getElementById("tmc-modal-claim").style.display = "none";
+    };
+
+    document.getElementById("tmc-modal-close").addEventListener("click", closeModal);
+    document.getElementById("tmc-modal-btn-cancel").addEventListener("click", closeModal);
+    
+    document.getElementById("tmc-modal-claim").addEventListener("click", (e) => {
+      if (e.target.id === "tmc-modal-claim") closeModal();
+    });
+
+    const showStep2 = () => {
+      document.getElementById("tmc-modal-title").textContent = "📲 Seleccionar Canal de Envío";
+      document.getElementById("tmc-modal-step-1").style.display = "none";
+      document.getElementById("tmc-modal-step-2").style.display = "block";
+    };
+
+    const showStep1 = () => {
+      document.getElementById("tmc-modal-title").textContent = "💬 Reportar Comprobante";
+      document.getElementById("tmc-modal-step-1").style.display = "block";
+      document.getElementById("tmc-modal-step-2").style.display = "none";
+    };
+
+    document.getElementById("tmc-modal-btn-next").addEventListener("click", showStep2);
+    document.getElementById("tmc-modal-btn-back").addEventListener("click", showStep1);
+
+    window.openClaimModal = (fecha, comprobante, debe, haber, saldo) => {
+      selectedTransaction = { fecha, comprobante, debe, haber, saldo };
+      document.getElementById("tmc-modal-detail-comp").textContent = comprobante;
+      document.getElementById("tmc-modal-detail-fecha").textContent = fecha;
+      document.getElementById("tmc-modal-detail-debe").textContent = debe;
+      document.getElementById("tmc-modal-detail-haber").textContent = haber;
+      document.getElementById("tmc-modal-comment").value = "";
+      
+      showStep1();
+      document.getElementById("tmc-modal-claim").style.display = "flex";
+    };
+
+    // Enviar WhatsApp
+    document.getElementById("tmc-modal-btn-whatsapp").addEventListener("click", () => {
+      if (!selectedTransaction) return;
+      const comment = document.getElementById("tmc-modal-comment").value.trim();
+      const compLimpio = selectedTransaction.comprobante;
+      const dateStr = selectedTransaction.fecha;
+      
+      const nameParts = [];
+      if (currentClientRazonSocial) nameParts.push(currentClientRazonSocial);
+      if (currentClientName) nameParts.push(currentClientName);
+      const namePart = nameParts.join(" / ");
+      const infoCliente = namePart ? `${namePart} (ID: ${currentClientCode})` : currentClientCode;
+
+      const text = `Hola, quiero reclamar el siguiente comprobante:\n` +
+        `- *Cliente:* ${infoCliente}\n` +
+        `- *Comprobante:* ${compLimpio}\n` +
+        `- *Fecha:* ${dateStr}\n` +
+        `- *Debe:* ${selectedTransaction.debe}\n` +
+        `- *Haber:* ${selectedTransaction.haber}\n` +
+        `- *Saldo Acumulado:* ${selectedTransaction.saldo}\n\n` +
+        `*Detalle del reclamo:* ${comment || "[No se ingresaron comentarios]"}`;
+      
+      const url = `https://wa.me/5491150155324?text=${encodeURIComponent(text)}`;
+      window.open(url, "_blank");
+      closeModal();
+    });
+
+    // Enviar Gmail Web
+    document.getElementById("tmc-modal-btn-gmail").addEventListener("click", () => {
+      if (!selectedTransaction) return;
+      const comment = document.getElementById("tmc-modal-comment").value.trim();
+      const compLimpio = selectedTransaction.comprobante;
+      const dateStr = selectedTransaction.fecha;
+      
+      const nameParts = [];
+      if (currentClientRazonSocial) nameParts.push(currentClientRazonSocial);
+      if (currentClientName) nameParts.push(currentClientName);
+      const namePart = nameParts.join(" / ");
+      const infoCliente = namePart ? `${namePart} (ID: ${currentClientCode})` : currentClientCode;
+
+      const clientLabel = currentClientRazonSocial ? `${currentClientRazonSocial} (${currentClientCode})` : `(${currentClientCode})`;
+      const subject = encodeURIComponent(`Reclamo: ${compLimpio} - ${clientLabel}`);
+      const body = encodeURIComponent(
+        `Hola Equipo de Ventas,\n\n` +
+        `Deseo realizar una consulta/reclamo sobre el siguiente comprobante:\n` +
+        `- Cliente: ${infoCliente}\n` +
+        `- Comprobante: ${compLimpio}\n` +
+        `- Fecha: ${dateStr}\n` +
+        `- Debe: ${selectedTransaction.debe}\n` +
+        `- Haber: ${selectedTransaction.haber}\n` +
+        `- Saldo Acumulado: ${selectedTransaction.saldo}\n\n` +
+        `Detalle del reclamo:\n${comment || "[No se ingresaron comentarios]"}\n\nSaludos.`
+      );
+      
+      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=ventas@tmcrespo.com.ar&su=${subject}&body=${body}`;
+      window.open(url, "_blank");
+      closeModal();
+    });
+
+    // Enviar Email
+    document.getElementById("tmc-modal-btn-email").addEventListener("click", () => {
+      if (!selectedTransaction) return;
+      const comment = document.getElementById("tmc-modal-comment").value.trim();
+      const compLimpio = selectedTransaction.comprobante;
+      const dateStr = selectedTransaction.fecha;
+      
+      const nameParts = [];
+      if (currentClientRazonSocial) nameParts.push(currentClientRazonSocial);
+      if (currentClientName) nameParts.push(currentClientName);
+      const namePart = nameParts.join(" / ");
+      const infoCliente = namePart ? `${namePart} (ID: ${currentClientCode})` : currentClientCode;
+
+      const clientLabel = currentClientRazonSocial ? `${currentClientRazonSocial} (${currentClientCode})` : `(${currentClientCode})`;
+      const subject = encodeURIComponent(`Reclamo: ${compLimpio} - ${clientLabel}`);
+      const body = encodeURIComponent(
+        `Hola Equipo de Ventas,\n\n` +
+        `Deseo realizar una consulta/reclamo sobre el siguiente comprobante:\n` +
+        `- Cliente: ${infoCliente}\n` +
+        `- Comprobante: ${compLimpio}\n` +
+        `- Fecha: ${dateStr}\n` +
+        `- Debe: ${selectedTransaction.debe}\n` +
+        `- Haber: ${selectedTransaction.haber}\n` +
+        `- Saldo Acumulado: ${selectedTransaction.saldo}\n\n` +
+        `Detalle del reclamo:\n${comment || "[No se ingresaron comentarios]"}\n\nSaludos.`
+      );
+      
+      const url = `mailto:ventas@tmcrespo.com.ar?subject=${subject}&body=${body}`;
+      window.location.href = url;
+      closeModal();
+    });
+
+    // Funciones auxiliares para la verificación oficial de AFIP
+    window.toggleQrZoom = (container) => {
+      const img = container.querySelector('#tmc-afip-qr-img');
+      const overlay = container.querySelector('.tmc-zoom-overlay');
+      const parentCol = container;
+      if (img.style.width === '140px' || img.style.width === '') {
+        img.style.width = '240px';
+        img.style.height = '240px';
+        parentCol.style.flex = '0 0 260px';
+        overlay.textContent = '🔍 Reducir';
+      } else {
+        img.style.width = '140px';
+        img.style.height = '140px';
+        parentCol.style.flex = '0 0 160px';
+        overlay.textContent = '🔍 Ampliar';
+      }
+    };
+
+    window.copyToClipboard = (text, btnId) => {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          const originalText = btn.innerHTML;
+          btn.innerHTML = "✔ Copiado";
+          btn.style.borderColor = "#16a34a";
+          btn.style.color = "#16a34a";
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = "";
+            btn.style.color = "";
+          }, 1500);
+        }
+      }).catch(err => {
+        console.error("Error al copiar al portapapeles:", err);
+      });
+    };
+
+    window.toggleAfipAssistant = () => {
+      const content = document.getElementById("tmc-afip-content");
+      const icon = document.getElementById("tmc-afip-toggle-icon");
+      if (!content || !icon) return;
+      if (content.style.display === "none") {
+        content.style.display = "flex";
+        icon.textContent = "▲ Colapsar";
+      } else {
+        content.style.display = "none";
+        icon.textContent = "▼ Ampliar";
+      }
+    };
+
+    window.getTipoComprobanteAfip = (comprobante) => {
+      const comp = comprobante.toUpperCase();
+      if (comp.includes("FAC A") || comp.includes("FACTURA A")) return "1 - Factura A";
+      if (comp.includes("FAC B") || comp.includes("FACTURA B")) return "6 - Factura B";
+      if (comp.includes("NC A") || comp.includes("NOTA CRED A") || comp.includes("NOTA DE CREDITO A") || comp.includes("NOTA CRÉDITO A")) return "3 - Nota de Crédito A";
+      if (comp.includes("NC B") || comp.includes("NOTA CRED B") || comp.includes("NOTA DE CREDITO B") || comp.includes("NOTA CRÉDITO B")) return "8 - Nota de Crédito B";
+      if (comp.includes("ND A") || comp.includes("NOTA DEB A") || comp.includes("NOTA DE DEBITO A") || comp.includes("NOTA DÉBITO A")) return "2 - Nota de Débito A";
+      if (comp.includes("ND B") || comp.includes("NOTA DEB B") || comp.includes("NOTA DE DEBITO B") || comp.includes("NOTA DÉBITO B")) return "7 - Nota de Débito B";
+      return "1 - Factura A";
+    };
+
+    const closeDetailModal = () => {
+      document.getElementById("tmc-modal-detail-doc").style.display = "none";
+    };
+
+    document.getElementById("tmc-modal-detail-close").addEventListener("click", closeDetailModal);
+    document.getElementById("tmc-modal-detail-btn-close").addEventListener("click", closeDetailModal);
+    document.getElementById("tmc-modal-detail-doc").addEventListener("click", (e) => {
+      if (e.target.id === "tmc-modal-detail-doc") closeDetailModal();
+    });
+
+    window.openDocumentDetailModal = async (comprobante, clientCode) => {
+      const modal = document.getElementById("tmc-modal-detail-doc");
+      const nroEl = document.getElementById("tmc-detail-nro");
+      const fechaEl = document.getElementById("tmc-detail-fecha");
+      const totalEl = document.getElementById("tmc-detail-total");
+      const obsEl = document.getElementById("tmc-detail-obs");
+      const loaderEl = document.getElementById("tmc-detail-loader");
+      const errorEl = document.getElementById("tmc-detail-error");
+      const tableWrapper = document.getElementById("tmc-detail-table-wrapper");
+      const tbody = document.getElementById("tmc-detail-table-body");
+      const head = document.getElementById("tmc-detail-table-head");
+      const totalsWrapper = document.getElementById("tmc-detail-totals-wrapper");
+      const downloadDocPdfBtn = document.getElementById("tmc-btn-download-doc-pdf");
+
+      // UI Reset
+      nroEl.textContent = cleanFXComprobante(comprobante);
+      fechaEl.textContent = "-";
+      totalEl.textContent = "-";
+      obsEl.style.display = "none";
+      obsEl.textContent = "";
+      loaderEl.style.display = "block";
+      errorEl.style.display = "none";
+      tableWrapper.style.display = "none";
+      totalsWrapper.style.display = "none";
+      totalsWrapper.innerHTML = "";
+      tbody.innerHTML = "";
+      head.innerHTML = "";
+      downloadDocPdfBtn.style.display = "none";
+      downloadDocPdfBtn.onclick = null;
+      modal.style.display = "flex";
+
+      try {
+        const url = `${CLOUD_FUNCTION_BASE}/obtenerDetalleComprobante?comprobante=${encodeURIComponent(comprobante)}&clientCode=${clientCode}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const res = await response.json();
+        if (!res.success || !res.detalles) throw new Error("Detalles no devueltos");
+
+        // Configurar boton de descarga de PDF oficial del comprobante si aplica (solo si es oficial con CAE)
+        if (res.tipo !== 'COBRO' && res.docId && res.cae) {
+          downloadDocPdfBtn.style.display = "inline-flex";
+          downloadDocPdfBtn.onclick = () => {
+            const reportId = "60";
+            const schemaId = "1491";
+            const downloadUrl = `${CLOUD_FUNCTION_BASE}/descargarReportePDF?reportId=${reportId}&instanceId=${res.docId}&schemaId=${schemaId}`;
+            window.open(downloadUrl, '_blank');
+          };
+        }
+
+        // Rellenar cabecera
+        fechaEl.textContent = formatDate(res.fecha);
+        totalEl.textContent = formatCurrency(res.total);
+        if (res.observaciones) {
+          obsEl.textContent = `Observaciones: ${res.observaciones}`;
+          obsEl.style.display = "block";
+        }
+
+        if (res.tipo === 'COBRO') {
+          // Cabecera simplificada para Recibos
+          head.innerHTML = `
+            <tr>
+              <th style="padding: 10px 12px; color: #64748b; font-weight: 600;">CONCEPTO</th>
+              <th style="padding: 10px 12px; color: #64748b; font-weight: 600;" class="text-right">IMPORTE</th>
+            </tr>
+          `;
+
+          // Cuerpo simplificado
+          let rowsHtml = "";
+          res.detalles.forEach(d => {
+            const subtotal = d.subtotal ? parseFloat(d.subtotal) : 0;
+            rowsHtml += `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 12px;" data-label="CONCEPTO">${d.concepto}</td>
+                <td style="padding: 10px 12px; font-weight: 600;" class="text-right" data-label="IMPORTE">${formatCurrency(subtotal)}</td>
+              </tr>
+            `;
+          });
+          tbody.innerHTML = rowsHtml;
+        } else {
+          // Cabecera estándar para Facturas y Notas
+          head.innerHTML = `
+            <tr>
+              <th style="padding: 10px 12px; color: #64748b; font-weight: 600;">CÓDIGO</th>
+              <th style="padding: 10px 12px; color: #64748b; font-weight: 600;">CONCEPTO</th>
+              <th style="padding: 10px 12px; color: #64748b; font-weight: 600;" class="text-right">CANT.</th>
+              <th style="padding: 10px 12px; color: #64748b; font-weight: 600;" class="text-right">PRECIO</th>
+              <th style="padding: 10px 12px; color: #64748b; font-weight: 600;" class="text-right">SUBTOTAL</th>
+            </tr>
+          `;
+
+          // Cuerpo de Facturas (Precio Unitario Neto con bonificación ya calculada)
+          let rowsHtml = "";
+          res.detalles.forEach(d => {
+            const precio = d.precio ? parseFloat(d.precio) : 0;
+            const subtotal = d.subtotal ? parseFloat(d.subtotal) : 0;
+            const bonif = d.bonif ? parseFloat(d.bonif) : 0;
+            const precioNeto = precio * (1 - bonif / 100);
+
+            rowsHtml += `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 12px; font-family: monospace;" data-label="CÓDIGO">${d.codigo || '-'}</td>
+                <td style="padding: 10px 12px;" data-label="CONCEPTO">${d.concepto}</td>
+                <td style="padding: 10px 12px;" class="text-right" data-label="CANT.">${d.cantidad}</td>
+                <td style="padding: 10px 12px;" class="text-right" data-label="PRECIO">${formatCurrency(precioNeto)}</td>
+                <td style="padding: 10px 12px; font-weight: 600;" class="text-right" data-label="SUBTOTAL">${formatCurrency(subtotal)}</td>
+              </tr>
+            `;
+          });
+          tbody.innerHTML = rowsHtml;
+
+          // Desglose de Totales e Impuestos (Ocultando descuento global si es 0)
+          if (res.totales) {
+            const t = res.totales;
+            const subtotalNeto = t.subtotalNeto !== null ? parseFloat(t.subtotalNeto) : (res.detalles.reduce((acc, d) => acc + (d.subtotal || 0), 0));
+            const descuento = parseFloat(t.descuento || 0);
+            const neto = t.neto !== null ? parseFloat(t.neto) : (subtotalNeto - descuento);
+            const iva = parseFloat(t.iva || 0);
+            const percepciones = parseFloat(t.percepciones || 0);
+            const impuestosInternos = parseFloat(t.impuestosInternos || 0);
+            const total = parseFloat(t.total || res.total || 0);
+
+            const cleanCompName = cleanFXComprobante(comprobante);
+            const compMatch = cleanCompName.match(/N°?\s*(\d+)\s*-\s*(\d+)/i);
+            const ptoVtaExtracted = compMatch ? compMatch[1] : "";
+            const nroCompExtracted = compMatch ? compMatch[2] : "";
+            const tipoCompDescription = getTipoComprobanteAfip(comprobante);
+
+            let totalsBreakdownHtml = `
+              <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; width: 100%; max-width: 320px; margin-left: auto;">
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                  <span>Subtotal Neto:</span>
+                  <span style="font-family: monospace;">${formatCurrency(subtotalNeto)}</span>
+                </div>
+            `;
+
+            if (descuento > 0) {
+              totalsBreakdownHtml += `
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                  <span>Descuento (${t.porcDescuento}%):</span>
+                  <span style="font-family: monospace; color: #dc2626;">-${formatCurrency(descuento)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; width: 100%; border-top: 1px dashed #e2e8f0; padding-top: 4px;">
+                  <span>Neto Gravado:</span>
+                  <span style="font-family: monospace;">${formatCurrency(neto)}</span>
+                </div>
+              `;
+            }
+
+            if (iva > 0) {
+              totalsBreakdownHtml += `
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                  <span>IVA (21%):</span>
+                  <span style="font-family: monospace;">${formatCurrency(iva)}</span>
+                </div>
+              `;
+            }
+
+            if (percepciones > 0) {
+              totalsBreakdownHtml += `
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                  <span>Percepciones/Impuestos:</span>
+                  <span style="font-family: monospace;">${formatCurrency(percepciones)}</span>
+                </div>
+              `;
+            }
+
+            if (impuestosInternos > 0) {
+              totalsBreakdownHtml += `
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                  <span>Impuestos Internos:</span>
+                  <span style="font-family: monospace;">${formatCurrency(impuestosInternos)}</span>
+                </div>
+              `;
+            }
+
+            totalsBreakdownHtml += `
+                <div style="display: flex; justify-content: space-between; width: 100%; border-top: 2px solid #0f172a; padding-top: 6px; font-weight: 700; font-size: 14px; color: #0f172a;">
+                  <span>Total:</span>
+                  <span style="font-family: monospace;">${formatCurrency(total)}</span>
+                </div>
+              </div>
+            `;
+
+            let afipAssistantHtml = "";
+            if (res.urlQr) {
+              const formattedCuitRec = res.cuitReceptor && String(res.cuitReceptor).length === 11 
+                ? `${String(res.cuitReceptor).substring(0, 2)}-${String(res.cuitReceptor).substring(2, 10)}-${String(res.cuitReceptor).substring(10)}` 
+                : (res.cuitReceptor || '-');
+              
+              afipAssistantHtml = `
+                <div style="margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; overflow: hidden; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; width: 100%; box-sizing: border-box;">
+                  <div onclick="toggleAfipAssistant()" style="background-color: #f1f5f9; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" title="Haz clic para mostrar/ocultar el asistente de verificación">
+                    <span style="font-size: 12px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;">
+                      🔒 Verificación de Factura Oficial (AFIP / ARCA)
+                    </span>
+                    <span id="tmc-afip-toggle-icon" style="font-size: 12px; font-weight: 700; color: #2563eb;">▼ Ampliar</span>
+                  </div>
+                  
+                  <div id="tmc-afip-content" style="padding: 14px; display: none; gap: 16px; flex-wrap: wrap; align-items: flex-start; border-top: 1px solid #e2e8f0; background: #ffffff;">
+                    <!-- Columna Izquierda: Código QR -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 0 0 160px; margin: 0 auto; transition: flex-basis 0.3s ease;">
+                      <div style="position: relative; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; padding: 6px; transition: all 0.3s ease;" 
+                           onclick="toggleQrZoom(this)" 
+                           title="Clic para ampliar para escaneo desde monitor">
+                        <img id="tmc-afip-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=L&data=${encodeURIComponent(res.urlQr)}" 
+                             alt="QR AFIP" 
+                             style="width: 140px; height: 140px; display: block; transition: width 0.3s ease, height 0.3s ease;" />
+                        <div class="tmc-zoom-overlay" style="position: absolute; bottom: 4px; right: 4px; background: rgba(15, 23, 42, 0.75); color: white; padding: 2px 4px; border-radius: 4px; font-size: 9px; display: flex; align-items: center; gap: 2px;">
+                          🔍 Ampliar
+                        </div>
+                      </div>
+                      <a href="${res.urlQr}" target="_blank" style="font-size: 11px; color: #2563eb; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">
+                        Verificar Online →
+                      </a>
+                    </div>
+
+                    <!-- Columna Derecha: Datos para Carga Manual -->
+                    <div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px;">
+                      <div style="font-size: 11px; color: #64748b; margin-bottom: 4px; line-height: 1.3;">
+                        Si la página de AFIP se abre vacía en tu PC, usá estos botones para copiar y pegar los datos:
+                      </div>
+                      
+                      <!-- Tabla de Datos -->
+                      <div style="display: grid; grid-template-columns: 110px 1fr auto; gap: 6px; align-items: center; font-size: 11px;">
+                        
+                        <!-- CUIT Emisor -->
+                        <div style="font-weight: 600; color: #475569;">CUIT Emisor:</div>
+                        <div style="font-family: monospace; color: #0f172a; font-weight: 600;">30-71798131-2</div>
+                        <button id="btn-copy-cuit-emisor" class="tmc-copy-btn" onclick="copyToClipboard('30717981312', 'btn-copy-cuit-emisor')">
+                          📋 Copiar
+                        </button>
+
+                        <!-- CAE -->
+                        <div style="font-weight: 600; color: #475569;">CAE N°:</div>
+                        <div style="font-family: monospace; color: #0f172a; font-weight: 600;">${res.cae || '-'}</div>
+                        <button id="btn-copy-cae" class="tmc-copy-btn" onclick="copyToClipboard('${res.cae || ''}', 'btn-copy-cae')">
+                          📋 Copiar
+                        </button>
+
+                        <!-- Fecha Emision -->
+                        <div style="font-weight: 600; color: #475569;">Fecha Emisión:</div>
+                        <div style="font-family: monospace; color: #0f172a; font-weight: 600;">${formatDate(res.fecha)}</div>
+                        <button id="btn-copy-fecha" class="tmc-copy-btn" onclick="copyToClipboard('${formatDate(res.fecha)}', 'btn-copy-fecha')">
+                          📋 Copiar
+                        </button>
+
+                        <!-- Tipo Comprobante -->
+                        <div style="font-weight: 600; color: #475569;">Tipo Comprobante:</div>
+                        <div style="font-family: monospace; color: #0f172a; font-weight: 600;">${tipoCompDescription}</div>
+                        <button id="btn-copy-tipo" class="tmc-copy-btn" onclick="copyToClipboard('${tipoCompDescription.split(' - ')[0]}', 'btn-copy-tipo')" 
+                                title="Copia el código numérico para buscar en el listado">
+                          📋 Copiar
+                        </button>
+
+                        <!-- Punto de Venta -->
+                        <div style="font-weight: 600; color: #475569;">Punto de Venta:</div>
+                        <div style="font-family: monospace; color: #0f172a; font-weight: 600;">${ptoVtaExtracted}</div>
+                        <button id="btn-copy-ptovta" class="tmc-copy-btn" onclick="copyToClipboard('${ptoVtaExtracted}', 'btn-copy-ptovta')">
+                          📋 Copiar
+                        </button>
+
+                        <!-- Número -->
+                        <div style="font-weight: 600; color: #475569;">Número Comp.:</div>
+                        <div style="font-family: monospace; color: #0f172a; font-weight: 600;">${nroCompExtracted}</div>
+                        <button id="btn-copy-nro" class="tmc-copy-btn" onclick="copyToClipboard('${nroCompExtracted}', 'btn-copy-nro')">
+                          📋 Copiar
+                        </button>
+
+                        <!-- Importe Total -->
+                        <div style="font-weight: 600; color: #475569;">Importe Total:</div>
+                        <div style="font-family: monospace; color: #0f172a; font-weight: 600;">${res.total ? parseFloat(res.total).toFixed(2) : '0.00'}</div>
+                        <button id="btn-copy-total" class="tmc-copy-btn" onclick="copyToClipboard('${res.total ? parseFloat(res.total).toFixed(2) : '0.00'}', 'btn-copy-total')">
+                          📋 Copiar
+                        </button>
+
+                        <!-- CUIT Receptor -->
+                        <div style="font-weight: 600; color: #475569;">CUIT Receptor:</div>
+                        <div style="font-family: monospace; color: #0f172a; font-weight: 600;">${formattedCuitRec}</div>
+                        <button id="btn-copy-cuit-receptor" class="tmc-copy-btn" onclick="copyToClipboard('${res.cuitReceptor || ''}', 'btn-copy-cuit-receptor')">
+                          📋 Copiar
+                        </button>
+
+                      </div>
+                    </div>
+                  </div>
+                `;
+            }
+
+            totalsWrapper.innerHTML = `
+              <div>
+                ${totalsBreakdownHtml}
+                ${afipAssistantHtml}
+              </div>
+            `;
+            totalsWrapper.style.display = "block";
+          }
+        }
+
+        loaderEl.style.display = "none";
+        tableWrapper.style.display = "block";
+      } catch (err) {
+        console.error("Error al obtener detalles del comprobante:", err);
+        loaderEl.style.display = "none";
+        errorEl.style.display = "block";
+      }
+    };
+
+    // Función para renderizar la tabla principal
+    const renderTable = (movements) => {
+      if (movements.length === 0) {
+        tbodyEl.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              ⚠️ No se encontraron movimientos para el rango de fechas seleccionado.
+            </td>
+          </tr>
+        `;
+        countEl.textContent = "0 registros";
+        return;
+      }
+
+      let tbodyHTML = "";
+      movements.forEach((r) => {
+        const debe = r.debe ? parseFloat(r.debe) : null;
+        const haber = r.haber ? parseFloat(r.haber) : null;
+        const filaSaldo = r.saldo ? parseFloat(r.saldo) : 0;
+        const compLimpio = cleanFXComprobante(r.comprobante);
+
+        const argFecha = formatDate(r.fecha);
+        const argDebe = debe ? formatCurrency(debe) : "-";
+        const argHaber = haber ? formatCurrency(haber) : "-";
+        const argSaldo = formatCurrency(filaSaldo);
+
+        tbodyHTML += `
+          <tr onclick="openDocumentDetailModal('${r.comprobante}', '${currentClientCode}')">
+            <td class="font-mono">${argFecha}</td>
+            <td>${compLimpio}</td>
+            <td class="text-right text-danger">${argDebe}</td>
+            <td class="text-right text-success">${argHaber}</td>
+            <td class="text-right font-mono" style="font-weight:600;">${argSaldo}</td>
+            <td class="text-center">
+              <button onclick="event.stopPropagation(); openClaimModal('${argFecha}', '${compLimpio}', '${argDebe}', '${argHaber}', '${argSaldo}')" class="tmc-btn-report">
+                💬 Reclamar
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbodyEl.innerHTML = tbodyHTML;
+      countEl.textContent = `Últimos ${movements.length} movimientos`;
+    };
+
+    // Lógica de filtrado por fechas y búsqueda por comprobante/importe
+    const aplicarFiltros = () => {
+      const desdeVal = filterDesdeEl.value;
+      const hastaVal = filterHastaEl.value;
+      const searchVal = document.getElementById("tmc-filter-search").value.trim().toLowerCase();
+
+      if (desdeVal || hastaVal || searchVal) {
+        btnClearFilters.style.display = "inline-flex";
+      } else {
+        btnClearFilters.style.display = "none";
+      }
+
+      let filtered = cachedMovements;
+      
+      // 1. Filtrar por fecha
+      if (desdeVal) {
+        const desdeDate = new Date(desdeVal + "T00:00:00");
+        filtered = filtered.filter(m => new Date(m.fecha) >= desdeDate);
+      }
+      if (hastaVal) {
+        const hastaDate = new Date(hastaVal + "T23:59:59");
+        filtered = filtered.filter(m => new Date(m.fecha) <= hastaDate);
+      }
+      
+      // 2. Filtrar por buscador de texto (comprobante, importe o fecha)
+      if (searchVal) {
+        filtered = filtered.filter(r => {
+          const compMatch = r.comprobante && r.comprobante.toLowerCase().includes(searchVal);
+          const debeStr = r.debe ? String(r.debe) : "";
+          const haberStr = r.haber ? String(r.haber) : "";
+          const debeMatch = debeStr.includes(searchVal);
+          const haberMatch = haberStr.includes(searchVal);
+          
+          // Formateados para búsqueda de texto parcial en moneda
+          const debeFormatted = r.debe ? formatCurrency(parseFloat(r.debe)).toLowerCase() : "";
+          const haberFormatted = r.haber ? formatCurrency(parseFloat(r.haber)).toLowerCase() : "";
+          const debeFormattedMatch = debeFormatted.includes(searchVal);
+          const haberFormattedMatch = haberFormatted.includes(searchVal);
+
+          // Buscar en fecha formateada
+          const fechaFormatted = formatDate(r.fecha).toLowerCase();
+          const fechaMatch = fechaFormatted.includes(searchVal);
+
+          return compMatch || debeMatch || haberMatch || debeFormattedMatch || haberFormattedMatch || fechaMatch;
+        });
+      }
+
+      renderTable(filtered);
+    };
+
+    const limpiarFiltros = () => {
+      filterDesdeEl.value = "";
+      filterHastaEl.value = "";
+      document.getElementById("tmc-filter-search").value = "";
+      btnClearFilters.style.display = "none";
+      renderTable(cachedMovements);
+    };
+
+    filterDesdeEl.addEventListener("change", aplicarFiltros);
+    filterHastaEl.addEventListener("change", aplicarFiltros);
+    document.getElementById("tmc-filter-search").addEventListener("input", aplicarFiltros);
+    btnClearFilters.addEventListener("click", limpiarFiltros);
+
+    // 1. Esperar a que el código de cliente sea inyectado en el DOM por Tornado
+    async function esperarCodigoCliente() {
+      const maxAttempts = 60; // 3 segundos max
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const codCliEl = document.getElementById('codCli');
+        if (codCliEl && codCliEl.textContent.trim()) {
+          return codCliEl.textContent.trim();
+        }
+        
+        // Regex de fallback en texto
+        const bodyText = document.body.innerText;
+        const match = bodyText.match(/(?:código\s+de\s+cliente|cliente)\s*(?:es|:|nro\.?|n[°o]|\s|-)*\s*(\d{4,6})/i);
+        if (match && match[1]) {
+          return match[1];
+        }
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      return null;
+    }
+
+    // Inicialización del Widget
+    const clientCode = await esperarCodigoCliente();
+    if (!clientCode) {
+      console.warn("No se pudo obtener el código de cliente de Tornado.");
+      tbodyEl.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-5 text-muted">
+            ⚠️ No se pudo identificar al cliente logueado.
+          </td>
+        </tr>
+      `;
+      saldoEl.textContent = "Error";
+      countEl.textContent = "Error";
+      return;
+    }
+
+    currentClientCode = clientCode;
+
+    try {
+      // 2. Fetch de datos a la Cloud Function
+      const response = await fetch(`${OBTENER_ESTADO_URL}?clientCode=${clientCode}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const res = await response.json();
+      
+      currentClientName = res.clientName || "";
+      currentClientRazonSocial = res.clientRazonSocial || "";
+
+      // Renderizar saludo
+      const greetingEl = document.getElementById("tmc-cliente-greeting");
+      if (res.clientRazonSocial) {
+        greetingEl.textContent = `Bienvenido, ${res.clientRazonSocial}`;
+        greetingEl.style.display = "block";
+      } else {
+        greetingEl.textContent = "";
+        greetingEl.style.display = "none";
+      }
+
+      if (!res.success || !res.data || res.data.length === 0) {
+        tbodyEl.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              ⚠️ No se encontraron movimientos en la cuenta corriente de este cliente.
+            </td>
+          </tr>
+        `;
+        saldoEl.textContent = formatCurrency(0);
+        countEl.textContent = "Últimos 0 movimientos";
+        return;
+      }
+
+      cachedMovements = res.data;
+
+      // 3. Renderizar Saldo Actual
+      const saldoActual = parseFloat(res.saldoActual || 0);
+      saldoEl.textContent = formatCurrency(saldoActual);
+
+      // 4. Renderizar Tabla de Movimientos
+      renderTable(cachedMovements);
+
+      // 5. Habilitar botón de descarga de PDF del estado de cuenta
+      btnDownload.disabled = false;
+      btnDownload.onclick = () => {
+        const reportId = "68";
+        const instanceId = clientCode;
+        const schemaId = "1491";
+        window.open(`${DESCARGAR_PDF_URL}?reportId=${reportId}&instanceId=${instanceId}&schemaId=${schemaId}`, '_blank');
+      };
+
+    } catch (err) {
+      console.error("Error al cargar estado de cuenta:", err);
+      tbodyEl.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-5 text-danger">
+            ❌ Error de conexión al cargar la cuenta corriente. Por favor, reintentá más tarde.
+          </td>
+        </tr>
+      `;
+      saldoEl.textContent = "Error";
+      countEl.textContent = "Error";
+    }
+  })();
+</script>

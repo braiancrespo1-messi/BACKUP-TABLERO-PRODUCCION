@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Deck - Visión IA Producción (TMC 2.0)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #08080c;
+            --bg-secondary: #111116;
+            --color-active: #00ffaa;
+            --color-idle: #ff7800;
+            --color-accent: #6366f1;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --glass-bg: rgba(255, 255, 255, 0.02);
+            --glass-border: rgba(255, 255, 255, 0.07);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0c0d14 100%);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            user-select: none;
+        }
+
+        /* Fondo dinámico sutil */
+        .ambient-light {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+            top: -100px;
+            right: -100px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .ambient-light-bottom {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 255, 170, 0.05) 0%, rgba(0, 0, 0, 0) 70%);
+            bottom: -200px;
+            left: -200px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 60px;
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #6366f1, #00ffaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .slide-counter {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        /* Diapositivas */
+        .presentation-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 60px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .slide {
+            width: 100%;
+            max-width: 1100px;
+            background: rgba(17, 17, 24, 0.4);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px 60px;
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 540px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .slide.active {
+            display: flex;
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .slide-header {
+            margin-bottom: 24px;
+        }
+
+        .slide-tag {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--color-accent);
+            margin-bottom: 8px;
+        }
+
+        .slide-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .slide-title span {
+            background: linear-gradient(90deg, var(--text-main), var(--color-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .slide-body {
+            flex-grow: 1;
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .slide-content-left {
+            flex: 1.2;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        .slide-content-left p {
+            margin-bottom: 18px;
+        }
+
+        .slide-content-left strong {
+            color: var(--text-main);
+        }
+
+        .slide-content-right {
+            flex: 0.8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Elementos UI para Diapositivas */
+        .hero-banner {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.8rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-sub {
+            font-size: 1.4rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            font-size: 1rem;
+        }
+
+        .feature-icon {
+            color: var(--color-active);
+            font-weight: bold;
+            margin-right: 12px;
+            margin-top: 2px;
+        }
+
+        /* Tarjetas de Costo y Comparativa */
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 100%;
+        }
+
+        .cost-card {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--glass-border);
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .cost-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.02);
+            transform: translateY(-5px);
+        }
+
+        .cost-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--color-active);
+            margin: 12px 0;
+        }
+
+        /* Tabla comparativa */
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .comp-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--glass-border);
+            font-family: 'Outfit', sans-serif;
+            color: var(--color-accent);
+        }
+
+        .comp-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            vertical-align: top;
+        }
+
+        .badge-positive {
+            color: var(--color-active);
+            font-weight: 600;
+        }
+
+        .badge-negative {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        /* Diagrama de Arquitectura */
+        .diagram-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 20px 0;
+            position: relative;
+        }
+
+        .diagram-node {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            width: 200px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .diagram-node.highlight {
+            border-color: var(--color-accent);
+            background: rgba(99, 102, 241, 0.04);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+        }
+
+        .diagram-node h4 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .diagram-node p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .diagram-arrow {
+            flex-grow: 1;
+            height: 2px;
+            background: linear-gradient(90deg, var(--glass-border), var(--color-accent), var(--glass-border));
+            position: relative;
+            margin: 0 10px;
+        }
+
+        .diagram-arrow::after {
+            content: '➔';
+            position: absolute;
+            right: -2px;
+            top: -9px;
+            color: var(--color-accent);
+            font-size: 0.9rem;
+        }
+
+        /* Pie de página y controles */
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 60px;
+            background: rgba(8, 8, 12, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            z-index: 10;
+        }
+
+        .keyboard-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .keyboard-hint kbd {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn-nav {
+            font-family: 'Outfit', sans-serif;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 10px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-nav:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .btn-nav.primary {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        .btn-nav.primary:hover {
+            background: #4f46e5;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .dot-indicator {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: var(--color-accent);
+            width: 24px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-light"></div>
+    <div class="ambient-light-bottom"></div>
+
+    <header>
+        <div class="logo">TMC VISION IA</div>
+        <div class="slide-counter" id="slideCounter">1 / 6</div>
+    </header>
+
+    <div class="presentation-container">
+        <!-- Diapositiva 1: Portada -->
+        <div class="slide active" id="slide-1">
+            <div class="slide-body" style="flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; height: 100%;">
+                <div class="slide-tag">Propuesta Comercial y Tecnológica</div>
+                <h1 class="hero-banner">Monitoreo de Productividad Industrial con Inteligencia Artificial</h1>
+                <p class="hero-sub">Detección automática de tiempos muertos en tiempo real por estimación de pose.</p>
+                <div style="margin-top: 20px;">
+                    <button class="btn-nav primary" onclick="changeSlide(1)">Comenzar Presentación</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diapositiva 2: El Valor del Negocio -->
+        <div class="slide" id="slide-2">
+            <div class="slide-header">
+                <div class="slide-tag">La Oportunidad</div>
+                <h2 class="slide-title">¿Para qué sirve este servicio SaaS?</h2>
+            </div>
+            <div class="slide-body">
+                <div class="slide-content-left">
+                    <p>El principal problema de las fábricas en Argentina es la <strong>falta de auditoría objetiva</strong> sobre la eficiencia operativa en los puestos manuales.</p>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="feature-icon">✔</span>
+                            <span><strong>Detección de inactividad:</strong> La IA evalúa continuamente el rango y velocidad de movimiento de los brazos en el puesto de trabajo.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="feature-icon">✔</span>
+                            <span><strong>Justificación con Video:</strong> Al detectar un operador inactivo (`IDLE`) por más de 5 segundos, graba automáticamente un clip de video (incluyendo los 5s previos) y lo almacena localmente para reuniones de control.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="feature-icon">✔</span>
+                            <span><strong>Suscripción Mensual (SaaS):</strong> El cliente contrata el monitoreo mensual por cámara. Esto disminuye la barrera de entrada y garantiza ingresos recurrentes.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="slide-content-right" style="background: rgba(99, 102, 241, 0.02); border: 1px solid var(--glass-border); padding: 30px; border-radius: 20px; flex-direction: column;">
+                    <div style="font-size: 0.95rem; text-transform: uppercase; color: var(--color-accent); font-weight: bold; margin-bottom: 10px;">Retorno de Inversión</div>
+                    <div style="font-family: 'Outfit'; font-size: 2.8rem; font-weight: 900; color: var(--color-active);">+18%</div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin-top: 10px;">Incremento promedio estimado en la productividad diaria mediante la corrección de micro-paradas operacionales.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diapositiva 3: Arquitectura Técnica -->
+        <div class="slide" id="slide-3">
+            <div class="slide-header">
+                <div class="slide-tag">Cómo Funciona</div>
+                <h2 class="slide-title">Arquitectura Local y Nube</h2>
+            </div>
+            <div class="slide-body" style="flex-direction: column; justify-content: center; gap: 30px;">
+                <p style="color: var(--text-muted); text-align: center; font-size: 1.05rem;">El procesamiento de las imágenes se realiza <strong>in situ (al borde)</strong> para evitar subir video continuo a la nube y ahorrar internet.</p>
+                
+                <div class="diagram-container">
+                    <div class="diagram-node">
+                        <h4>1. Captura en Puesto</h4>
+                        <p>Cámara IP transmite video RTSP (USB/Red local) a 25 fotogramas por segundo.</p>
+                    </div>
+                    <div class="diagram-arrow"></div>
+                    <div class="diagram-node highlight">
+                        <h4>2. Servidor Local (IA)</h4>
+                        <p>La PC con GPU procesa el video, estima la pose (YOLO) y graba clips de ocio.</p>
+                    </div>
+                    <div class="diagram-arrow"></div>
+                    <div class="diagram-node">
+                        <h4>3. DB Local / Nube</h4>
+                        <p>Los registros se guardan en SQLite local. Sincronización optimizada a Firebase.</p>
+                    </div>
+                    <div class="diagram-arrow"></div>
+                    <div class="diagram-node">
+                        <h4>4. Dashboard Web</h4>
+                        <p>Supervisor visualiza esqueletos en vivo, curvas e historial desde su browser.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diapositiva 4: Costos de Inversión -->
+        <div class="slide" id="slide-4">
+            <div class="slide-header">
+                <div class="slide-tag">Presupuesto en Argentina</div>
+                <h2 class="slide-title">Inversión de Hardware (Piloto 5 Puestos)</h2>
+            </div>
+            <div class="slide-body">
+                <div class="grid-cards">
+                    <div class="cost-card">
+                        <div style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted);">Servidor Central</div>
+                        <div class="cost-value">$850 USD</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">PC con Placa de Video NVIDIA RTX para procesar las 5 cámaras en paralelo.</div>
+                    </div>
+                    <div class="cost-card">
+                        <div style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted);">Cámaras IP (5 unidades)</div>
+                        <div class="cost-value">$300 USD</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Cámaras IP profesionales Dahua/Hikvision de 2MP con lente fija.</div>
+                    </div>
+                    <div class="cost-card">
+                        <div style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted);">Red e Instalación</div>
+                        <div class="cost-value">$200 USD</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Switch PoE (alimenta cámaras), cableado estructurado UTP y montaje.</div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 255, 170, 0.03); border: 1px solid rgba(0, 255, 170, 0.15); padding: 16px 24px; border-radius: 16px; margin-top: 20px;">
+                <span style="font-size: 1rem; font-weight: 600;">Costo Inicial Promedio por Puesto: <strong style="color: var(--color-active); font-size: 1.2rem;">~$270 USD</strong></span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Amortización estimada del hardware: <strong>7 meses</strong> cobrando un abono SaaS recurrente de $40 USD por puesto.</span>
+            </div>
+        </div>
+
+        <!-- Diapositiva 5: Modalidades de Red -->
+        <div class="slide" id="slide-5">
+            <div class="slide-header">
+                <div class="slide-tag">Estrategia de Despliegue</div>
+                <h2 class="slide-title">Comparativa de Modalidades para el Cliente</h2>
+            </div>
+            <div class="slide-body">
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th>Característica</th>
+                            <th>Opción Local Offline (SQLite)</th>
+                            <th>Opción Híbrida Cloud (Firebase)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Costos de Operación</strong></td>
+                            <td class="badge-positive">$0 USD mensual (Gratis de por vida)</td>
+                            <td class="badge-positive">Gratis (Optimizado dentro de la capa free de Google)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Internet en Fábrica</strong></td>
+                            <td>No requiere internet. Funciona 100% desconectado.</td>
+                            <td>Requiere conexión de internet estable.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Monitoreo Remoto</strong></td>
+                            <td class="badge-negative">Solo se puede ver dentro de la fábrica.</td>
+                            <td class="badge-positive">Visualización remota desde cualquier sitio.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Seguridad de Datos</strong></td>
+                            <td>Los datos de video y logs nunca salen de la PC local.</td>
+                            <td>Los logs e imágenes de estado se sincronizan a la nube.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Diapositiva 6: Aislamiento y Confidencialidad -->
+        <div class="slide" id="slide-6">
+            <div class="slide-header">
+                <div class="slide-tag">Arquitectura de Datos</div>
+                <h2 class="slide-title">Seguridad y Aislamiento de Bases de Datos</h2>
+            </div>
+            <div class="slide-body">
+                <div class="slide-content-left">
+                    <p>Para asegurar que los datos del cliente no sufran interferencias ni filtraciones con otros aplicativos de su negocio (como <strong>Tablero V2</strong>), el sistema garantiza una separación absoluta:</p>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="feature-icon">✔</span>
+                            <span><strong>Separación Física en Servidor Local:</strong> La base de datos SQLite vive en un único archivo autónomo en la carpeta del aplicativo. No requiere un servidor compartido.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="feature-icon">✔</span>
+                            <span><strong>Proyecto Firebase Independiente:</strong> Se crea una cuenta y proyecto de Firebase exclusivo con claves únicas. Ningún dato de Visión IA viaja por el canal de Tablero V2.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="feature-icon">✔</span>
+                            <span><strong>Capa Free Garantizada:</strong> Optimizamos la telemetría en tiempo real para mandar señales solo al cambiar de estado. Esto reduce un 99.9% el consumo y mantiene el costo de base de datos en $0.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="slide-content-right" style="background: rgba(99, 102, 241, 0.02); border: 1px solid var(--glass-border); padding: 30px; border-radius: 20px; text-align: center; flex-direction: column;">
+                    <div style="font-family: 'Outfit'; font-size: 1.5rem; font-weight: 900; color: var(--color-active); margin-bottom: 12px;">Despliegue Profesional</div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">Ideal para comercializar el sistema como llave en mano corporativo bajo estrictas normas de compliance y seguridad de datos.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="keyboard-hint">Podés usar las flechas <kbd>←</kbd> y <kbd>→</kbd> del teclado o presionar <kbd>F11</kbd> para pantalla completa.</div>
+        <div class="dot-indicator" id="dotIndicator">
+            <div class="dot active" onclick="goToSlide(0)"></div>
+            <div class="dot" onclick="goToSlide(1)"></div>
+            <div class="dot" onclick="goToSlide(2)"></div>
+            <div class="dot" onclick="goToSlide(3)"></div>
+            <div class="dot" onclick="goToSlide(4)"></div>
+            <div class="dot" onclick="goToSlide(5)"></div>
+        </div>
+        <div class="nav-buttons">
+            <button class="btn-nav" id="btnPrev" onclick="changeSlide(-1)">Anterior</button>
+            <button class="btn-nav primary" id="btnNext" onclick="changeSlide(1)">Siguiente</button>
+        </div>
+    </footer>
+
+    <script>
+        let currentSlideIdx = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dots = document.querySelectorAll('.dot');
+        const slideCounter = document.getElementById('slideCounter');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+
+        function updateSlideUI() {
+            slides.forEach((slide, idx) => {
+                if (idx === currentSlideIdx) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+
+            dots.forEach((dot, idx) => {
+                if (idx === currentSlideIdx) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+
+            slideCounter.innerText = `${currentSlideIdx + 1} / ${slides.length}`;
+            
+            // Configurar botones
+            if (currentSlideIdx === 0) {
+                btnPrev.style.opacity = '0.3';
+                btnPrev.style.pointerEvents = 'none';
+                btnNext.innerText = 'Siguiente';
+            } else if (currentSlideIdx === slides.length - 1) {
+                btnPrev.style.opacity = '1';
+                btnPrev.style.pointerEvents = 'auto';
+                btnNext.innerText = 'Finalizar';
+            } else {
+                btnPrev.style.opacity = '1';
+                btnPrev.style.pointerEvents = 'auto';
+                btnNext.innerText = 'Siguiente';
+            }
+        }
+
+        function changeSlide(direction) {
+            currentSlideIdx += direction;
+            if (currentSlideIdx < 0) {
+                currentSlideIdx = 0;
+            } else if (currentSlideIdx >= slides.length) {
+                currentSlideIdx = 0; // Reiniciar
+            }
+            updateSlideUI();
+        }
+
+        function goToSlide(idx) {
+            currentSlideIdx = idx;
+            updateSlideUI();
+        }
+
+        // Teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                changeSlide(1);
+            } else if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            }
+        });
+
+        // Inicializar
+        updateSlideUI();
+    </script>
+</body>
+</html>

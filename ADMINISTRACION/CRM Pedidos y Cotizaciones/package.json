@@ -1,0 +1,39 @@
+{
+  "name": "tmc-crm",
+  "version": "1.0.1",
+  "description": "TMC CRM - Cotizaciones y Pedidos",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "keywords": [],
+  "author": "TMC",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.tmc.crm",
+    "productName": "TMC CRM",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TMC CRM"
+    },
+    "files": [
+      "main.js",
+      "CRM Ventas.html",
+      "estilos.css",
+      "*.png",
+      "logica.js"
+    ]
+  }
+}

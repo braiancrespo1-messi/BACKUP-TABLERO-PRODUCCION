@@ -1,0 +1,2975 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TMC 2.0 - Registrar Recibo Manual</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --bg-main: #0b0f19;
+      --bg-card: #0f172a;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.08);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --purple: #8b5cf6;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.05), transparent 45%), var(--bg-main);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+    }
+
+    .tmc-container {
+      width: 100%;
+      max-width: 1000px;
+      padding: 30px 20px;
+      box-sizing: border-box;
+    }
+
+    .tmc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .tmc-title-area h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 0 0 4px 0;
+      background: linear-gradient(to right, #60a5fa, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .tmc-title-area p {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .tmc-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      font-family: inherit;
+    }
+
+    .tmc-btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .tmc-btn-primary:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+    }
+
+    .tmc-btn-secondary {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tmc-btn-secondary:hover:not(:disabled) {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .tmc-btn:disabled {
+      background-color: rgba(255, 255, 255, 0.03);
+      color: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.05);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Steps indicator */
+    .tmc-steps {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(8px);
+    }
+
+    .tmc-step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      position: relative;
+    }
+
+    .tmc-step-item.active {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .tmc-step-item.completed {
+      color: var(--success);
+    }
+
+    .tmc-step-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
+    .tmc-step-item.active .tmc-step-num {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .tmc-step-item.completed .tmc-step-num {
+      background: var(--success);
+      color: #ffffff;
+      border-color: var(--success);
+    }
+
+    /* Main cards */
+    .tmc-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      margin-bottom: 24px;
+    }
+
+    /* Step 0 - Search layout */
+    .tmc-search-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .tmc-input-search {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .tmc-input-search:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+
+    .tmc-clients-results {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .tmc-client-row {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tmc-client-row:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+
+    .tmc-client-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tmc-client-name {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 14.5px;
+    }
+
+    .tmc-client-meta {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .tmc-client-balance {
+      font-size: 14.5px;
+      font-weight: 700;
+      font-family: monospace;
+    }
+
+    .tmc-client-balance.debt { color: var(--danger); }
+    .tmc-client-balance.credit { color: var(--success); }
+
+    /* Client summary header block */
+    .tmc-client-summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(59, 130, 246, 0.05);
+      border: 1px solid rgba(59, 130, 246, 0.12);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .tmc-client-summary-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tmc-client-summary-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tmc-client-summary-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .tmc-client-summary-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .tmc-client-summary-balance-box {
+      text-align: right;
+    }
+
+    .tmc-client-summary-balance-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: monospace;
+    }
+
+    .tmc-client-summary-unapplied-val {
+      font-size: 12px;
+      color: var(--warning);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* Forms */
+    .tmc-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .tmc-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .tmc-form-group label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tmc-input-date, .tmc-input-text {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .tmc-input-date:focus, .tmc-input-text:focus {
+      border-color: var(--primary);
+    }
+
+    /* Medios de Pago */
+    .tmc-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tmc-panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #60a5fa;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tmc-payment-rows-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .tmc-payment-row {
+      border-radius: 10px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-sizing: border-box;
+      animation: tmcFadeIn 0.3s ease-out;
+    }
+
+    .tmc-remove-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .tmc-remove-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Inputs in row */
+    .tmc-row-input {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-family: inherit;
+      outline: none;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .tmc-row-input:focus {
+      border-color: var(--primary);
+    }
+
+    /* Invoices table */
+    .tmc-table-wrapper {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.2);
+      max-height: 280px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+    }
+
+    .tmc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    .tmc-table th {
+      background-color: rgba(15, 23, 42, 0.6);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 8px 10px;
+    }
+
+    .tmc-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: middle;
+      color: #cbd5e1;
+    }
+
+    /* Warnings */
+    .tmc-warning-box {
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    /* Footer actions */
+    .tmc-card-footer-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 18px;
+    }
+
+    /* Custom Dialog overlays */
+    .tmc-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+    }
+
+    .tmc-modal-content {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 95%;
+      max-width: 440px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .tmc-modal-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: rgba(15, 23, 42, 0.8);
+    }
+
+    .tmc-modal-header h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .tmc-modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #94a3b8;
+    }
+
+    .tmc-modal-body {
+      padding: 24px 20px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    .tmc-modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background-color: rgba(15, 23, 42, 0.8);
+    }
+
+    /* Spinner */
+    .tmc-spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: tmcSpin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    /* Success state */
+    .tmc-success-view {
+      text-align: center;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .tmc-success-icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.1);
+      border: 2px solid var(--success);
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes scaleUp {
+      from { transform: scale(0.6); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes tmcSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes tmcFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Custom Sorting and Drawer Styles */
+    .sort-arrow {
+      font-size: 10px;
+      color: var(--primary);
+      margin-left: 4px;
+    }
+
+    .tmc-drawer {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 380px;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      border-left: 1px solid var(--border);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tmc-drawer.open {
+      right: 0;
+    }
+
+    .tmc-drawer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .tmc-drawer-header h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .tmc-drawer-close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #94a3b8;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .tmc-drawer-close-btn:hover {
+      color: #ffffff;
+    }
+
+    .tmc-drawer-body {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .tmc-floating-trigger {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, var(--purple), var(--primary));
+      color: #ffffff;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+      z-index: 9998;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .tmc-floating-trigger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 25px rgba(139, 92, 246, 0.4);
+    }
+
+    .tmc-floating-badge {
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      min-width: 18px;
+      height: 18px;
+      font-size: 10px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tmc-container">
+    
+    <!-- ERROR ALERT FOR AUXILIARES -->
+    <div id="tmc-aux-error-alert" onclick="cargarAuxiliares()" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #f87171; padding: 12px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; text-align: center; cursor: pointer; animation: tmcFadeIn 0.3s;"></div>
+
+    <!-- HEADER AREA -->
+    <div class="tmc-header">
+      <div class="tmc-title-area">
+        <h1>Registrar Recibo Manual</h1>
+        <p>Emisión y conciliación de cobros en vivo con el sistema ERP YiQi</p>
+      </div>
+      <a href="../index.html" class="tmc-btn tmc-btn-secondary">🏠 Volver al Inicio</a>
+    </div>
+
+    <!-- STEP INDICATORS -->
+    <div class="tmc-steps" id="tmc-steps-bar">
+      <div class="tmc-step-item active" id="step-dot-0">
+        <span class="tmc-step-num">0</span>
+        <span>Cliente</span>
+      </div>
+      <div class="tmc-step-item" id="step-dot-1">
+        <span class="tmc-step-num">1</span>
+        <span>Pagos Recibidos</span>
+      </div>
+      <div class="tmc-step-item" id="step-dot-2">
+        <span class="tmc-step-num">2</span>
+        <span>Imputación FIFO</span>
+      </div>
+    </div>
+
+    <!-- STEP 0: SELECT CLIENT SCREEN -->
+    <div id="tmc-view-step0" class="tmc-card">
+      <h3 style="margin-top: 0; font-size: 16px; color: #ffffff; font-weight: 700; margin-bottom: 16px;">Seleccionar Cliente para el Recibo</h3>
+      <div class="tmc-search-bar">
+        <input type="text" id="tmc-client-search" class="tmc-input-search" placeholder="Buscar por Nombre, Razón Social, CUIT o ID de cliente..." autocomplete="off">
+      </div>
+      
+      <!-- Results Area -->
+      <div class="tmc-clients-results" id="tmc-client-results-list">
+        <div class="text-muted" style="text-align: center; padding: 40px 10px; font-size: 13.5px;">
+          Ingresá un término de búsqueda para ver los clientes.
+        </div>
+      </div>
+    </div>
+
+<!-- History Drawer is placed at the end of the body -->
+
+    <!-- MAIN FORM VIEW (STEPS 1 AND 2) - INITIAL HIDE -->
+    <div id="tmc-view-form" style="display: none;">
+      
+      <!-- Selected Client Summary header -->
+      <div class="tmc-client-summary-header">
+        <div class="tmc-client-summary-info">
+          <span class="tmc-client-summary-label">Cliente Seleccionado</span>
+          <span class="tmc-client-summary-name" id="tmc-active-client-name">-</span>
+          <span class="tmc-client-summary-meta" id="tmc-active-client-meta">-</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <div class="tmc-client-summary-balance-box">
+            <span class="tmc-client-summary-label">Saldo Actual CC</span>
+            <div class="tmc-client-summary-balance-val" id="tmc-active-client-saldo">$0,00</div>
+            <div class="tmc-client-summary-unapplied-val" id="tmc-active-client-unapplied" style="display: none;">Saldo a favor: $0,00</div>
+          </div>
+          <button id="tmc-btn-change-client" class="tmc-btn tmc-btn-secondary" style="padding: 6px 12px; font-size: 11.5px;">❌ Cambiar</button>
+        </div>
+      </div>
+
+      <!-- STEP 1: RENDER PAYMENTS FORM -->
+      <div id="tmc-form-step1" class="tmc-card">
+        <div class="tmc-form-grid">
+          <div class="tmc-form-group">
+            <label for="tmc-cobro-fecha">Fecha de Cobro *</label>
+            <input type="date" id="tmc-cobro-fecha" class="tmc-input-date">
+          </div>
+          <div class="tmc-form-group">
+            <label for="tmc-cobro-observaciones">Observaciones (Opcional)</label>
+            <input type="text" id="tmc-cobro-observaciones" class="tmc-input-text" placeholder="Ej: R.M.A" value="">
+          </div>
+        </div>
+
+        <div class="tmc-panel-header">
+          <h4 class="tmc-panel-title">💵 Cargar Medios de Pago</h4>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button id="tmc-add-efectivo" class="tmc-btn tmc-btn-secondary" style="padding: 6px 10px; font-size: 11px;">+ Efectivo</button>
+            <button id="tmc-add-cheque" class="tmc-btn tmc-btn-secondary" style="padding: 6px 10px; font-size: 11px;">+ Cheque</button>
+            <button id="tmc-add-transfer" class="tmc-btn tmc-btn-secondary" style="padding: 6px 10px; font-size: 11px;">+ Transf.</button>
+            <button id="tmc-add-electronico" class="tmc-btn tmc-btn-secondary" style="padding: 6px 10px; font-size: 11px;">+ Elect.</button>
+            <button id="tmc-add-retencion" class="tmc-btn tmc-btn-secondary" style="padding: 6px 10px; font-size: 11px;">+ Retención</button>
+          </div>
+        </div>
+
+        <div class="tmc-payment-rows-container" id="tmc-payments-list">
+          <!-- Rows added dynamically -->
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+          <span style="font-size: 12.5px; font-weight: 700; color: var(--text-muted);">TOTAL MEDIOS DE PAGO</span>
+          <span id="tmc-cobro-total-pagos" style="font-size: 19px; font-weight: 800; color: var(--success);">$0,00</span>
+        </div>
+      </div>
+
+      <!-- STEP 2: RENDER INVOICES IMPUTATION FORM -->
+      <div id="tmc-form-step2" class="tmc-card" style="display: none;">
+        <div class="tmc-form-grid" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+          <div>
+            <span style="color: var(--text-muted); display: block; font-size: 11px; text-transform: uppercase; margin-bottom: 2px;">Nuevos Pagos Cargados</span>
+            <strong id="tmc-summary-pagos-step2" style="color: var(--success); font-size: 16px;">$0,00</strong>
+          </div>
+          <div id="tmc-use-unapplied-wrapper" style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+            <span style="color: var(--text-muted); display: block; font-size: 11px; text-transform: uppercase; margin-bottom: 2px;">Saldo a favor en ERP</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="tmc-cobro-use-unapplied" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--primary);">
+              <label for="tmc-cobro-use-unapplied" style="cursor: pointer; font-size: 12.5px; font-weight: 600; color: #ffffff; user-select: none;">
+                Usar saldo existente (<span id="tmc-existing-unapplied-amount" style="color: var(--warning); font-weight: 700;">$0,00</span>)
+              </label>
+            </div>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); display: block; font-size: 11px; text-transform: uppercase; margin-bottom: 2px;">Total Imputable</span>
+            <strong id="tmc-total-disponible" style="color: #ffffff; font-size: 16px;">$0,00</strong>
+          </div>
+        </div>
+
+        <div class="tmc-panel-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
+            <h4 class="tmc-panel-title">📋 Imputación a Comprobantes Pendientes</h4>
+            <button id="tmc-btn-fifo" class="tmc-btn tmc-btn-primary" style="padding: 6px 12px; font-size: 11.5px; border-radius: 6px; margin: 0; background-color: #f97316;" title="Autocompletar imputación cronológicamente (antiguas primero)">
+              ⚡ Autocompletar FIFO
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; width: 100%;">
+            <input type="text" id="tmc-invoice-filter" class="tmc-input-search" placeholder="🔍 Buscar por número o fecha..." style="padding: 6px 10px; font-size: 12px; flex: 1; min-width: 150px; background: rgba(0,0,0,0.4); margin: 0;" />
+            <div style="display: flex; align-items: center; gap: 6px; user-select: none; cursor: pointer; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 6px 12px; border-radius: 10px; font-size: 12px; height: 34px; box-sizing: border-box;">
+              <input type="checkbox" id="tmc-show-total-factura" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--primary);" />
+              <label for="tmc-show-total-factura" style="cursor: pointer; font-weight: 500; color: #cbd5e1; margin: 0;">Mostrar total factura</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="tmc-table-wrapper">
+          <table class="tmc-table">
+            <thead>
+              <tr style="background-color: rgba(15, 23, 42, 0.6); border-bottom: 2px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); font-weight: 600;">
+                <th style="padding: 8px 10px; width: 40px; text-align: center;">Sel.</th>
+                <th style="padding: 8px 10px; cursor: pointer; user-select: none;" onclick="toggleSort('fecha')" id="th-vence-comp">Vence/Comp. <span class="sort-arrow"></span></th>
+                <th id="th-total-original" style="padding: 8px 10px; text-align: right; cursor: pointer; user-select: none; display: none;" onclick="toggleSort('debe')">Total Factura <span class="sort-arrow"></span></th>
+                <th style="padding: 8px 10px; text-align: right; cursor: pointer; user-select: none;" onclick="toggleSort('pendientePago')" id="th-saldo-pend">Saldo Pend. <span class="sort-arrow"></span></th>
+                <th style="padding: 8px 10px; text-align: right; width: 110px;">Imputar</th>
+              </tr>
+            </thead>
+            <tbody id="tmc-invoices-list">
+              <!-- Outstanding invoices added dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+            <span style="font-weight: 600; color: var(--text-muted);">TOTAL IMPUTADO:</span>
+            <span id="tmc-cobro-total-cancelaciones" style="font-size: 15px; font-weight: 800; color: #ffffff;">$0,00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+            <span style="font-weight: 600; color: var(--text-muted);">DIFERENCIA / RESTANTE:</span>
+            <span id="tmc-cobro-diferencia" style="font-size: 15px; font-weight: 800; color: #ffffff;">$0,00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- WARNING VALIDATION BOX -->
+      <div id="tmc-warning" class="tmc-warning-box"></div>
+
+      <!-- FOOTER ACTIONS -->
+      <div class="tmc-card-footer-actions">
+        <!-- Step 1 Controls -->
+        <button id="tmc-btn-step1-cancel" class="tmc-btn tmc-btn-secondary">Cancelar</button>
+        <button id="tmc-btn-step1-next" class="tmc-btn tmc-btn-primary">Siguiente (Imputaciones) →</button>
+
+        <!-- Step 2 Controls -->
+        <button id="tmc-btn-step2-prev" class="tmc-btn tmc-btn-secondary" style="display: none;">← Volver (Pagos)</button>
+        <button id="tmc-btn-step2-submit" class="tmc-btn tmc-btn-primary" style="display: none;" disabled>💾 Registrar Cobro</button>
+      </div>
+
+    </div>
+
+    <!-- LOADER STATE -->
+    <div id="tmc-view-loader" class="tmc-card" style="display: none; text-align: center; padding: 50px 20px;">
+      <div class="tmc-spinner"></div>
+      <p id="tmc-loader-text" class="text-muted" style="margin-top: 16px; font-weight: 500; font-size: 14px;">Procesando cobro en YiQi ERP...</p>
+    </div>
+
+    <!-- SUCCESS SCREEN -->
+    <div id="tmc-view-success" class="tmc-card" style="display: none;">
+      <div class="tmc-success-view">
+        <div class="tmc-success-icon">✔</div>
+        <h2 style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 8px 0 0 0;">¡Cobro Registrado con Éxito!</h2>
+        <p class="text-muted" id="tmc-success-msg" style="font-size: 14px; margin: 0; max-width: 400px; line-height: 1.5;">El recibo fue emitido y sincronizado en vivo en YiQi ERP.</p>
+        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center;">
+          <button id="tmc-btn-success-pdf" class="tmc-btn" style="background-color: var(--purple); color: #ffffff;">📥 Descargar PDF</button>
+          <button id="tmc-btn-success-new" class="tmc-btn tmc-btn-primary">➕ Emitir otro Recibo</button>
+          <a href="../index.html" class="tmc-btn tmc-btn-secondary">🏠 Ir al menú principal</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DIÁLOGO CONFIRM/ALERT PERSONALIZADO -->
+  <div id="tmc-custom-dialog" class="tmc-modal-overlay" style="display: none;">
+    <div class="tmc-modal-content">
+      <div class="tmc-modal-header">
+        <h3 id="tmc-custom-dialog-title">Mensaje del Sistema</h3>
+        <button id="tmc-custom-dialog-close" class="tmc-modal-close-btn">&times;</button>
+      </div>
+      <div class="tmc-modal-body">
+        <p id="tmc-custom-dialog-message" style="margin: 0; word-break: break-word;"></p>
+      </div>
+      <div class="tmc-modal-footer">
+        <button id="tmc-custom-dialog-btn-cancel" class="tmc-btn tmc-btn-secondary">Cancelar</button>
+        <button id="tmc-custom-dialog-btn-accept" class="tmc-btn tmc-btn-primary">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // Gen 2 Cloud Run URL Endpoints
+    const OBTENER_ESTADO_URL = "https://obtenerestadocuenta-vb5plcbgra-uc.a.run.app";
+    const OBTENER_CONSOLIDADO_URL = "https://obtenerconsolidadosaldos-vb5plcbgra-uc.a.run.app";
+    const OBTENER_AUXILIARES_URL = "https://obtenerauxiliarescobro-vb5plcbgra-uc.a.run.app";
+    const CREAR_RECIBO_MANUAL_URL = "https://crearrecibomanual-vb5plcbgra-uc.a.run.app";
+
+    // Global variables
+    let cajasList = [];
+    let bancosList = [];
+    let cuentasList = [];
+    let retencionesList = [];
+
+    let currentClientCode = "";
+    let currentClientName = "";
+    let currentClientRazonSocial = "";
+    let currentClientSaldoActual = 0;
+    let currentClientSaldoNoImputadoYiqi = 0;
+    let currentClientCuit = "";
+    let currentClientDomicilio = "";
+    let currentClientLocalidad = "";
+    let lastCobroId = "";
+    let currentImputations = {}; // Map of comprobante -> amount
+    let cachedMovements = [];
+    let currentStep = 0; // 0: Client, 1: Payments, 2: Imputations
+
+    // Sorting & breakdown state
+    let invoiceSortField = "fecha";
+    let invoiceSortAsc = true;
+    let invoiceDetailsCache = {};
+    let searchedClientsMap = {};
+
+    // ==========================================
+    // CUIT Librador Helpers
+    // ==========================================
+    window.showCuitHelper = (inputEl) => {
+      if (!inputEl.value && currentClientCuit) {
+        const helper = inputEl.closest('.tmc-form-group').querySelector('.tmc-cuit-helper');
+        if (helper) {
+          helper.style.display = 'inline';
+        }
+      }
+    };
+    window.hideCuitHelper = (inputEl) => {
+      setTimeout(() => {
+        const helper = inputEl.closest('.tmc-form-group').querySelector('.tmc-cuit-helper');
+        if (helper) {
+          helper.style.display = 'none';
+        }
+      }, 250);
+    };
+    window.fillCuitHelper = (helperEl) => {
+      const input = helperEl.closest('.tmc-form-group').querySelector('.tmc-cheque-cuit');
+      if (input) {
+        input.value = currentClientCuit;
+        helperEl.style.display = 'none';
+        updateTotals();
+      }
+    };
+
+    // ==========================================
+    // Session History Helpers
+    // ==========================================
+    window.downloadPdfHistory = (cobroId, isFX) => {
+      if (isFX) {
+        let history = [];
+        try {
+          history = JSON.parse(localStorage.getItem("tmc_emitted_receipts")) || [];
+        } catch (e) { history = []; }
+        const record = history.find(r => r.cobroId == cobroId);
+        if (record) {
+          printCustomReceipt(record);
+        } else {
+          showCustomAlert("Error", "No se encontraron los datos locales de este recibo FX para imprimir.");
+        }
+      } else {
+        window.open(`https://descargarreportepdf-vb5plcbgra-uc.a.run.app?reportName=RECIBO_v1.2&instanceId=${cobroId}&schemaId=1491&entityName=COBRO`, '_blank');
+      }
+    };
+
+    window.toggleHistoryDrawer = () => {
+      const drawer = document.getElementById("tmc-history-drawer");
+      if (drawer) {
+        drawer.classList.toggle("open");
+      }
+    };
+
+    function saveReceiptToHistory(clientName, clientCode, cobroId, receiptNumber, amount, isFX) {
+      let history = [];
+      try {
+        history = JSON.parse(localStorage.getItem("tmc_emitted_receipts")) || [];
+      } catch (e) { history = []; }
+      
+      const newRecord = {
+        timestamp: new Date().toISOString(),
+        clientName,
+        clientCode,
+        cobroId,
+        receiptNumber,
+        amount,
+        isFX,
+        // Full fields for custom print
+        fecha: document.getElementById("tmc-cobro-fecha").value,
+        cuit: currentClientCuit,
+        domicilio: currentClientDomicilio,
+        localidad: currentClientLocalidad,
+        efectivos: getPaymentsEfectivos(),
+        cheques: getPaymentsCheques(),
+        transferencias: getPaymentsTransferencias(),
+        electronicos: getPaymentsElectronicos(),
+        retenciones: getPaymentsRetenciones(),
+        cancelaciones: getPaymentsCancelaciones()
+      };
+      history.unshift(newRecord);
+      localStorage.setItem("tmc_emitted_receipts", JSON.stringify(history));
+      renderSessionHistory();
+    }
+
+    function getPaymentsEfectivos() {
+      const list = [];
+      document.querySelectorAll(".tmc-payment-row[data-type='efectivo']").forEach(row => {
+        list.push({
+          cajaId: parseInt(row.querySelector(".tmc-efectivo-caja").value, 10),
+          importe: parseFloat(row.querySelector(".tmc-efectivo-importe").value) || 0
+        });
+      });
+      return list;
+    }
+    function getPaymentsCheques() {
+      const list = [];
+      document.querySelectorAll(".tmc-payment-row[data-type='cheque']").forEach(row => {
+        const isElectronico = row.querySelector(".tmc-cheque-electronico").checked;
+        list.push({
+          bancoId: bancosList.find(b => b.nombre.toLowerCase() === row.querySelector(".tmc-cheque-banco-input").value.trim().toLowerCase())?.id || null,
+          numero: row.querySelector(".tmc-cheque-numero").value.trim(),
+          fechaPago: row.querySelector(".tmc-cheque-fecha").value,
+          importe: parseFloat(row.querySelector(".tmc-cheque-importe").value) || 0,
+          electronico: isElectronico,
+          cajaId: isElectronico ? null : parseInt(row.querySelector(".tmc-cheque-caja").value, 10),
+          cuitLibrador: row.querySelector(".tmc-cheque-cuit").value.trim() || null,
+          referencia: row.querySelector(".tmc-cheque-ref").value.trim() || null
+        });
+      });
+      return list;
+    }
+    function getPaymentsTransferencias() {
+      const list = [];
+      document.querySelectorAll(".tmc-payment-row[data-type='transferencia']").forEach(row => {
+        list.push({
+          cuentaDestinoId: parseInt(row.querySelector(".tmc-transfer-cuenta").value, 10),
+          referencia: row.querySelector(".tmc-transfer-ref").value.trim() || null,
+          importe: parseFloat(row.querySelector(".tmc-transfer-importe").value) || 0
+        });
+      });
+      return list;
+    }
+    function getPaymentsElectronicos() {
+      const list = [];
+      document.querySelectorAll(".tmc-payment-row[data-type='electronico']").forEach(row => {
+        list.push({
+          conceptoId: parseInt(row.querySelector(".tmc-electronico-concepto").value, 10),
+          nroOperacion: row.querySelector(".tmc-electronico-ref").value.trim() || null,
+          importe: parseFloat(row.querySelector(".tmc-electronico-importe").value) || 0
+        });
+      });
+      return list;
+    }
+    function getPaymentsRetenciones() {
+      const list = [];
+      document.querySelectorAll(".tmc-payment-row[data-type='retencion']").forEach(row => {
+        list.push({
+          numero: row.querySelector(".tmc-retencion-numero").value.trim(),
+          conceptoId: parseInt(row.querySelector(".tmc-retencion-concepto").value, 10),
+          fechaEmision: row.querySelector(".tmc-retencion-fecha").value || null,
+          importe: parseFloat(row.querySelector(".tmc-retencion-importe").value) || 0
+        });
+      });
+      return list;
+    }
+    function getPaymentsCancelaciones() {
+      const list = [];
+      for (const comp in currentImputations) {
+        if (currentImputations[comp] > 0.01) {
+          list.push({
+            invoiceNumber: comp,
+            amount: currentImputations[comp]
+          });
+        }
+      }
+      return list;
+    }
+
+    function renderSessionHistory() {
+      const tbody = document.getElementById("tmc-session-history-list");
+      const triggerBtn = document.getElementById("tmc-history-trigger-btn");
+      const badge = document.getElementById("tmc-history-badge");
+      
+      let history = [];
+      try {
+        history = JSON.parse(localStorage.getItem("tmc_emitted_receipts")) || [];
+      } catch (e) { history = []; }
+      
+      if (triggerBtn && badge) {
+        if (history.length > 0) {
+          triggerBtn.style.display = "flex";
+          badge.textContent = history.length;
+        } else {
+          triggerBtn.style.display = "none";
+          const drawer = document.getElementById("tmc-history-drawer");
+          if (drawer) drawer.classList.remove("open");
+        }
+      }
+      
+      if (!tbody) return;
+      
+      let html = "";
+      if (history.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted" style="font-size: 12px;">No hay recibos en esta sesión.</td></tr>`;
+        return;
+      }
+      
+      history.forEach(r => {
+        if (!r) return;
+        let dateLocal = "-";
+        try {
+          if (r.timestamp) {
+            const d = new Date(r.timestamp);
+            if (!isNaN(d.getTime())) {
+              dateLocal = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + " - " + d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+            }
+          }
+        } catch (e) {
+          dateLocal = "-";
+        }
+        
+        const clientName = r.clientName || "Cliente";
+        const receiptNumber = r.receiptNumber || r.cobroId || "-";
+        const cobroId = r.cobroId || "";
+        const amount = r.amount || 0;
+        const isFX = !!r.isFX;
+
+        html += `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 6px 8px; font-size:11px;">
+              <div style="font-weight: 600; color: #ffffff;">${escapeHTML(clientName)}</div>
+              <div style="font-size: 9.5px; color: var(--text-muted);">${dateLocal}</div>
+            </td>
+            <td style="padding: 6px 8px; font-family: monospace; font-weight: bold; color: var(--primary); font-size:11px;">
+              ${escapeHTML(receiptNumber)}
+              <div style="font-size: 8px; color: var(--text-muted); font-family: inherit;">ID: ${escapeHTML(cobroId)}</div>
+            </td>
+            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: var(--success); font-family: monospace; font-size:11px;">${formatCurrency(amount)}</td>
+            <td style="padding: 6px 8px; text-align: center;">
+              <button onclick="downloadPdfHistory('${escapeHTML(cobroId)}', ${isFX})" class="tmc-btn" style="padding: 4px 6px; font-size: 10px; background-color: var(--purple); color: #ffffff; border-radius: 4px; box-shadow: none;">📥 PDF</button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }    // ==========================================
+    // Custom Dialog Alert/Confirm Helper
+    // ==========================================
+    let customDialogResolve = null;
+
+    const showCustomAlert = (title, message) => {
+      return new Promise((resolve) => {
+        document.getElementById("tmc-custom-dialog-title").innerHTML = title;
+        document.getElementById("tmc-custom-dialog-message").innerHTML = String(message).replace(/\n/g, "<br>");
+        document.getElementById("tmc-custom-dialog-btn-cancel").style.display = "none";
+        
+        const acceptBtn = document.getElementById("tmc-custom-dialog-btn-accept");
+        acceptBtn.textContent = "Aceptar";
+        document.getElementById("tmc-custom-dialog").style.display = "flex";
+        
+        customDialogResolve = () => {
+          document.getElementById("tmc-custom-dialog").style.display = "none";
+          resolve(true);
+        };
+      });
+    };
+
+    const showCustomConfirm = (title, message) => {
+      return new Promise((resolve) => {
+        document.getElementById("tmc-custom-dialog-title").innerHTML = title;
+        document.getElementById("tmc-custom-dialog-message").innerHTML = String(message).replace(/\n/g, "<br>");
+        document.getElementById("tmc-custom-dialog-btn-cancel").style.display = "block";
+        
+        const acceptBtn = document.getElementById("tmc-custom-dialog-btn-accept");
+        acceptBtn.textContent = "Aceptar";
+        document.getElementById("tmc-custom-dialog").style.display = "flex";
+        
+        customDialogResolve = (res) => {
+          document.getElementById("tmc-custom-dialog").style.display = "none";
+          resolve(res);
+        };
+      });
+    };
+
+    document.getElementById("tmc-custom-dialog-btn-accept").addEventListener("click", () => {
+      if (customDialogResolve) customDialogResolve(true);
+    });
+    document.getElementById("tmc-custom-dialog-btn-cancel").addEventListener("click", () => {
+      if (customDialogResolve) customDialogResolve(false);
+    });
+    document.getElementById("tmc-custom-dialog-close").addEventListener("click", () => {
+      if (customDialogResolve) customDialogResolve(false);
+    });
+
+    // Formatting utilities
+    const formatCurrency = (val) => {
+      if (val === null || val === undefined || isNaN(val)) return "-";
+      return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+    };
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return "-";
+      try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      } catch (e) {
+        return dateStr.split('T')[0];
+      }
+    };
+
+    const cleanFXComprobante = (comprobante) => {
+      if (!comprobante) return "-";
+      const regexFX = /^(?:factura\s+x|fac\.?\s+x|fx)\s*(?:n[°o]|nro\.?|#)?\s*/i;
+      if (regexFX.test(comprobante)) {
+        return comprobante.replace(regexFX, "").trim();
+      }
+      return comprobante;
+    };
+
+    // Load Auxiliaries lists from backend
+    async function cargarAuxiliares() {
+      const errorAlert = document.getElementById("tmc-aux-error-alert");
+      if (errorAlert) errorAlert.style.display = "none";
+      try {
+        console.log("Fetching auxiliares from:", OBTENER_AUXILIARES_URL);
+        const response = await fetch(OBTENER_AUXILIARES_URL);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const res = await response.json();
+        if (!res.success) {
+          throw new Error(res.error || "Éxito falso retornado por el servidor.");
+        }
+        cajasList = res.cajas || [];
+        bancosList = res.bancos || [];
+        // Filter transfer accounts to be only own bank accounts (CUDE_ES_CUENTA_BANCARIA_P === "S" inside YiQi)
+        // In the Cloud Function, we filtered it or the frontend does. Let's make sure we show them all if already filtered.
+        cuentasList = res.cuentas || [];
+        retencionesList = res.retenciones || [];
+        const dl = document.getElementById("bancos-datalist");
+        if (dl) {
+          dl.innerHTML = bancosList.map(b => `<option value="${escapeHTML(b.nombre)}"></option>`).join("");
+        }
+        console.log("Auxiliares de cobro cargados exitosamente:", {
+          cajas: cajasList.length,
+          bancos: bancosList.length,
+          cuentas: cuentasList.length,
+          retenciones: retencionesList.length
+        });
+      } catch (err) {
+        console.error("Error al cargar auxiliares de cobro:", err);
+        if (errorAlert) {
+          errorAlert.style.display = "block";
+          errorAlert.innerHTML = `⚠️ Error al cargar cajas y bancos: ${escapeHTML(err.message)}. <strong style="text-decoration: underline; color: #ffffff;">Hacé click acá para reintentar.</strong>`;
+        }
+      }
+    }
+
+    // ==========================================
+    // STEP 0: Search and Selection
+    // ==========================================
+    let searchTimeout = null;
+
+    async function buscarClientes(query) {
+      const resultsContainer = document.getElementById("tmc-client-results-list");
+      resultsContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 10px;">
+          <div class="tmc-spinner" style="width: 24px; height: 24px; border-width: 2.5px; margin-bottom: 12px;"></div>
+          <span style="font-size: 13px; color: var(--text-muted);">Buscando clientes en YiQi ERP...</span>
+        </div>
+      `;
+
+      try {
+        const url = query ? `${OBTENER_CONSOLIDADO_URL}?search=${encodeURIComponent(query)}` : OBTENER_CONSOLIDADO_URL;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const res = await response.json();
+        if (res.success && res.data) {
+          renderSearchResults(res.data);
+        } else {
+          resultsContainer.innerHTML = `<div class="text-muted" style="text-align: center; padding: 30px;">Error al obtener clientes.</div>`;
+        }
+      } catch (err) {
+        console.error("Error al buscar clientes:", err);
+        resultsContainer.innerHTML = `<div class="text-muted" style="text-align: center; padding: 30px; color: var(--danger);">❌ Error de conexión al buscar clientes.</div>`;
+      }
+    }
+
+    function renderSearchResults(clients) {
+      const resultsContainer = document.getElementById("tmc-client-results-list");
+      if (clients.length === 0) {
+        resultsContainer.innerHTML = `<div class="text-muted" style="text-align: center; padding: 30px;">No se encontraron clientes coincidentes.</div>`;
+        return;
+      }
+
+      searchedClientsMap = {};
+      let html = "";
+      clients.forEach(c => {
+        searchedClientsMap[c.id] = c;
+        const isDebt = c.saldo > 0.01;
+        const isCredit = c.saldo < -0.01;
+        const balanceClass = isDebt ? "debt" : (isCredit ? "credit" : "");
+        const formattedBal = formatCurrency(c.saldo);
+        const nameLabel = c.nombre || c.razonSocial || "Sin Nombre";
+        const metaLabel = `ID: ${c.id} | CUIT: ${c.cuit || '-'} | Domicilio: ${c.domicilio || '-'}`;
+
+        html += `
+          <div class="tmc-client-row" onclick="seleccionarCliente('${c.id}')">
+            <div class="tmc-client-info">
+              <span class="tmc-client-name">${nameLabel}</span>
+              <span class="tmc-client-meta">${metaLabel}</span>
+            </div>
+            <div class="tmc-client-balance ${balanceClass}">${formattedBal}</div>
+          </div>
+        `;
+      });
+      resultsContainer.innerHTML = html;
+    }
+
+    // Trigger search with debounce
+    document.getElementById("tmc-client-search").addEventListener("input", (e) => {
+      const val = e.target.value.trim();
+      clearTimeout(searchTimeout);
+      if (!val) {
+        document.getElementById("tmc-client-results-list").innerHTML = `
+          <div class="text-muted" style="text-align: center; padding: 40px 10px; font-size: 13.5px;">
+            Ingresá un término de búsqueda para ver los clientes.
+          </div>
+        `;
+        return;
+      }
+      searchTimeout = setTimeout(() => {
+        buscarClientes(val);
+      }, 350);
+    });
+
+    async function seleccionarCliente(clientCode) {
+      document.getElementById("tmc-view-step0").style.display = "none";
+      document.getElementById("tmc-view-loader").style.display = "block";
+      document.getElementById("tmc-loader-text").textContent = "Cargando comprobantes pendientes del cliente...";
+
+      const cachedC = searchedClientsMap[clientCode];
+      if (cachedC) {
+        currentClientCuit = cachedC.cuit || "";
+        currentClientDomicilio = cachedC.domicilio || "";
+        currentClientLocalidad = cachedC.localidad || "";
+      }
+
+      try {
+        const response = await fetch(`${OBTENER_ESTADO_URL}?clientCode=${clientCode}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const res = await response.json();
+        if (res.success) {
+          currentClientCode = clientCode;
+          currentClientName = res.clientName || "";
+          currentClientRazonSocial = res.clientRazonSocial || "";
+          currentClientSaldoActual = parseFloat(res.saldoActual || 0);
+          currentClientSaldoNoImputadoYiqi = parseFloat(res.saldoNoImputadoYiqi || 0);
+          currentClientCuit = res.clientCuit || "";
+          cachedMovements = res.data || [];
+
+          currentImputations = {}; // Reset imputations state
+          const filterInput = document.getElementById("tmc-invoice-filter");
+          if (filterInput) filterInput.value = "";
+          const sortSelect = document.getElementById("tmc-invoice-sort");
+          if (sortSelect) sortSelect.value = "date-asc";
+
+          // Render summary info
+          document.getElementById("tmc-active-client-name").textContent = currentClientRazonSocial || currentClientName || "Cliente";
+          document.getElementById("tmc-active-client-meta").textContent = `ID Cliente: ${clientCode} | CUIT: ${res.clientCuit || '-'}`;
+          document.getElementById("tmc-active-client-saldo").textContent = formatCurrency(currentClientSaldoActual);
+          
+          const unappliedEl = document.getElementById("tmc-active-client-unapplied");
+          if (currentClientSaldoNoImputadoYiqi > 1.0) {
+            unappliedEl.textContent = `Saldo sin imputar en YiQi: ${formatCurrency(currentClientSaldoNoImputadoYiqi)}`;
+            unappliedEl.style.display = "block";
+          } else {
+            unappliedEl.style.display = "none";
+          }
+
+          // Initialise Forms
+          document.getElementById("tmc-cobro-fecha").value = new Date().toISOString().split("T")[0];
+          document.getElementById("tmc-cobro-observaciones").value = "";
+          
+          // Clear previous payments
+          document.getElementById("tmc-payments-list").innerHTML = `
+            <div id="tmc-no-payments-msg" class="text-center py-5 text-muted" style="font-size: 13px;">
+              Cargá los medios de pago recibidos usando los botones superiores.
+            </div>
+          `;
+          // Ensure helpers (cajas/cuentas) are loaded before transitioning
+          if (cajasList.length === 0) {
+            console.log("cajasList is empty on client selection. Retrying to load auxiliaries...");
+            await cargarAuxiliares();
+          }
+
+
+
+          // Populate step 2 Invoices
+          populateInvoicesTable();
+
+          // Show Form view and transition to Step 1
+          document.getElementById("tmc-view-loader").style.display = "none";
+          document.getElementById("tmc-view-form").style.display = "block";
+          transitionToStep(1);
+        } else {
+          throw new Error(res.error || "Error al recuperar cuenta corriente.");
+        }
+      } catch (err) {
+        console.error("Error al seleccionar cliente:", err);
+        document.getElementById("tmc-view-loader").style.display = "none";
+        document.getElementById("tmc-view-step0").style.display = "block";
+        showCustomAlert("Error de Conexión", `No se pudieron cargar los saldos del cliente: ${err.message}`);
+      }
+    }
+
+    document.getElementById("tmc-btn-change-client").addEventListener("click", async () => {
+      const totalPagos = getPaymentsTotal();
+      if (totalPagos > 0.01) {
+        if (!await showCustomConfirm("Cambiar Cliente", "¿Desea cambiar de cliente? Se perderán todos los datos cargados en este recibo.")) {
+          return;
+        }
+      }
+      
+      currentClientCode = "";
+      cachedMovements = [];
+      document.getElementById("tmc-view-form").style.display = "none";
+      document.getElementById("tmc-client-search").value = "";
+      document.getElementById("tmc-client-results-list").innerHTML = `
+        <div class="text-muted" style="text-align: center; padding: 40px 10px; font-size: 13.5px;">
+          Ingresá un término de búsqueda para ver los clientes.
+        </div>
+      `;
+      document.getElementById("tmc-view-step0").style.display = "block";
+      transitionToStep(0);
+    });
+
+    // ==========================================
+    // MEDIOS DE PAGO FORM (STEP 1)
+    // ==========================================
+    window.removePaymentRow = (rowId) => {
+      const row = document.getElementById(rowId);
+      if (row) row.remove();
+      
+      const container = document.getElementById("tmc-payments-list");
+      if (container.querySelectorAll(".tmc-payment-row").length === 0) {
+        const msg = document.getElementById("tmc-no-payments-msg");
+        if (msg) msg.style.display = "block";
+      }
+      updateTotals();
+    };
+
+    function bindRowEvents(rowId) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+
+      if (row.getAttribute("data-type") === "cheque") {
+        const echeqChk = row.querySelector(".tmc-cheque-electronico");
+        const cajaSel = row.querySelector(".tmc-cheque-caja");
+        if (echeqChk && cajaSel) {
+          const updateCajaState = () => {
+            if (echeqChk.checked) {
+              cajaSel.disabled = true;
+              cajaSel.value = "";
+              cajaSel.style.opacity = "0.5";
+            } else {
+              cajaSel.disabled = false;
+              cajaSel.style.opacity = "1";
+            }
+          };
+          echeqChk.addEventListener("change", updateCajaState);
+          updateCajaState();
+        }
+      }
+
+      row.querySelectorAll("input, select").forEach(el => {
+        el.addEventListener("input", updateTotals);
+        el.addEventListener("change", updateTotals);
+      });
+      updateTotals();
+    }
+
+    window.addEfectivoRow = (cajaId = "", importe = 0) => {
+      const container = document.getElementById("tmc-payments-list");
+      const msg = document.getElementById("tmc-no-payments-msg");
+      if (msg) msg.style.display = "none";
+      const cajaOptions = cajasList.map(c => `<option value="${c.id}" ${c.id == cajaId ? 'selected' : ''}>${c.nombre}</option>`).join("");
+      const rowId = "efectivo-" + Date.now() + Math.random().toString(36).substr(2, 5);
+      const rowHtml = `
+        <div class="tmc-payment-row" id="${rowId}" data-type="efectivo" style="background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.15); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 700; color: #10b981; text-transform: uppercase;">💵 Efectivo</span>
+            <button class="tmc-remove-btn" onclick="removePaymentRow('${rowId}')">🗑️ Eliminar</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tmc-form-group">
+              <label>Caja *</label>
+              <select class="tmc-row-input tmc-efectivo-caja">${cajaOptions}</select>
+            </div>
+            <div class="tmc-form-group">
+              <label>Importe *</label>
+              <input type="number" step="0.01" min="0.01" class="tmc-row-input tmc-efectivo-importe" value="${importe > 0 ? importe.toFixed(2) : ''}" placeholder="0.00">
+            </div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML("beforeend", rowHtml);
+      bindRowEvents(rowId);
+
+      // Async loading fallback if list is empty
+      if (cajasList.length === 0) {
+        cargarAuxiliares().then(() => {
+          const select = document.querySelector(`#${rowId} .tmc-efectivo-caja`);
+          if (select) {
+            select.innerHTML = cajasList.map(c => `<option value="${c.id}" ${c.id == cajaId ? 'selected' : ''}>${c.nombre}</option>`).join("");
+          }
+        });
+      }
+    };
+
+    window.addChequeRow = (numero = "", bancoId = "", fechaPago = "", importe = 0, electronico = false, cajaId = "", cuitLibrador = "", referencia = "") => {
+      const container = document.getElementById("tmc-payments-list");
+      const msg = document.getElementById("tmc-no-payments-msg");
+      if (msg) msg.style.display = "none";
+      const matchedB = bancosList.find(b => b.id == bancoId);
+      const bancoName = matchedB ? matchedB.nombre : "";
+      const cajaOptions = `<option value="">-- Seleccionar Caja --</option>` + cajasList.map(c => `<option value="${c.id}" ${c.id == cajaId ? 'selected' : ''}>${c.nombre}</option>`).join("");
+      const todayStr = new Date().toISOString().split("T")[0];
+      const rowId = "cheque-" + Date.now() + Math.random().toString(36).substr(2, 5);
+      const rowHtml = `
+        <div class="tmc-payment-row" id="${rowId}" data-type="cheque" style="background: rgba(59, 130, 246, 0.04); border-color: rgba(59, 130, 246, 0.15); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 700; color: #3b82f6; text-transform: uppercase;">✍️ Cheque</span>
+            <button class="tmc-remove-btn" onclick="removePaymentRow('${rowId}')">🗑️ Eliminar</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tmc-form-group">
+              <label>Nro Cheque *</label>
+              <input type="text" class="tmc-row-input tmc-cheque-numero" value="${numero}" placeholder="Número">
+            </div>
+            <div class="tmc-form-group">
+              <label>Banco *</label>
+              <input type="text" list="bancos-datalist" class="tmc-row-input tmc-cheque-banco-input" value="${escapeHTML(bancoName)}" placeholder="Buscar banco...">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tmc-form-group">
+              <label>Fecha Vencimiento *</label>
+              <input type="date" class="tmc-row-input tmc-cheque-fecha" value="${fechaPago || todayStr}">
+            </div>
+            <div class="tmc-form-group">
+              <label>Importe *</label>
+              <input type="number" step="0.01" min="0.01" class="tmc-row-input tmc-cheque-importe" value="${importe > 0 ? importe.toFixed(2) : ''}" placeholder="0.00">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tmc-form-group" style="position: relative;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>CUIT Librador (Opc.)</label>
+                <span class="tmc-cuit-helper" style="font-size: 10px; color: var(--primary); cursor: pointer; font-weight: 600; display: none;" onclick="fillCuitHelper(this)">✨ Usar CUIT Cliente</span>
+              </div>
+              <input type="text" class="tmc-row-input tmc-cheque-cuit" value="${cuitLibrador}" placeholder="CUIT del librador" onfocus="showCuitHelper(this)" onblur="hideCuitHelper(this)">
+            </div>
+            <div class="tmc-form-group">
+              <label>Referencia (Opc.)</label>
+              <input type="text" class="tmc-row-input tmc-cheque-ref" value="${referencia}" placeholder="Referencia">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; margin-top: 4px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="checkbox" class="tmc-cheque-electronico" id="chk-echeq-${rowId}" ${electronico ? 'checked' : ''} style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--primary);" />
+              <label for="chk-echeq-${rowId}" style="cursor: pointer; font-size: 11px; font-weight: 600; color: #ffffff; user-select: none;">Es ECHEQ</label>
+            </div>
+            <div class="tmc-form-group" style="margin: 0;">
+              <select class="tmc-row-input tmc-cheque-caja">${cajaOptions}</select>
+            </div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML("beforeend", rowHtml);
+      bindRowEvents(rowId);
+    };
+
+    window.addTransferenciaRow = (cuentaDestinoId = "", referencia = "", importe = 0) => {
+      const container = document.getElementById("tmc-payments-list");
+      const msg = document.getElementById("tmc-no-payments-msg");
+      if (msg) msg.style.display = "none";
+      const cuentaOptions = `<option value="">-- Seleccionar Cuenta --</option>` + cuentasList.map(c => `<option value="${c.id}" ${c.id == cuentaDestinoId ? 'selected' : ''}>${c.nombre}</option>`).join("");
+      const rowId = "transfer-" + Date.now() + Math.random().toString(36).substr(2, 5);
+      const rowHtml = `
+        <div class="tmc-payment-row" id="${rowId}" data-type="transferencia" style="background: rgba(245, 158, 11, 0.04); border-color: rgba(245, 158, 11, 0.15); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 700; color: #f59e0b; text-transform: uppercase;">🏛️ Transferencia</span>
+            <button class="tmc-remove-btn" onclick="removePaymentRow('${rowId}')">🗑️ Eliminar</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tmc-form-group">
+              <label>Cuenta Destino *</label>
+              <select class="tmc-row-input tmc-transfer-cuenta">${cuentaOptions}</select>
+            </div>
+            <div class="tmc-form-group">
+              <label>Referencia (Opc.)</label>
+              <input type="text" class="tmc-row-input tmc-transfer-ref" value="${referencia}" placeholder="Nro Operación">
+            </div>
+          </div>
+          <div class="tmc-form-group">
+            <label>Importe *</label>
+            <input type="number" step="0.01" min="0.01" class="tmc-row-input tmc-transfer-importe" value="${importe > 0 ? importe.toFixed(2) : ''}" placeholder="0.00">
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML("beforeend", rowHtml);
+      bindRowEvents(rowId);
+
+      // Async loading fallback if list is empty
+      if (cuentasList.length === 0) {
+        cargarAuxiliares().then(() => {
+          const select = document.querySelector(`#${rowId} .tmc-transfer-cuenta`);
+          if (select) {
+            select.innerHTML = `<option value="">-- Seleccionar Cuenta --</option>` + cuentasList.map(c => `<option value="${c.id}" ${c.id == cuentaDestinoId ? 'selected' : ''}>${c.nombre}</option>`).join("");
+          }
+        });
+      }
+    };
+
+    window.addElectronicoRow = (conceptoId = "2", nroOperacion = "", importe = 0) => {
+      const container = document.getElementById("tmc-payments-list");
+      const msg = document.getElementById("tmc-no-payments-msg");
+      if (msg) msg.style.display = "none";
+      const rowId = "electronico-" + Date.now() + Math.random().toString(36).substr(2, 5);
+      const rowHtml = `
+        <div class="tmc-payment-row" id="${rowId}" data-type="electronico" style="background: rgba(139, 92, 246, 0.04); border-color: rgba(139, 92, 246, 0.15); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 700; color: #8b5cf6; text-transform: uppercase;">📱 Electrónico</span>
+            <button class="tmc-remove-btn" onclick="removePaymentRow('${rowId}')">🗑️ Eliminar</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tmc-form-group">
+              <label>Concepto *</label>
+              <select class="tmc-row-input tmc-electronico-concepto">
+                <option value="2" ${conceptoId == "2" ? 'selected' : ''}>Mercado Pago</option>
+                <option value="1" ${conceptoId == "1" ? 'selected' : ''}>Otros</option>
+              </select>
+            </div>
+            <div class="tmc-form-group">
+              <label>Nro Operación (Opc.)</label>
+              <input type="text" class="tmc-row-input tmc-electronico-ref" value="${nroOperacion}" placeholder="Referencia">
+            </div>
+          </div>
+          <div class="tmc-form-group">
+            <label>Importe *</label>
+            <input type="number" step="0.01" min="0.01" class="tmc-row-input tmc-electronico-importe" value="${importe > 0 ? importe.toFixed(2) : ''}" placeholder="0.00">
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML("beforeend", rowHtml);
+      bindRowEvents(rowId);
+    };
+
+    window.addRetencionRow = (numero = "", conceptoId = "", fechaEmision = "", importe = 0) => {
+      const container = document.getElementById("tmc-payments-list");
+      const msg = document.getElementById("tmc-no-payments-msg");
+      if (msg) msg.style.display = "none";
+      const conceptoOptions = `<option value="">-- Seleccionar Concepto --</option>` + retencionesList.map(r => `<option value="${r.id}" ${r.id == conceptoId ? 'selected' : ''}>${r.nombre}</option>`).join("");
+      const rowId = "retencion-" + Date.now() + Math.random().toString(36).substr(2, 5);
+      const rowHtml = `
+        <div class="tmc-payment-row" id="${rowId}" data-type="retencion" style="background: rgba(239, 68, 68, 0.04); border-color: rgba(239, 68, 68, 0.15); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 700; color: #f87171; text-transform: uppercase;">📄 Retención</span>
+            <button class="tmc-remove-btn" onclick="removePaymentRow('${rowId}')">🗑️ Eliminar</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tmc-form-group">
+              <label>Nro Comprobante *</label>
+              <input type="text" class="tmc-row-input tmc-retencion-numero" value="${numero}" placeholder="Nro comprobante">
+            </div>
+            <div class="tmc-form-group">
+              <label>Fecha Emisión (Opc.)</label>
+              <input type="date" class="tmc-row-input tmc-retencion-fecha" value="${fechaEmision}">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tmc-form-group">
+              <label>Concepto *</label>
+              <select class="tmc-row-input tmc-retencion-concepto">${conceptoOptions}</select>
+            </div>
+            <div class="tmc-form-group">
+              <label>Importe *</label>
+              <input type="number" step="0.01" min="0.01" class="tmc-row-input tmc-retencion-importe" value="${importe > 0 ? importe.toFixed(2) : ''}" placeholder="0.00">
+            </div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML("beforeend", rowHtml);
+      bindRowEvents(rowId);
+
+      // Async loading fallback if list is empty
+      if (retencionesList.length === 0) {
+        cargarAuxiliares().then(() => {
+          const select = document.querySelector(`#${rowId} .tmc-retencion-concepto`);
+          if (select) {
+            select.innerHTML = `<option value="">-- Seleccionar Concepto --</option>` + retencionesList.map(r => `<option value="${r.id}" ${r.id == conceptoId ? 'selected' : ''}>${r.nombre}</option>`).join("");
+          }
+        });
+      }
+    };
+
+    // Attach step 1 button events
+    document.getElementById("tmc-add-efectivo").addEventListener("click", () => addEfectivoRow("", 0));
+    document.getElementById("tmc-add-cheque").addEventListener("click", () => addChequeRow("", "", "", 0));
+    document.getElementById("tmc-add-transfer").addEventListener("click", () => addTransferenciaRow("", "", 0));
+    document.getElementById("tmc-add-electronico").addEventListener("click", () => addElectronicoRow("2", "", 0));
+    document.getElementById("tmc-add-retencion").addEventListener("click", () => addRetencionRow("", "", "", 0));
+
+    function getPaymentsTotal() {
+      let total = 0;
+      document.querySelectorAll(".tmc-payment-row").forEach(row => {
+        const type = row.getAttribute("data-type");
+        let amt = 0;
+        if (type === "efectivo") {
+          amt = parseFloat(row.querySelector(".tmc-efectivo-importe").value) || 0;
+        } else if (type === "cheque") {
+          amt = parseFloat(row.querySelector(".tmc-cheque-importe").value) || 0;
+        } else if (type === "transferencia") {
+          amt = parseFloat(row.querySelector(".tmc-transfer-importe").value) || 0;
+        } else if (type === "electronico") {
+          amt = parseFloat(row.querySelector(".tmc-electronico-importe").value) || 0;
+        } else if (type === "retencion") {
+          amt = parseFloat(row.querySelector(".tmc-retencion-importe").value) || 0;
+        }
+        total += amt;
+      });
+      return total;
+    }
+
+    // ==========================================
+    // IMPUTATIONS FORM (STEP 2)
+    // ==========================================
+    function saveImputationsState() {
+      document.querySelectorAll(".tmc-cobro-invoice-input").forEach(input => {
+        const comp = input.getAttribute("data-comprobante");
+        const val = parseFloat(input.value) || 0;
+        if (val > 0.01) {
+          currentImputations[comp] = val;
+        } else {
+          delete currentImputations[comp];
+        }
+      });
+    }
+
+    function getCancelationsTotal(excludeComprobante = null) {
+      let total = 0;
+      for (const comp in currentImputations) {
+        if (comp !== excludeComprobante) {
+          total += currentImputations[comp];
+        }
+      }
+      return total;
+    }
+
+    function populateInvoicesTable() {
+      const tbody = document.getElementById("tmc-invoices-list");
+      if (!tbody) return;
+      
+      let debits = cachedMovements.filter(m => {
+        const debe = m.debe ? parseFloat(m.debe) : 0;
+        const pp = m.pendientePago !== undefined ? parseFloat(m.pendientePago) : debe;
+        return debe > 0 && pp > 1.0;
+      }).map(m => ({
+        comprobante: m.comprobante,
+        fecha: m.fecha,
+        debe: parseFloat(m.debe),
+        pendientePago: m.pendientePago !== undefined ? parseFloat(m.pendientePago) : parseFloat(m.debe)
+      }));
+
+      // Search Filter
+      const filterVal = (document.getElementById("tmc-invoice-filter")?.value || "").toLowerCase().trim();
+      if (filterVal) {
+        debits = debits.filter(d => 
+          d.comprobante.toLowerCase().includes(filterVal) || 
+          formatDate(d.fecha).toLowerCase().includes(filterVal)
+        );
+      }
+
+      // Sort according to user clickable headers
+      if (invoiceSortField === "fecha") {
+        debits.sort((a, b) => invoiceSortAsc ? new Date(a.fecha) - new Date(b.fecha) : new Date(b.fecha) - new Date(a.fecha));
+      } else if (invoiceSortField === "pendientePago") {
+        debits.sort((a, b) => invoiceSortAsc ? a.pendientePago - b.pendientePago : b.pendientePago - a.pendientePago);
+      } else if (invoiceSortField === "debe") {
+        debits.sort((a, b) => invoiceSortAsc ? a.debe - b.debe : b.debe - a.debe);
+      }
+
+      // Update header arrow text
+      const thVence = document.getElementById("th-vence-comp");
+      const thSaldo = document.getElementById("th-saldo-pend");
+      const thOriginal = document.getElementById("th-total-original");
+      
+      if (thVence) {
+        thVence.querySelector(".sort-arrow").textContent = invoiceSortField === "fecha" ? (invoiceSortAsc ? " ▲" : " ▼") : "";
+      }
+      if (thSaldo) {
+        thSaldo.querySelector(".sort-arrow").textContent = invoiceSortField === "pendientePago" ? (invoiceSortAsc ? " ▲" : " ▼") : "";
+      }
+      if (thOriginal) {
+        thOriginal.querySelector(".sort-arrow").textContent = invoiceSortField === "debe" ? (invoiceSortAsc ? " ▲" : " ▼") : "";
+      }
+
+      // Toggle Original Total column visibility
+      const showTotal = document.getElementById("tmc-show-total-factura")?.checked;
+      if (thOriginal) {
+        thOriginal.style.display = showTotal ? "table-cell" : "none";
+      }
+
+      if (debits.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${showTotal ? 5 : 4}" class="text-center py-5 text-muted">No hay facturas que coincidan con el filtro.</td></tr>`;
+        return;
+      }
+
+      let invoicesHtml = "";
+      debits.forEach(d => {
+        const savedVal = currentImputations[d.comprobante] || 0;
+        const isChecked = savedVal > 0.01;
+        const displayVal = savedVal > 0 ? savedVal.toFixed(2) : "0.00";
+        const isDisabled = !isChecked;
+        
+        invoicesHtml += `
+          <tr style="hover: background-color: rgba(255, 255, 255, 0.02);">
+            <td style="text-align: center; vertical-align: middle;">
+              <input type="checkbox" class="tmc-cobro-invoice-checkbox" data-comprobante="${d.comprobante}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--primary);" />
+            </td>
+            <td>
+              <div style="font-weight: 600; color: #ffffff;">
+                <span onclick="toggleInvoiceDetail('${escapeHTML(d.comprobante)}', this)" style="cursor: pointer; color: var(--primary); text-decoration: underline; font-weight: 600;" title="Ver productos de la factura">${cleanFXComprobante(d.comprobante)}</span>
+              </div>
+              <div style="font-size: 10px; color: var(--text-muted);">${formatDate(d.fecha)}</div>
+            </td>
+            ${showTotal ? `<td style="text-align: right; color: #cbd5e1; font-weight: 500; font-family: monospace;">${formatCurrency(d.debe)}</td>` : ""}
+            <td style="text-align: right; color: #f87171; font-weight: 600; font-family: monospace;">${formatCurrency(d.pendientePago)}</td>
+            <td style="text-align: right;">
+              <input type="number" step="0.01" min="0" max="${d.pendientePago}" class="tmc-cobro-invoice-input" data-comprobante="${d.comprobante}" data-pending="${d.pendientePago}" value="${displayVal}" ${isDisabled ? 'disabled' : ''} style="width: 100px; text-align: right; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #ffffff; padding: 4px 8px; font-family: monospace; font-size: 12px; font-weight: 600; outline: none; transition: border-color 0.2s;" />
+            </td>
+          </tr>
+          <tr id="detail-row-${escapeHTML(d.comprobante)}" style="display: none;">
+            <td colspan="${showTotal ? 5 : 4}" style="padding: 0 10px 10px 10px; background: rgba(0,0,0,0.15);">
+              <div id="detail-content-${escapeHTML(d.comprobante)}" style="padding: 10px; border: 1px dashed rgba(255,255,255,0.08); border-radius: 8px; margin-top: 4px; font-size: 11.5px; animation: tmcFadeIn 0.2s;"></div>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = invoicesHtml;
+
+      // Bind checkbox handlers
+      tbody.querySelectorAll(".tmc-cobro-invoice-checkbox").forEach(chk => {
+        chk.addEventListener("change", (e) => {
+          const comp = e.target.getAttribute("data-comprobante");
+          const input = tbody.querySelector(`.tmc-cobro-invoice-input[data-comprobante="${comp}"]`);
+          if (input) {
+            if (e.target.checked) {
+              input.disabled = false;
+              const totalPagos = getPaymentsTotal();
+              const totalCanc = getCancelationsTotal(comp);
+              const useUnapplied = document.getElementById("tmc-cobro-use-unapplied").checked;
+              const unappliedAmount = useUnapplied ? currentClientSaldoNoImputadoYiqi : 0;
+              const totalDisp = totalPagos + unappliedAmount;
+              const diff = Math.max(0, totalDisp - totalCanc);
+              const maxPending = parseFloat(input.getAttribute("data-pending")) || 0;
+              const val = Math.min(diff, maxPending);
+              input.value = val.toFixed(2);
+              currentImputations[comp] = val;
+            } else {
+              input.value = "0.00";
+              input.disabled = true;
+              delete currentImputations[comp];
+            }
+          }
+          updateTotals();
+        });
+      });
+
+      // Bind input handlers
+      tbody.querySelectorAll(".tmc-cobro-invoice-input").forEach(input => {
+        input.addEventListener("input", (e) => {
+          let val = parseFloat(e.target.value) || 0;
+          const maxPending = parseFloat(e.target.getAttribute("data-pending")) || 0;
+          const comp = e.target.getAttribute("data-comprobante");
+          const chk = tbody.querySelector(`.tmc-cobro-invoice-checkbox[data-comprobante="${comp}"]`);
+          
+          if (val > maxPending) {
+            val = maxPending;
+            e.target.value = maxPending.toFixed(2);
+          }
+          if (val < 0) {
+            val = 0;
+            e.target.value = "0.00";
+          }
+          if (val > 0.01) {
+            currentImputations[comp] = val;
+            if (chk) chk.checked = true;
+          } else {
+            delete currentImputations[comp];
+            if (chk) chk.checked = false;
+          }
+          updateTotals();
+        });
+        
+        input.addEventListener("blur", (e) => {
+          const comp = e.target.getAttribute("data-comprobante");
+          const chk = tbody.querySelector(`.tmc-cobro-invoice-checkbox[data-comprobante="${comp}"]`);
+          const val = parseFloat(e.target.value) || 0;
+          if (val <= 0.01) {
+            if (chk) chk.checked = false;
+            e.target.disabled = true;
+            delete currentImputations[comp];
+          }
+          updateTotals();
+        });
+      });
+    }
+    // ==========================================
+    // TRANSTIONS & VALIDATION LOGIC
+    // ==========================================
+    function transitionToStep(step) {
+      currentStep = step;
+      
+      const stepDots = [document.getElementById("step-dot-0"), document.getElementById("step-dot-1"), document.getElementById("step-dot-2")];
+      const viewForm = document.getElementById("tmc-view-form");
+      const step1Form = document.getElementById("tmc-form-step1");
+      const step2Form = document.getElementById("tmc-form-step2");
+      
+      const btnStep1Cancel = document.getElementById("tmc-btn-step1-cancel");
+      const btnStep1Next = document.getElementById("tmc-btn-step1-next");
+      const btnStep2Prev = document.getElementById("tmc-btn-step2-prev");
+      const btnStep2Submit = document.getElementById("tmc-btn-step2-submit");
+
+      // Update step dot highlights
+      stepDots.forEach((dot, idx) => {
+        dot.className = "tmc-step-item";
+        if (idx === step) {
+          dot.classList.add("active");
+        } else if (idx < step) {
+          dot.classList.add("completed");
+        }
+      });
+
+      if (step === 1) {
+        step1Form.style.display = "block";
+        step2Form.style.display = "none";
+        
+        btnStep1Cancel.style.display = "inline-flex";
+        btnStep1Next.style.display = "inline-flex";
+        btnStep2Prev.style.display = "none";
+        btnStep2Submit.style.display = "none";
+      } else if (step === 2) {
+        step1Form.style.display = "none";
+        step2Form.style.display = "block";
+        
+        btnStep1Cancel.style.display = "none";
+        btnStep1Next.style.display = "none";
+        btnStep2Prev.style.display = "inline-flex";
+        btnStep2Submit.style.display = "inline-flex";
+        
+        // Setup unapplied balance fields
+        const unappliedAmountSpan = document.getElementById("tmc-existing-unapplied-amount");
+        const unappliedWrapper = document.getElementById("tmc-use-unapplied-wrapper");
+        
+        if (currentClientSaldoNoImputadoYiqi > 1.0) {
+          unappliedWrapper.style.display = "flex";
+          unappliedAmountSpan.textContent = formatCurrency(currentClientSaldoNoImputadoYiqi);
+        } else {
+          unappliedWrapper.style.display = "none";
+          document.getElementById("tmc-cobro-use-unapplied").checked = false;
+        }
+
+        // Run FIFO allocation by default on entering Step 2
+        runFifoAutoallocation();
+      }
+      updateTotals();
+    }
+
+    function updateTotals() {
+      const totalPagos = getPaymentsTotal();
+      const totalCancelaciones = getCancelationsTotal();
+      
+      document.getElementById("tmc-cobro-total-pagos").textContent = formatCurrency(totalPagos);
+      document.getElementById("tmc-summary-pagos-step2").textContent = formatCurrency(totalPagos);
+      document.getElementById("tmc-cobro-total-cancelaciones").textContent = formatCurrency(totalCancelaciones);
+      
+      const useUnapplied = document.getElementById("tmc-cobro-use-unapplied").checked;
+      const unappliedAmount = useUnapplied ? currentClientSaldoNoImputadoYiqi : 0;
+      const totalDisponible = totalPagos + unappliedAmount;
+      
+      document.getElementById("tmc-total-disponible").textContent = formatCurrency(totalDisponible);
+      
+      const diff = totalDisponible - totalCancelaciones;
+      const diffEl = document.getElementById("tmc-cobro-diferencia");
+      diffEl.textContent = formatCurrency(diff);
+      
+      const submitBtn = document.getElementById("tmc-btn-step2-submit");
+      const nextBtn = document.getElementById("tmc-btn-step1-next");
+      const warningBox = document.getElementById("tmc-warning");
+      
+      const errors = [];
+      
+      if (currentStep === 1) {
+        // Step 1 Validation
+        if (totalPagos <= 0.01) {
+          errors.push("Debe cargar al menos un medio de pago con importe mayor a $0.");
+        }
+        
+        document.querySelectorAll(".tmc-payment-row").forEach((row, index) => {
+          const type = row.getAttribute("data-type");
+          const idxLabel = `[Pago ${index + 1} - ${type.toUpperCase()}]`;
+          
+          if (type === "efectivo") {
+            const cajaId = row.querySelector(".tmc-efectivo-caja").value;
+            const amt = parseFloat(row.querySelector(".tmc-efectivo-importe").value) || 0;
+            if (!cajaId) errors.push(`${idxLabel} Seleccioná una Caja.`);
+            if (amt <= 0) errors.push(`${idxLabel} El importe debe ser mayor a $0.`);
+          } else if (type === "cheque") {
+            const num = row.querySelector(".tmc-cheque-numero").value.trim();
+            const bancoInputVal = row.querySelector(".tmc-cheque-banco-input").value.trim();
+            const matchedBanco = bancosList.find(b => b.nombre.toLowerCase() === bancoInputVal.toLowerCase());
+            const fecha = row.querySelector(".tmc-cheque-fecha").value;
+            const amt = parseFloat(row.querySelector(".tmc-cheque-importe").value) || 0;
+            const electronico = row.querySelector(".tmc-cheque-electronico").checked;
+            const cajaId = row.querySelector(".tmc-cheque-caja").value;
+            
+            if (!num) errors.push(`${idxLabel} Ingresá el número de cheque.`);
+            if (!bancoInputVal) {
+              errors.push(`${idxLabel} Escribí y seleccioná un Banco.`);
+            } else if (!matchedBanco) {
+              errors.push(`${idxLabel} El banco "${bancoInputVal}" no es válido. Seleccioná uno de la lista.`);
+            }
+            if (!fecha) errors.push(`${idxLabel} Ingresá la fecha de cobro del cheque.`);
+            if (amt <= 0) errors.push(`${idxLabel} El importe debe ser mayor a $0.`);
+            if (!electronico && !cajaId) errors.push(`${idxLabel} El cheque físico requiere seleccionar una Caja.`);
+          } else if (type === "transferencia") {
+            const cudeId = row.querySelector(".tmc-transfer-cuenta").value;
+            const amt = parseFloat(row.querySelector(".tmc-transfer-importe").value) || 0;
+            if (!cudeId) errors.push(`${idxLabel} Seleccioná la cuenta bancaria de destino.`);
+            if (amt <= 0) errors.push(`${idxLabel} El importe debe ser mayor a $0.`);
+          } else if (type === "electronico") {
+            const conceptoId = row.querySelector(".tmc-electronico-concepto").value;
+            const amt = parseFloat(row.querySelector(".tmc-electronico-importe").value) || 0;
+            if (!conceptoId) errors.push(`${idxLabel} Seleccioná el concepto electrónico.`);
+            if (amt <= 0) errors.push(`${idxLabel} El importe debe ser mayor a $0.`);
+          } else if (type === "retencion") {
+            const num = row.querySelector(".tmc-retencion-numero").value.trim();
+            const conceptoId = row.querySelector(".tmc-retencion-concepto").value;
+            const amt = parseFloat(row.querySelector(".tmc-retencion-importe").value) || 0;
+            if (!num) errors.push(`${idxLabel} Ingresá el número del comprobante de retención.`);
+            if (!conceptoId) errors.push(`${idxLabel} Seleccioná el concepto de retención.`);
+            if (amt <= 0) errors.push(`${idxLabel} El importe debe ser mayor a $0.`);
+          }
+        });
+        
+        if (errors.length > 0) {
+          warningBox.innerHTML = `<ul style="margin: 0; padding-left: 16px;">${errors.map(e => `<li>${e}</li>`).join("")}</ul>`;
+          warningBox.style.display = "block";
+          nextBtn.disabled = true;
+        } else {
+          warningBox.innerHTML = "";
+          warningBox.style.display = "none";
+          nextBtn.disabled = false;
+        }
+      } else if (currentStep === 2) {
+        // Step 2 Validation
+        if (totalCancelaciones <= 0.01) {
+          errors.push("Debe seleccionar e imputar al menos un comprobante pendiente.");
+        }
+        
+        if (useUnapplied) {
+          if (totalCancelaciones < totalPagos - 0.01) {
+            errors.push(`El total imputado (${formatCurrency(totalCancelaciones)}) no puede ser inferior al total de nuevos pagos (${formatCurrency(totalPagos)}). Debés imputar al menos los nuevos fondos cargados.`);
+            diffEl.style.color = "#ef4444";
+          } else if (totalCancelaciones > totalDisponible + 0.01) {
+            errors.push(`El total imputado (${formatCurrency(totalCancelaciones)}) supera el total disponible (${formatCurrency(totalDisponible)}).`);
+            diffEl.style.color = "#ef4444";
+          } else {
+            diffEl.style.color = "#10b981";
+          }
+        } else {
+          if (Math.abs(totalPagos - totalCancelaciones) > 0.01) {
+            errors.push(`El total imputado (${formatCurrency(totalCancelaciones)}) debe coincidir exactamente con el total de nuevos pagos cargados (${formatCurrency(totalPagos)}).`);
+            diffEl.style.color = "#ef4444";
+          } else {
+            diffEl.style.color = "#10b981";
+          }
+        }
+        
+        if (errors.length > 0) {
+          warningBox.innerHTML = `<ul style="margin: 0; padding-left: 16px;">${errors.map(e => `<li>${e}</li>`).join("")}</ul>`;
+          warningBox.style.display = "block";
+          submitBtn.disabled = true;
+        } else {
+          warningBox.innerHTML = "";
+          warningBox.style.display = "none";
+          submitBtn.disabled = false;
+        }
+      }
+    }
+
+    document.getElementById("tmc-btn-step1-next").addEventListener("click", () => {
+      transitionToStep(2);
+    });
+
+    document.getElementById("tmc-btn-step2-prev").addEventListener("click", () => {
+      transitionToStep(1);
+    });
+
+    document.getElementById("tmc-btn-step1-cancel").addEventListener("click", async () => {
+      const totalPagos = getPaymentsTotal();
+      if (totalPagos > 0.01) {
+        if (!await showCustomConfirm("Cancelar Carga", "¿Desea cancelar la carga del recibo? Se perderán todos los datos ingresados.")) {
+          return;
+        }
+      }
+      document.getElementById("tmc-view-form").style.display = "none";
+      document.getElementById("tmc-client-search").value = "";
+      document.getElementById("tmc-client-results-list").innerHTML = `
+        <div class="text-muted" style="text-align: center; padding: 40px 10px; font-size: 13.5px;">
+          Ingresá un término de búsqueda para ver los clientes.
+        </div>
+      `;
+      document.getElementById("tmc-view-step0").style.display = "block";
+      transitionToStep(0);
+    });
+
+    function runFifoAutoallocation() {
+      const totalPagos = getPaymentsTotal();
+      const useUnapplied = document.getElementById("tmc-cobro-use-unapplied").checked;
+      const unappliedAmount = useUnapplied ? currentClientSaldoNoImputadoYiqi : 0;
+      
+      let pool = totalPagos + unappliedAmount;
+      
+      currentImputations = {};
+      
+      const chronologicalDebits = cachedMovements.filter(m => {
+        const debe = m.debe ? parseFloat(m.debe) : 0;
+        const pp = m.pendientePago !== undefined ? parseFloat(m.pendientePago) : debe;
+        return debe > 0 && pp > 1.0;
+      }).map(m => ({
+        comprobante: m.comprobante,
+        fecha: m.fecha,
+        pendientePago: m.pendientePago !== undefined ? parseFloat(m.pendientePago) : parseFloat(m.debe)
+      })).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+      
+      for (const d of chronologicalDebits) {
+        if (pool <= 0.01) break;
+        const amountToApply = Math.min(pool, d.pendientePago);
+        if (amountToApply > 0.01) {
+          currentImputations[d.comprobante] = amountToApply;
+          pool -= amountToApply;
+        }
+      }
+      
+      populateInvoicesTable();
+      updateTotals();
+    }
+
+    document.getElementById("tmc-btn-fifo").addEventListener("click", runFifoAutoallocation);
+    document.getElementById("tmc-cobro-use-unapplied").addEventListener("change", runFifoAutoallocation);
+
+    // ==========================================
+    // EMISIÓN Y ENVÍO DE DATOS
+    // ==========================================
+    async function submitCobro() {
+      updateTotals();
+      const submitBtn = document.getElementById("tmc-btn-step2-submit");
+      if (submitBtn.disabled) return;
+
+      const efectivos = [];
+      const cheques = [];
+      const transferencias = [];
+      const electronicos = [];
+      const retenciones = [];
+      const cancelaciones = [];
+      const totalPaid = getPaymentsTotal();
+
+      document.querySelectorAll(".tmc-payment-row").forEach(row => {
+        const type = row.getAttribute("data-type");
+        if (type === "efectivo") {
+          efectivos.push({
+            cajaId: parseInt(row.querySelector(".tmc-efectivo-caja").value, 10),
+            importe: parseFloat(row.querySelector(".tmc-efectivo-importe").value)
+          });
+        } else if (type === "cheque") {
+          const isElectronico = row.querySelector(".tmc-cheque-electronico").checked;
+          const cajaIdVal = row.querySelector(".tmc-cheque-caja").value;
+          const typedBanco = row.querySelector(".tmc-cheque-banco-input").value.trim();
+          const matchedBanco = bancosList.find(b => b.nombre.toLowerCase() === typedBanco.toLowerCase());
+          cheques.push({
+            bancoId: matchedBanco ? matchedBanco.id : null,
+            numero: row.querySelector(".tmc-cheque-numero").value.trim(),
+            fechaPago: row.querySelector(".tmc-cheque-fecha").value,
+            importe: parseFloat(row.querySelector(".tmc-cheque-importe").value),
+            electronico: isElectronico,
+            cajaId: isElectronico ? null : (cajaIdVal ? parseInt(cajaIdVal, 10) : null),
+            cuitLibrador: row.querySelector(".tmc-cheque-cuit").value.trim() || null,
+            referencia: row.querySelector(".tmc-cheque-ref").value.trim() || null
+          });
+        } else if (type === "transferencia") {
+          transferencias.push({
+            cuentaDestinoId: parseInt(row.querySelector(".tmc-transfer-cuenta").value, 10),
+            referencia: row.querySelector(".tmc-transfer-ref").value.trim() || null,
+            importe: parseFloat(row.querySelector(".tmc-transfer-importe").value)
+          });
+        } else if (type === "electronico") {
+          electronicos.push({
+            conceptoId: parseInt(row.querySelector(".tmc-electronico-concepto").value, 10),
+            nroOperacion: row.querySelector(".tmc-electronico-ref").value.trim() || null,
+            importe: parseFloat(row.querySelector(".tmc-electronico-importe").value)
+          });
+        } else if (type === "retencion") {
+          retenciones.push({
+            numero: row.querySelector(".tmc-retencion-numero").value.trim(),
+            conceptoId: parseInt(row.querySelector(".tmc-retencion-concepto").value, 10),
+            fechaEmision: row.querySelector(".tmc-retencion-fecha").value || null,
+            importe: parseFloat(row.querySelector(".tmc-retencion-importe").value)
+          });
+        }
+      });
+
+      for (const comp in currentImputations) {
+        if (currentImputations[comp] > 0.01) {
+          cancelaciones.push({
+            invoiceNumber: comp,
+            amount: currentImputations[comp]
+          });
+        }
+      }
+
+      const fecha = document.getElementById("tmc-cobro-fecha").value;
+      const observacionesRaw = document.getElementById("tmc-cobro-observaciones").value.trim();
+      const observaciones = observacionesRaw ? "R.M.A - " + observacionesRaw : "R.M.A";
+
+      const payload = {
+        clientCode: currentClientCode,
+        fecha: fecha,
+        observaciones: observaciones || "R.M.A",
+        efectivos,
+        cheques,
+        transferencias,
+        electronicos,
+        retenciones,
+        cancelaciones
+      };
+
+      let confirmMsg = `¿Desea registrar este recibo de cobro en YiQi ERP por un total de ${formatCurrency(totalPaid)}?\n\n`;
+      if (efectivos.length > 0) confirmMsg += `- Efectivo: ${formatCurrency(efectivos.reduce((a, b) => a + b.importe, 0))}\n`;
+      if (cheques.length > 0) confirmMsg += `- Cheques: ${formatCurrency(cheques.reduce((a, b) => a + b.importe, 0))}\n`;
+      if (transferencias.length > 0) confirmMsg += `- Transferencias: ${formatCurrency(transferencias.reduce((a, b) => a + b.importe, 0))}\n`;
+      if (electronicos.length > 0) confirmMsg += `- Electrónicos: ${formatCurrency(electronicos.reduce((a, b) => a + b.importe, 0))}\n`;
+      if (retenciones.length > 0) confirmMsg += `- Retenciones: ${formatCurrency(retenciones.reduce((a, b) => a + b.importe, 0))}\n`;
+
+      const useUnapplied = document.getElementById("tmc-cobro-use-unapplied").checked;
+      if (useUnapplied) {
+        const totalCancelaciones = getCancelationsTotal();
+        const adj = totalCancelaciones - totalPaid;
+        if (adj > 0.01) {
+          confirmMsg += `\n* Se imputarán ${formatCurrency(adj)} adicionales del saldo a favor existente.`;
+        }
+      }
+
+      if (!await showCustomConfirm("Confirmar Registro de Cobro", confirmMsg)) {
+        return;
+      }
+
+      // Transition to loading view
+      document.getElementById("tmc-view-form").style.display = "none";
+      document.getElementById("tmc-steps-bar").style.display = "none";
+      
+      const loaderEl = document.getElementById("tmc-view-loader");
+      const loaderText = document.getElementById("tmc-loader-text");
+      loaderEl.style.display = "block";
+      loaderText.textContent = "Registrando cobro en YiQi ERP...";
+
+      try {
+        const response = await fetch(CREAR_RECIBO_MANUAL_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(errText || `HTTP ${response.status}`);
+        }
+
+        const res = await response.json();
+        if (res.success) {
+          loaderText.textContent = "Cobro registrado. Sincronizando datos con YiQi ERP...";
+          await new Promise(resolve => setTimeout(resolve, 2500));
+
+          // Reset step index and show success screen
+          loaderEl.style.display = "none";
+          
+          lastCobroId = res.cobroId;
+          saveReceiptToHistory(currentClientRazonSocial || currentClientName, currentClientCode, res.cobroId, res.receiptNumber || res.cobroId, totalPaid, isFXReceipt());
+          
+          document.getElementById("tmc-success-msg").innerHTML = `El recibo manual fue emitido y guardado exitosamente en YiQi ERP.<br><strong>Número de Recibo Oficial: ${res.receiptNumber || res.cobroId}</strong>`;
+          document.getElementById("tmc-view-success").style.display = "block";
+        } else {
+          throw new Error(res.error || "Error al emitir el recibo.");
+        }
+      } catch (err) {
+        console.error("Error al registrar recibo:", err);
+        loaderEl.style.display = "none";
+        document.getElementById("tmc-view-form").style.display = "block";
+        document.getElementById("tmc-steps-bar").style.display = "flex";
+        updateTotals();
+        showCustomAlert("Error de Registro", `No se pudo emitir el recibo manual: ${err.message}`);
+      }
+    }
+
+    document.getElementById("tmc-btn-step2-submit").addEventListener("click", submitCobro);
+
+    // Success actions
+    document.getElementById("tmc-btn-success-new").addEventListener("click", () => {
+      // Reset view to Step 0 (Client Search)
+      document.getElementById("tmc-view-success").style.display = "none";
+      document.getElementById("tmc-steps-bar").style.display = "flex";
+      document.getElementById("tmc-view-step0").style.display = "block";
+      
+      currentClientCode = "";
+      cachedMovements = [];
+      document.getElementById("tmc-client-search").value = "";
+      document.getElementById("tmc-client-results-list").innerHTML = `
+        <div class="text-muted" style="text-align: center; padding: 40px 10px; font-size: 13.5px;">
+          Ingresá un término de búsqueda para ver los clientes.
+        </div>
+      `;
+      transitionToStep(0);
+    });
+
+    document.getElementById("tmc-btn-success-pdf").addEventListener("click", () => {
+      if (lastCobroId) {
+        downloadPdfHistory(lastCobroId, isFXReceipt());
+      }
+    });
+
+    document.getElementById("tmc-btn-clear-history-drawer").addEventListener("click", () => {
+      localStorage.removeItem("tmc_emitted_receipts");
+      renderSessionHistory();
+    });
+
+  // Helper functions
+  function escapeHTML(str) {
+    if (str === null || str === undefined) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function isFXReceipt() {
+    const checkName = (currentClientRazonSocial || currentClientName || "").toLowerCase();
+    const isClientFX = checkName.includes("fx") || /\bx\b/.test(checkName);
+    
+    let isInvoiceFX = false;
+    for (const comp in currentImputations) {
+      if (currentImputations[comp] > 0.01) {
+        const nameLower = comp.toLowerCase();
+        if (nameLower.includes("fx") || nameLower.includes("factura x") || nameLower.includes("fac. x") || nameLower.includes("fact x")) {
+          isInvoiceFX = true;
+          break;
+        }
+      }
+    }
+    return isClientFX || isInvoiceFX;
+  }
+
+  window.toggleSort = (field) => {
+    if (invoiceSortField === field) {
+      invoiceSortAsc = !invoiceSortAsc;
+    } else {
+      invoiceSortField = field;
+      invoiceSortAsc = true;
+    }
+    saveImputationsState();
+    populateInvoicesTable();
+  };
+
+  window.toggleInvoiceDetail = async (comprobante, el) => {
+    const detailRow = document.getElementById(`detail-row-${comprobante}`);
+    const detailContent = document.getElementById(`detail-content-${comprobante}`);
+    if (!detailRow || !detailContent) return;
+
+    if (detailRow.style.display !== "none") {
+      detailRow.style.display = "none";
+      return;
+    }
+
+    detailRow.style.display = "table-row";
+    
+    if (invoiceDetailsCache[comprobante]) {
+      renderInvoiceDetail(comprobante, invoiceDetailsCache[comprobante]);
+      return;
+    }
+
+    detailContent.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px; padding: 4px;">
+        <div class="tmc-spinner" style="width: 14px; height: 14px; border-width: 2px; margin: 0;"></div>
+        <span style="color: var(--text-muted);">Cargando detalle del comprobante...</span>
+      </div>
+    `;
+
+    try {
+      const response = await fetch(`${OBTENER_DETALLE_URL}?comprobante=${encodeURIComponent(comprobante)}&clientCode=${currentClientCode}`);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const res = await response.json();
+      if (res.success) {
+        invoiceDetailsCache[comprobante] = res;
+        renderInvoiceDetail(comprobante, res);
+      } else {
+        throw new Error(res.error || "No se pudo obtener el detalle");
+      }
+    } catch (err) {
+      console.error("Error al obtener detalle:", err);
+      detailContent.innerHTML = `
+        <div style="color: var(--danger); padding: 4px;">
+          ❌ Error al cargar detalles: ${err.message}
+        </div>
+      `;
+    }
+  };
+
+  function renderInvoiceDetail(comprobante, detail) {
+    const detailContent = document.getElementById(`detail-content-${comprobante}`);
+    if (!detailContent) return;
+
+    let html = "";
+    if (detail.pedidoId) {
+      const nroLabel = detail.pedidoNro ? `N° ${detail.pedidoNro}` : `ID: ${detail.pedidoId}`;
+      const estadoLabel = detail.pedidoEstado ? ` (${detail.pedidoEstado})` : '';
+      html += `
+        <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed rgba(255,255,255,0.08); color: var(--warning); font-weight: 600; font-size:11px;">
+          📦 Pedido Asociado: ${nroLabel}${estadoLabel}
+        </div>
+      `;
+    }
+
+    if (detail.observaciones) {
+      html += `<div style="font-style: italic; color: var(--text-muted); margin-bottom: 6px; font-size:11px;">Obs: ${detail.observaciones}</div>`;
+    }
+
+    if (detail.detalles && detail.detalles.length > 0) {
+      html += `
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px;">
+          <thead>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.12); text-align: left; color: var(--text-muted);">
+              <th style="padding: 4px 6px;">Cód.</th>
+              <th style="padding: 4px 6px;">Concepto</th>
+              <th style="padding: 4px 6px; text-align: right;">Cant.</th>
+              <th style="padding: 4px 6px; text-align: right;">Precio</th>
+              <th style="padding: 4px 6px; text-align: right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      detail.detalles.forEach(item => {
+        html += `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+            <td style="padding: 4px 6px; color: var(--text-muted); font-family: monospace;">${item.codigo || '-'}</td>
+            <td style="padding: 4px 6px; color: #ffffff;">${item.concepto || ''}</td>
+            <td style="padding: 4px 6px; text-align: right; font-family: monospace;">${item.cantidad}</td>
+            <td style="padding: 4px 6px; text-align: right; font-family: monospace;">${formatCurrency(item.precio)}</td>
+            <td style="padding: 4px 6px; text-align: right; font-family: monospace; font-weight: 600; color: #f8fafc;">${formatCurrency(item.subtotal)}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </tbody>
+        </table>
+      `;
+    } else {
+      html += `<div style="color: var(--text-muted); font-size:11px;">Sin detalles de productos disponibles.</div>`;
+    }
+
+    detailContent.innerHTML = html;
+  }
+
+  function numeroALetras(num) {
+    const unidades = ["", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"];
+    const decenas = ["diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve"];
+    const decenasDiez = ["", "diez", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"];
+    const centenas = ["", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
+
+    function seccion(n, divisor, strSingular, strPlural) {
+      let ciento = Math.floor(n / divisor);
+      let resto = n % divisor;
+      let str = "";
+      if (ciento > 0) {
+        if (ciento === 1 && resto === 0) {
+          str = "cien";
+        } else {
+          str = centenas[ciento];
+        }
+      }
+      if (resto > 0) {
+        if (str !== "") str += " ";
+        if (resto < 10) {
+          str += unidades[resto];
+        } else if (resto < 20) {
+          str += decenas[resto - 10];
+        } else {
+          let dec = Math.floor(resto / 10);
+          let uni = resto % 10;
+          if (uni > 0) {
+            if (dec === 2) {
+              str = "veinti" + unidades[uni];
+            } else {
+              str = decenasDiez[dec] + " y " + unidades[uni];
+            }
+          } else {
+            str += decenasDiez[dec];
+          }
+        }
+      }
+      if (divisor === 1) return str;
+      if (ciento > 0 || resto > 0) {
+        return str + " " + (n === 1 ? strSingular : strPlural);
+      }
+      return "";
+    }
+
+    let entero = Math.floor(num);
+    let centavos = Math.round((num - entero) * 100);
+    
+    if (entero === 0) return "cero con " + centavos + "/00";
+    
+    let strEntero = "";
+    let millones = Math.floor(entero / 1000000);
+    let restoMillones = entero % 1000000;
+    let miles = Math.floor(restoMillones / 1000);
+    let restoMiles = restoMillones % 1000;
+
+    if (millones > 0) {
+      strEntero += seccion(millones, 1, "millón", "millones");
+    }
+    if (miles > 0) {
+      if (strEntero !== "") strEntero += " ";
+      if (miles === 1) {
+        strEntero += "mil";
+      } else {
+        strEntero += seccion(miles, 1, "", "") + " mil";
+      }
+    }
+    if (restoMiles > 0) {
+      if (strEntero !== "") strEntero += " ";
+      strEntero += seccion(restoMiles, 1, "", "");
+    }
+
+    let centavosStr = centavos < 10 ? "0" + centavos : centavos;
+    return strEntero.toUpperCase() + " CON " + centavosStr + "/00";
+  }
+
+  function printCustomReceipt(r) {
+    const w = window.open("", "_blank");
+    if (!w) {
+      showCustomAlert("Bloqueador de ventanas", "Por favor, habilita las ventanas emergentes para poder imprimir el recibo.");
+      return;
+    }
+
+    let liqRows = "";
+    let totalLiq = 0;
+    r.cancelaciones.forEach(c => {
+      let cleanName = cleanFXComprobante(c.invoiceNumber);
+      if (/fx\b|factura\s+x|fac\.?\s+x/i.test(c.invoiceNumber)) {
+        cleanName = "Fact X Nº " + cleanName;
+      }
+      liqRows += `
+        <tr>
+          <td>${formatDate(r.fecha)}</td>
+          <td>${cleanName}</td>
+          <td class="text-right">$ ${parseFloat(c.amount).toFixed(2)}</td>
+        </tr>
+      `;
+      totalLiq += parseFloat(c.amount);
+    });
+
+    let payRows = "";
+    if (r.efectivos && r.efectivos.length > 0) {
+      r.efectivos.forEach(e => {
+        const caja = cajasList.find(c => c.id == e.cajaId);
+        payRows += `
+          <tr>
+            <td>Efectivo (${caja ? caja.nombre : 'Caja'})</td>
+            <td class="text-right">$ ${parseFloat(e.importe).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
+    if (r.cheques && r.cheques.length > 0) {
+      r.cheques.forEach(ch => {
+        const banco = bancosList.find(b => b.id == ch.bancoId);
+        payRows += `
+          <tr>
+            <td>Cheque N°${ch.numero} (${banco ? banco.nombre : 'Banco'}) - Vto: ${formatDate(ch.fechaPago)}</td>
+            <td class="text-right">$ ${parseFloat(ch.importe).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
+    if (r.transferencias && r.transferencias.length > 0) {
+      r.transferencias.forEach(t => {
+        const cuenta = cuentasList.find(c => c.id == t.cuentaDestinoId);
+        payRows += `
+          <tr>
+            <td>Transferencia (${cuenta ? cuenta.nombre : 'Cuenta'}) - Ref: ${t.referencia || '-'}</td>
+            <td class="text-right">$ ${parseFloat(t.importe).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
+    if (r.electronicos && r.electronicos.length > 0) {
+      r.electronicos.forEach(el => {
+        payRows += `
+          <tr>
+            <td>Electrónico - Ref: ${el.nroOperacion || '-'}</td>
+            <td class="text-right">$ ${parseFloat(el.importe).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
+    if (r.retenciones && r.retenciones.length > 0) {
+      r.retenciones.forEach(ret => {
+        const concepto = retencionesList.find(c => c.id == ret.conceptoId);
+        payRows += `
+          <tr>
+            <td>Retención N°${ret.numero} (${concepto ? concepto.nombre : 'Retención'})</td>
+            <td class="text-right">$ ${parseFloat(ret.importe).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    const letters = numeroALetras(r.amount);
+
+    w.document.write(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <title>Recibo No Oficial - ${r.receiptNumber}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            color: #000000;
+            margin: 40px;
+            line-height: 1.4;
+            font-size: 13px;
+          }
+          .container {
+            border: 1px solid #000000;
+            padding: 0;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 2px solid #000000;
+          }
+          .header-table td {
+            border: 1px solid #000000;
+            padding: 12px;
+            vertical-align: top;
+          }
+          .logo-area {
+            width: 55%;
+          }
+          .logo-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 4px;
+          }
+          .logo-subtitle {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+          }
+          .x-box {
+            width: 80px;
+            text-align: center;
+            vertical-align: middle !important;
+            padding: 0 !important;
+          }
+          .x-letter {
+            font-size: 48px;
+            font-weight: bold;
+            line-height: 1;
+          }
+          .x-desc {
+            font-size: 8px;
+            font-weight: bold;
+            margin-top: 4px;
+          }
+          .receipt-info {
+            width: 35%;
+          }
+          .receipt-info h2 {
+            margin: 0 0 6px 0;
+            font-size: 15px;
+          }
+          .client-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 2px solid #000000;
+          }
+          .client-table td {
+            padding: 8px 12px;
+            border-bottom: 1px dashed #cccccc;
+          }
+          .client-table tr:last-child td {
+            border-bottom: none;
+          }
+          .details-container {
+            display: flex;
+            border-bottom: 2px solid #000000;
+          }
+          .liq-column {
+            width: 55%;
+            border-right: 2px solid #000000;
+            display: flex;
+            flex-direction: column;
+          }
+          .imp-column {
+            width: 45%;
+            display: flex;
+            flex-direction: column;
+          }
+          .section-title {
+            background-color: #e0e0e0;
+            text-align: center;
+            font-weight: bold;
+            padding: 6px;
+            border-bottom: 1px solid #000000;
+            font-size: 11px;
+            text-transform: uppercase;
+          }
+          .liq-table, .imp-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .liq-table th, .imp-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            padding: 6px;
+            font-size: 11px;
+            border-bottom: 1px solid #000000;
+          }
+          .liq-table td, .imp-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 11.5px;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .amount-section {
+            padding: 12px;
+            border-bottom: 2px solid #000000;
+            font-weight: bold;
+          }
+          .footer-section {
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+          }
+          @media print {
+            body {
+              margin: 20px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <table class="header-table">
+            <tr>
+              <td class="logo-area" style="vertical-align: middle;">
+                <div style="font-size: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">DOCUMENTACIÓN INTERNA</div>
+                <div style="font-size: 11px; color: #555555; margin-top: 4px;">Recibo de cobranza administrativa</div>
+              </td>
+              <td class="x-box">
+                <div class="x-letter">X</div>
+                <div class="x-desc">DOCUMENTO NO VALIDO COMO FACTURA</div>
+              </td>
+              <td class="receipt-info" style="vertical-align: middle;">
+                <h2 style="margin: 0; font-size: 14px;">RECIBO Nº 0000 - ${String(r.receiptNumber).padStart(8, '0')}</h2>
+                <div style="margin-top: 8px; font-size: 11.5px;">
+                  <strong>Fecha:</strong> ${formatDate(r.fecha)}
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <table class="client-table">
+            <tr>
+              <td style="width: 50%;"><strong>Señores:</strong> ${r.clientName}</td>
+              <td style="width: 50%;"><strong>Localidad:</strong> ${r.localidad || '-'}</td>
+            </tr>
+            <tr>
+              <td><strong>Domicilio:</strong> ${r.domicilio || '-'}</td>
+              <td><strong>C.U.I.T.:</strong> ${r.cuit || 'No oficial'}</td>
+            </tr>
+          </table>
+
+          <div class="details-container">
+            <div class="liq-column">
+              <div class="section-title">Liquidación</div>
+              <table class="liq-table">
+                <thead>
+                  <tr>
+                    <th style="width: 70px;">Fecha</th>
+                    <th>Comprobante N°</th>
+                    <th style="width: 90px; text-align: right;">Importe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${liqRows}
+                  <tr style="font-weight: bold; background-color: #f9f9f9;">
+                    <td colspan="2" class="text-right">TOTAL $</td>
+                    <td class="text-right">$ ${totalLiq.toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="imp-column">
+              <div class="section-title">Imputación</div>
+              <table class="imp-table">
+                <thead>
+                  <tr>
+                    <th>Medio de Pago</th>
+                    <th style="width: 90px; text-align: right;">Importe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${payRows}
+                  <tr style="font-weight: bold; background-color: #f9f9f9;">
+                    <td class="text-right">TOTAL $</td>
+                    <td class="text-right">$ ${parseFloat(r.amount).toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="amount-section">
+            Recibimos la cantidad de: $ ${parseFloat(r.amount).toFixed(2)} (${letters})
+          </div>
+
+          <div class="footer-section">
+            <div><strong>Moneda:</strong> ARS</div>
+            <div style="font-style: italic; color: #555555;">Documento de uso interno y cobranza</div>
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          }
+        <\/script>
+      </body>
+      </html>
+    `);
+    w.document.close();
+  }
+
+    // Initialize application on load
+    let appInitialized = false;
+    async function initializeApp() {
+      if (appInitialized) return;
+      appInitialized = true;
+      console.log("Initializing application lifecycle...");
+      await cargarAuxiliares();
+      transitionToStep(0);
+      renderSessionHistory();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initializeApp);
+      window.addEventListener("load", initializeApp);
+    } else {
+      initializeApp();
+    }
+  </script>
+  <!-- HISTORIAL PANEL LATERAL (DRAWER) -->
+  <div id="tmc-history-drawer" class="tmc-drawer">
+    <div class="tmc-drawer-header">
+      <h3>⏱️ Recibos Emitidos en la Sesión</h3>
+      <button onclick="toggleHistoryDrawer()" class="tmc-drawer-close-btn">&times;</button>
+    </div>
+    <div class="tmc-drawer-body">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+        <button id="tmc-btn-clear-history-drawer" class="tmc-btn tmc-btn-secondary" style="padding: 4px 8px; font-size: 11px; border-radius: 6px;">Borrar Historial</button>
+      </div>
+      <div class="tmc-table-wrapper" style="max-height: calc(100vh - 120px); border: none; background: transparent; margin: 0; overflow-y: auto;">
+        <table class="tmc-table">
+          <thead>
+            <tr style="border-bottom: 2px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); font-weight: 600;">
+              <th style="padding: 6px 8px;">Cliente / Fecha</th>
+              <th style="padding: 6px 8px;">Comprobante</th>
+              <th style="padding: 6px 8px; text-align: right;">Total</th>
+              <th style="padding: 6px 8px; text-align: center; width: 60px;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tmc-session-history-list">
+            <!-- Emitted receipts listed here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTON FLOTANTE DE HISTORIAL -->
+  <button id="tmc-history-trigger-btn" class="tmc-floating-trigger" onclick="toggleHistoryDrawer()">
+    <span>⏱️ Recibos Emitidos</span>
+    <span id="tmc-history-badge" class="tmc-floating-badge">0</span>
+  </button>
+
+  <!-- BANCOS DATALIST -->
+  <datalist id="bancos-datalist"></datalist>
+
+</body>
+</html>

@@ -1,0 +1,3132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alta de Cliente y Sucursales - Portal de Auto-Registro</title>
+  
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* VARIABLES DEL SISTEMA DE ESTILOS PREMIUM */
+    :root {
+      --font-title: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      
+      /* HSL Color Palette */
+      --bg-app: #080c14;
+      --bg-card: rgba(15, 22, 36, 0.75);
+      --bg-card-hover: rgba(22, 32, 52, 0.85);
+      --border-card: rgba(255, 255, 255, 0.07);
+      
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.4);
+      --primary-light: rgba(99, 102, 241, 0.12);
+      
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --accent-light: rgba(16, 185, 129, 0.12);
+      
+      --danger: #ef4444;
+      --danger-light: rgba(239, 68, 68, 0.1);
+      
+      --warning: #f59e0b;
+      --warning-light: rgba(245, 158, 11, 0.1);
+      
+      --text-main: #f3f4f6;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 10px;
+      
+      --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      --transition-fast: 0.2s ease;
+      --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ESTILOS DE BASE */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* CUSTOM SCROLLBAR FOR MODERN LOOK */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080c14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    body {
+      background-color: var(--bg-app);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 60%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 60%);
+      background-attachment: fixed;
+      font-family: var(--font-body);
+      color: var(--text-main);
+      line-height: 1.4;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 15px 20px;
+    }
+
+    header img {
+      filter: invert(1) contrast(1.2) brightness(1.2);
+      mix-blend-mode: screen;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    header img:hover {
+      transform: translateY(-2px) scale(1.025);
+      filter: invert(1) contrast(1.3) brightness(1.4) drop-shadow(0 0 25px rgba(99, 102, 241, 0.35)) !important;
+    }
+
+    /* CONTENEDOR */
+    .app-container {
+      width: 100%;
+      max-width: 900px; /* Ensanchado para mayor legibilidad y evitar campos apretados */
+      margin-top: 10px;
+      position: relative;
+    }
+
+    /* HEADER */
+    header {
+      text-align: center;
+      margin-bottom: 35px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    header h1 {
+      font-family: var(--font-title);
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    header p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      font-weight: 300;
+      max-width: 550px;
+      margin: 0 auto;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* COMPACT HEADER STYLING WHEN FIELDS ARE EXPANDED */
+    body.header-compact header {
+      margin-bottom: 15px !important;
+      margin-top: 5px !important;
+    }
+    body.header-compact header img {
+      max-height: 32px !important;
+      margin-bottom: 8px !important;
+    }
+    body.header-compact header h1 {
+      font-size: 1.6rem !important;
+      margin-bottom: 2px !important;
+    }
+    body.header-compact header p {
+      display: none !important;
+      opacity: 0;
+      height: 0;
+      overflow: hidden;
+      margin: 0;
+    }
+
+    /* ADDITIONAL COMPACTING FOR PENDING/EXPANDED STATE */
+    body.header-compact .form-card {
+      padding: 16px 28px !important;
+    }
+    body.header-compact .step-title {
+      margin-bottom: 15px !important;
+      padding-bottom: 8px !important;
+    }
+    body.header-compact label {
+      min-height: 26px !important;
+      padding-bottom: 4px !important;
+      font-size: 0.72rem !important;
+    }
+    body.header-compact input[type="text"],
+    body.header-compact input[type="email"],
+    body.header-compact select {
+      padding: 10px 14px !important;
+      font-size: 0.92rem !important;
+      border-radius: 10px !important;
+    }
+    body.header-compact .billing-grid {
+      gap: 8px 18px !important;
+    }
+    body.header-compact .form-grid {
+      gap: 12px !important;
+    }
+    body.header-compact .wizard-footer {
+      padding-top: 15px !important;
+    }
+    body.header-compact .btn {
+      padding: 10px 20px !important;
+      font-size: 0.9rem !important;
+      border-radius: 10px !important;
+    }
+    body.header-compact .btn-afip {
+      border-radius: 10px !important;
+    }
+
+    /* TRIGGER CONFIGURACIÓN API (SEGURIDAD) */
+    .config-trigger {
+      position: absolute;
+      top: -15px;
+      right: 0;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition-fast);
+      z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+
+    .config-trigger:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--primary);
+      color: var(--text-main);
+    }
+
+    /* MODAL CONFIGURACIÓN */
+    .config-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(4, 6, 10, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .config-modal-content {
+      background: #0d121f;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 30px;
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      box-shadow: var(--shadow-premium);
+      animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .config-modal-content h3 {
+      font-family: var(--font-title);
+      margin-bottom: 8px;
+      font-size: 1.4rem;
+      color: #ffffff;
+    }
+
+    .config-modal-content p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.8rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: var(--transition-fast);
+    }
+
+    .close-modal:hover {
+      color: var(--text-main);
+    }
+
+    .config-option-box {
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.01);
+      border-radius: var(--radius-sm);
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    /* INDICADORES DE PASOS */
+    .steps-indicator {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .steps-indicator::before {
+      content: '';
+      position: absolute;
+      top: 18px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 1;
+    }
+
+    .step-item {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: calc(100% / 4);
+      cursor: pointer;
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #0f1524;
+      border: 2px solid rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-title);
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: var(--transition-normal);
+      margin-bottom: 6px;
+    }
+
+    .step-item.active .step-number {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      border-color: #818cf8;
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .step-item.completed .step-number {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-color: #34d399;
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .step-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: var(--transition-fast);
+      text-align: center;
+    }
+
+    .step-item.active .step-label {
+      color: var(--text-main);
+    }
+
+    .step-item.completed .step-label {
+      color: var(--accent);
+    }
+
+    /* CARD CONTENEDOR PRINCIPAL */
+    .form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 24px 32px;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-premium);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      max-height: 70vh; /* Bounded card height to avoid cut-off */
+    }
+
+    /* WIZARD PASOS */
+    .wizard-step {
+      display: none;
+      animation: stepFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .wizard-step.active {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+      margin-bottom: 12px;
+    }
+
+    /* CUSTOM INTERNAL SCROLLBAR */
+    .wizard-step::-webkit-scrollbar {
+      width: 6px;
+    }
+    .wizard-step::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .wizard-step::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+    }
+    .wizard-step::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    @keyframes stepFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-title {
+      font-family: var(--font-title);
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 25px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 14px;
+    }
+
+    /* GRID Y CAMPOS DE FORMULARIO */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .billing-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px 18px;
+    }
+
+    .col-span-1 { grid-column: span 1; }
+    .col-span-2 { grid-column: span 2; }
+    .col-span-3 { grid-column: span 3; }
+    .col-span-4 { grid-column: span 4; }
+    .col-span-5 { grid-column: span 5; }
+    .col-span-6 { grid-column: span 6; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+
+    label {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      min-height: 32px; /* Pull labels to baseline alignment */
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    select {
+      width: 100%;
+      background: rgba(15, 22, 36, 0.45); /* Dark slate glass background */
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px; /* Modern premium rounding */
+      color: var(--text-main);
+      padding: 12px 14px;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+    }
+
+    input.input-error {
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2) !important;
+    }
+
+    /* HIGHLIGHT PENDING/EMPTY FIELDS */
+    input:not([readonly]):placeholder-shown {
+      border-color: rgba(245, 158, 11, 0.35) !important;
+      background-color: rgba(245, 158, 11, 0.02) !important;
+      box-shadow: 0 0 4px rgba(245, 158, 11, 0.1) !important;
+    }
+    input:not([readonly]):placeholder-shown:focus {
+      border-color: var(--primary) !important;
+      background-color: rgba(255, 255, 255, 0.05) !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
+    }
+
+    input[readonly],
+    select[disabled],
+    .input-readonly {
+      background: rgba(15, 22, 36, 0.25) !important;
+      border-color: rgba(255, 255, 255, 0.04) !important;
+      color: var(--text-secondary) !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+      box-shadow: none !important;
+      opacity: 0.65;
+    }
+
+    /* Lock icon for retrieved AFIP fields */
+    input[readonly].input-readonly,
+    select[disabled].input-readonly {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.2)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2' ry='2'%3E%3C/rect%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'%3E%3C/path%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: calc(100% - 14px) center !important;
+      padding-right: 36px !important;
+    }
+
+    select option {
+      background-color: #0d121f;
+      color: var(--text-main);
+    }
+
+    /* CUIT E INTEGRACIÓN AFIP */
+    .cuit-input-container {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .btn-afip {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0 22px;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-afip:hover:not(:disabled) {
+      background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-afip:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
+    }
+
+    .afip-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: rgba(2, 132, 199, 0.1);
+      color: #38bdf8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(2, 132, 199, 0.25);
+      align-self: flex-start;
+      margin-top: 4px;
+      animation: stepFadeIn 0.3s ease;
+    }
+
+    .dni-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: rgba(139, 92, 246, 0.1);
+      color: #a78bfa;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      align-self: flex-start;
+      margin-top: 4px;
+      animation: stepFadeIn 0.3s ease;
+    }
+
+    /* SUCURSALES MANAGER */
+    .branches-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .btn-add-branch {
+      background: var(--primary-light);
+      border: 1px dashed var(--primary);
+      color: #a5b4fc;
+      padding: 9px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-add-branch:hover {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(99, 102, 241, 0.35);
+    }
+
+    .branches-list-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 290px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+
+    .branch-item-card {
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: stepFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: var(--transition-fast);
+    }
+
+    .branch-item-card:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .branch-item-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .branch-item-name {
+      font-weight: 600;
+      font-size: 0.98rem;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .branch-item-address {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .btn-delete-branch {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-fast);
+    }
+
+    .btn-delete-branch:hover {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .no-branches-placeholder {
+      text-align: center;
+      padding: 45px 20px;
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: 0.9rem;
+      border: 1px dashed rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.005);
+    }
+
+    /* CUADRO DE RESUMEN (PASO 3) */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 25px;
+    }
+
+    .summary-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .summary-cell.full-width {
+      grid-column: span 2;
+    }
+
+    .summary-cell-lbl {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .summary-cell-val {
+      font-size: 0.95rem;
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    /* FOOTER NAVEGACIÓN */
+    .wizard-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      background: transparent;
+      z-index: 5;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.18);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .btn-secondary:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .btn-accent:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    /* PANTALLA EXITO FINAL */
+    .success-panel {
+      text-align: center;
+      padding: 30px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: stepFadeIn 0.5s ease;
+    }
+
+    .success-check-icon {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.08);
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+    }
+
+    .success-title {
+      font-family: var(--font-title);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+
+    .success-text {
+      color: var(--text-secondary);
+      max-width: 480px;
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+    }
+
+    .success-card-details {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      width: 100%;
+      max-width: 420px;
+      text-align: left;
+      margin-bottom: 30px;
+    }
+
+    .success-card-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+    }
+
+    .success-card-row:last-child {
+      border: none;
+    }
+
+    /* LOADER OVERLAY */
+    .loader-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(8, 12, 20, 0.9);
+      backdrop-filter: blur(15px);
+      z-index: 50;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      border-radius: var(--radius-lg);
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255, 255, 255, 0.06);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    .loader-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #ffffff;
+      font-family: var(--font-title);
+    }
+
+    .loader-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 260px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* TOAST NOTIFICACIONES */
+    .app-toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: #0d121f;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-sm);
+      padding: 14px 28px;
+      box-shadow: var(--shadow-premium);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      font-weight: 500;
+      font-size: 0.92rem;
+    }
+
+    .app-toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .app-toast.error {
+      border-color: var(--danger);
+      background: rgba(239, 68, 68, 0.12);
+      color: #fca5a5;
+    }
+
+    .app-toast.success {
+      border-color: var(--accent);
+      background: rgba(16, 185, 129, 0.12);
+      color: #a7f3d0;
+    }
+
+    .app-toast.warning {
+      border-color: var(--warning);
+      background: rgba(245, 158, 11, 0.12);
+      color: #fde68a;
+    }
+
+    /* BANNER DE SIMULACIÓN */
+    .simulation-banner {
+      width: 100%;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.18);
+      border-radius: var(--radius-sm);
+      padding: 12px 18px;
+      font-size: 0.84rem;
+      color: #fcd34d;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .sim-toggle-btn {
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      color: #fef08a;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .sim-toggle-btn:hover {
+      background: rgba(245, 158, 11, 0.28);
+    }
+
+    @media (max-height: 780px) {
+      body {
+        padding: 5px 15px !important;
+      }
+      header {
+        margin-bottom: 6px !important;
+        margin-top: 3px !important;
+      }
+      header img {
+        max-height: 38px !important;
+        margin-bottom: 3px !important;
+      }
+      header h1 {
+        font-size: 1.6rem !important;
+        margin-bottom: 1px !important;
+      }
+      header p {
+        display: none !important;
+      }
+      .steps-indicator {
+        margin-bottom: 6px !important;
+      }
+      .step-number {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 0.78rem !important;
+        margin-bottom: 1px !important;
+      }
+      .step-label {
+        font-size: 0.65rem !important;
+      }
+      .form-card {
+        padding: 10px 18px !important;
+        max-height: 76vh !important;
+      }
+      .step-title {
+        font-size: 1.1rem !important;
+        margin-bottom: 8px !important;
+        padding-bottom: 3px !important;
+      }
+      .form-grid {
+        gap: 6px !important;
+      }
+      .billing-grid {
+        gap: 6px 10px !important;
+      }
+      input[type="text"],
+      input[type="email"],
+      select {
+        padding: 6px 10px !important;
+        font-size: 0.82rem !important;
+        border-radius: 8px !important;
+      }
+      label {
+        font-size: 0.62rem !important;
+        letter-spacing: 0.2px !important;
+        min-height: 24px !important;
+        padding-bottom: 2px !important;
+      }
+      .btn {
+        padding: 6px 14px !important;
+        font-size: 0.82rem !important;
+        border-radius: 8px !important;
+      }
+      .btn-afip {
+        padding: 6px 14px !important;
+        font-size: 0.82rem !important;
+        border-radius: 8px !important;
+      }
+      .btn-add-branch {
+        padding: 6px 12px !important;
+        font-size: 0.82rem !important;
+        border-radius: 8px !important;
+      }
+      .wizard-footer {
+        margin-top: 5px !important;
+        padding-top: 8px !important;
+      }
+      .branches-list-box {
+        max-height: 85px !important;
+        overflow-y: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CONFIGURACIÓN API (SEGURIDAD DE LLAVES) -->
+  <button class="config-trigger" onclick="openConfigModal()" style="display: none !important;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    Configuración de API
+  </button>
+
+  <!-- MODAL DE CONFIGURACIÓN -->
+  <div class="config-modal" id="config-modal">
+    <div class="config-modal-content">
+      <button class="close-modal" onclick="closeConfigModal()">&times;</button>
+      <h3>Configuración de Seguridad e Integración</h3>
+      <p>Definí el modo de conexión del formulario. Para producción (Tornado Store), se recomienda usar el Modo Proxy Seguro para no exponer claves contables en el código frontend.</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+        
+        <!-- Toggle Modo de Conexión -->
+        <div class="form-group">
+          <label>Modo de Conexión</label>
+          <select id="cfg-conn-mode" onchange="toggleConfigFormDisplay()">
+            <option value="direct">Conexión Directa API YiQi (Desarrollo/Testing Local)</option>
+            <option value="proxy">Proxy Seguro del Servidor (Recomendado Producción)</option>
+          </select>
+        </div>
+
+        <!-- Opciones Conexión Directa -->
+        <div id="direct-api-config" class="config-option-box">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div class="form-group">
+              <label>API Base URL</label>
+              <input type="text" id="cfg-url" value="https://api.yiqi.com.ar">
+            </div>
+            <div class="form-group">
+              <label>Schema ID (YiQi)</label>
+              <input type="text" id="cfg-schema" value="1491">
+            </div>
+            <div class="form-group">
+              <label>Usuario / Email ERP</label>
+              <input type="text" id="cfg-user" placeholder="email@tudominio.com">
+            </div>
+            <div class="form-group">
+              <label>Contraseña ERP</label>
+              <input type="password" id="cfg-pass" placeholder="••••••••">
+            </div>
+          </div>
+        </div>
+
+        <!-- Opciones Proxy Seguro -->
+        <div id="proxy-api-config" class="config-option-box" style="display:none;">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div class="form-group">
+              <label>Endpoint Proxy Alta Cliente (Firebase Function)</label>
+              <input type="text" id="cfg-proxy-url" value="https://altaclienteproxy-vb5plcbgra-uc.a.run.app">
+              <span style="font-size:0.72rem; color: var(--text-muted); margin-top:2px;">Se encarga de validar duplicados y registrar la ficha del cliente y sus sucursales en YiQi ERP.</span>
+            </div>
+            <div class="form-group">
+              <label>Endpoint Proxy Padrón AFIP (Firebase Function)</label>
+              <input type="text" id="cfg-afip-url" value="https://consultarcuitafip-vb5plcbgra-uc.a.run.app">
+              <span style="font-size:0.72rem; color: var(--text-muted); margin-top:2px;">Se encarga de consultar los datos fiscales del CUIT (AFIP/Cuitalizer) de forma segura.</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 10px;">
+          <button class="btn btn-primary" onclick="saveConfiguration()" style="flex: 1; justify-content: center; padding: 10px;">Guardar Cambios</button>
+          <button class="btn btn-secondary" onclick="resetConfiguration()" style="padding: 10px;">Reestablecer</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- HEADER -->
+    <header style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 40px; margin-top: 20px; text-align: center;">
+      <img src="logo_tmc.png" alt="TMC Logística" style="max-height: 55px; max-width: 250px; object-fit: contain; margin-bottom: 25px; transition: all 0.3s ease;">
+      <h1 style="font-family: var(--font-title); font-size: 2.8rem; font-weight: 800; background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; letter-spacing: -0.5px;">Auto-Registro de Clientes</h1>
+      <p style="color: var(--text-secondary); font-size: 1.05rem; font-weight: 400; max-width: 520px; line-height: 1.6; margin: 0 auto; opacity: 0.95;">Completá los datos fiscales de tu empresa para dar de alta tu ficha de facturación y despacho de forma inmediata.</p>
+    </header>
+
+    <!-- BANNER MODAL SIMULACIÓN -->
+    <div class="simulation-banner" id="sim-banner" style="display: none !important;">
+    </div>
+
+    <!-- INDICADOR DE WIZARD -->
+    <div class="steps-indicator">
+      <div class="step-item active" id="step-ind-1" onclick="navigateToStep(1)">
+        <div class="step-number">1</div>
+        <div class="step-label">Facturación</div>
+      </div>
+      <div class="step-item" id="step-ind-2" onclick="navigateToStep(2)">
+        <div class="step-number">2</div>
+        <div class="step-label">Contacto</div>
+      </div>
+      <div class="step-item" id="step-ind-3" onclick="navigateToStep(3)">
+        <div class="step-number">3</div>
+        <div class="step-label">Sucursales</div>
+      </div>
+      <div class="step-item" id="step-ind-4" onclick="navigateToStep(4)">
+        <div class="step-number">4</div>
+        <div class="step-label">Confirmación</div>
+      </div>
+    </div>
+
+    <!-- CARD PRINCIPAL -->
+    <div class="form-card">
+
+      <!-- SPINNER CARGANDO -->
+      <div class="loader-overlay" id="loader-overlay">
+        <div class="spinner"></div>
+        <div class="loader-title" id="loader-title">Procesando solicitud...</div>
+        <div class="loader-subtitle" id="loader-subtitle">Estamos sincronizando los datos con el sistema contable.</div>
+      </div>
+
+      <!-- PASO 1: DATOS DE FACTURACIÓN -->
+      <div class="wizard-step active" id="step-1">
+        <div class="step-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="4"></line><line x1="8" y1="2" x2="8" y2="4"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Paso 1: Datos de Facturación
+        </div>
+
+        <div class="form-grid">
+          
+          <!-- CUIT AFIP LOOKUP -->
+          <div class="form-group full-width">
+            <label id="lbl-cuit-container" style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+              <span id="lbl-cuit">CUIT de la Empresa (Solo números)</span>
+              <span id="btn-toggle-dni" style="font-size: 0.82rem; color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: 500; text-transform: none; letter-spacing: normal;" onclick="toggleRegistrationMode()">¿No tenés CUIT? Ingresar con DNI</span>
+            </label>
+            <div class="cuit-input-container">
+              <input type="text" id="cust-cuit" placeholder="Ej: 30-76543210-9" maxlength="14">
+              <button class="btn-afip" id="btn-afip" onclick="triggerAfipLookup()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                Consultar CUIT (AFIP)
+              </button>
+            </div>
+            <div class="afip-status-badge" id="afip-badge" style="display:none; margin-top: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              Datos fiscales recuperados y validados de AFIP
+            </div>
+            <div class="dni-status-badge" id="dni-badge" style="display:none; margin-top: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+              Modo Registro: DNI (Carga manual)
+            </div>
+          </div>
+
+          <!-- CONTENEDOR DESPLEGABLE DE CAMPOS DE FACTURACIÓN -->
+          <div id="billing-expanded-fields" class="billing-grid full-width" style="display: none; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 15px; margin-top: 10px;">
+            <!-- Razón Social -->
+            <div class="form-group col-span-4">
+              <label>Razón Social</label>
+              <input type="text" id="cust-social" placeholder="Ej: Distribuidora Sol S.A.">
+            </div>
+
+            <!-- Condición ante IVA -->
+            <div class="form-group col-span-2">
+              <label>Condición ante IVA</label>
+              <select id="cust-iva">
+                <option value="7" selected>Consumidor Final (CF)</option>
+                <option value="1">Exento (EX)</option>
+                <option value="2">Responsable Inscripto (RI)</option>
+                <option value="3">Responsable Monotributo (RS)</option>
+                <option value="4">Responsable no Inscripto (RNI)</option>
+              </select>
+            </div>
+
+            <!-- Domicilio Fiscal (Calle y Altura) -->
+            <div class="form-group col-span-4">
+              <label>Domicilio Fiscal (Calle y Altura)</label>
+              <input type="text" id="cust-address" placeholder="Ej: Av. Rivadavia 4500">
+            </div>
+
+            <!-- Localidad -->
+            <div class="form-group col-span-2">
+              <label>Localidad</label>
+              <input type="text" id="cust-city" placeholder="Ej: Lanús / CABA">
+            </div>
+
+            <!-- País -->
+            <div class="form-group col-span-2">
+              <label>País</label>
+              <select id="cust-country" onchange="handleCountryChange('cust')">
+                <option value="1" selected>Argentina</option>
+                <option value="2">Brasil</option>
+                <option value="3">Uruguay</option>
+                <option value="4">Paraguay</option>
+                <option value="5">Chile</option>
+                <option value="6">Bolivia</option>
+              </select>
+            </div>
+
+            <!-- Provincia -->
+            <div class="form-group col-span-2">
+              <label>Provincia</label>
+              <select id="cust-province">
+                <option value="1">CABA</option>
+                <option value="2" selected>Buenos Aires</option>
+                <option value="3">Catamarca</option>
+                <option value="4">Córdoba</option>
+                <option value="5">Corrientes</option>
+                <option value="6">Chaco</option>
+                <option value="7">Chubut</option>
+                <option value="8">Entre Ríos</option>
+                <option value="9">Formosa</option>
+                <option value="10">Jujuy</option>
+                <option value="11">La Pampa</option>
+                <option value="12">La Rioja</option>
+                <option value="13">Mendoza</option>
+                <option value="14">Misiones</option>
+                <option value="15">Neuquén</option>
+                <option value="16">Río Negro</option>
+                <option value="17">Salta</option>
+                <option value="18">San Juan</option>
+                <option value="19">San Luis</option>
+                <option value="20">Santa Cruz</option>
+                <option value="21">Santa Fe</option>
+                <option value="22">Santiago del Estero</option>
+                <option value="23">Tierra del Fuego</option>
+                <option value="24">Tucumán</option>
+              </select>
+            </div>
+
+            <!-- Código Postal -->
+            <div class="form-group col-span-2">
+              <label>Código Postal</label>
+              <input type="text" id="cust-zip" placeholder="Ej: 1406">
+            </div>
+
+            <!-- Nro Ingresos Brutos -->
+            <div class="form-group col-span-3">
+              <label>Nro Ingresos Brutos (IIBB)</label>
+              <input type="text" id="cust-iibb" placeholder="Autocompletado desde AFIP" readonly class="input-readonly">
+            </div>
+
+            <!-- Inicio de Actividades -->
+            <div class="form-group col-span-3">
+              <label>Inicio de Actividades</label>
+              <input type="text" id="cust-inicio-actividades" placeholder="Autocompletado desde AFIP" readonly class="input-readonly">
+            </div>
+
+            <!-- Subconcepto de ganancias -->
+            <div class="form-group col-span-6" style="display: none;">
+              <label>Subconcepto Ganancias</label>
+              <select id="cust-subconcepto-ganancias" disabled class="input-readonly">
+                <option value="86" selected>Régimen General Retención Alícuota General (86)</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- PASO 2: DATOS DE CONTACTO -->
+      <div class="wizard-step" id="step-2">
+        <div class="step-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          Paso 2: Datos de Contacto
+        </div>
+
+        <div class="form-grid">
+          <!-- Nombre de Contacto -->
+          <div class="form-group">
+            <label>Nombre de Contacto (Persona)</label>
+            <input type="text" id="cust-contact-name" placeholder="Ej: Juan Pérez">
+          </div>
+
+          <!-- Nombre de Fantasía -->
+          <div class="form-group">
+            <label>Nombre de Fantasía / Comercial</label>
+            <input type="text" id="cust-fantasy" placeholder="Ej: Sol Mayorista">
+          </div>
+
+          <!-- Email de Facturación -->
+          <div class="form-group">
+            <label>Email para Facturación Electrónica</label>
+            <input type="email" id="cust-email" placeholder="administracion@empresa.com">
+          </div>
+
+          <!-- Teléfono de contacto -->
+          <div class="form-group">
+            <label>Teléfono de Contacto</label>
+            <input type="text" id="cust-phone" placeholder="Ej: 11-9876-5432">
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3: SUCURSALES DE ENTREGA -->
+      <div class="wizard-step" id="step-3">
+        <div class="step-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          Paso 3: Sucursales de Entrega
+        </div>
+
+        <div class="branches-bar">
+          <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 530px;">
+            Declará las sucursales físicas o depósitos donde despacharemos tus pedidos. Podés agregar todas las sucursales que necesites.
+          </p>
+          <button class="btn-add-branch" onclick="openBranchForm()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Agregar Sucursal
+          </button>
+        </div>
+
+        <!-- FORMULARIO INLINE AGREGAR SUCURSAL -->
+        <div id="add-branch-inline-form" style="display:none; background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.05); padding: 20px; border-radius: var(--radius-md); margin-bottom: 25px; animation: stepFadeIn 0.3s ease;">
+          <h4 style="font-family: var(--font-title); margin-bottom: 12px; font-size: 1.1rem; color: #ffffff;">Nueva Sucursal de Entrega</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombre de la Sucursal</label>
+              <input type="text" id="br-name" placeholder="Ej: Depósito Central / Local Lanús">
+            </div>
+            <div class="form-group">
+              <label>Dirección física</label>
+              <input type="text" id="br-address" placeholder="Ej: Av. General Paz 1500">
+            </div>
+            <div class="form-group">
+              <label>Localidad</label>
+              <input type="text" id="br-city" placeholder="Ej: Vicente López" list="localidades-list">
+              <datalist id="localidades-list"></datalist>
+            </div>
+            <!-- País -->
+            <div class="form-group">
+              <label>País</label>
+              <select id="br-country" onchange="handleCountryChange('br')">
+                <option value="1" selected>Argentina</option>
+                <option value="2">Brasil</option>
+                <option value="3">Uruguay</option>
+                <option value="4">Paraguay</option>
+                <option value="5">Chile</option>
+                <option value="6">Bolivia</option>
+              </select>
+            </div>
+
+            <!-- Provincia -->
+            <div class="form-group">
+              <label>Provincia</label>
+              <select id="br-province" onchange="updateLocalidadesDatalist('br')">
+                <option value="1">CABA</option>
+                <option value="2" selected>Buenos Aires</option>
+                <option value="3">Catamarca</option>
+                <option value="4">Córdoba</option>
+                <option value="5">Corrientes</option>
+                <option value="6">Chaco</option>
+                <option value="7">Chubut</option>
+                <option value="8">Entre Ríos</option>
+                <option value="9">Formosa</option>
+                <option value="10">Jujuy</option>
+                <option value="11">La Pampa</option>
+                <option value="12">La Rioja</option>
+                <option value="13">Mendoza</option>
+                <option value="14">Misiones</option>
+                <option value="15">Neuquén</option>
+                <option value="16">Río Negro</option>
+                <option value="17">Salta</option>
+                <option value="18">San Juan</option>
+                <option value="19">San Luis</option>
+                <option value="20">Santa Cruz</option>
+                <option value="21">Santa Fe</option>
+                <option value="22">Santiago del Estero</option>
+                <option value="23">Tierra del Fuego</option>
+                <option value="24">Tucumán</option>
+              </select>
+            </div>
+            <div class="form-group full-width" style="display:flex; flex-direction:row; gap: 10px; margin-top: 10px; justify-content: flex-end;">
+              <button class="btn btn-secondary" onclick="closeBranchForm()" style="padding: 8px 16px; font-size: 0.85rem;">Cancelar</button>
+              <button class="btn btn-primary" onclick="addBranchToList()" style="padding: 8px 16px; font-size: 0.85rem;">Añadir Sucursal</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTADO DE SUCURSALES -->
+        <div class="branches-list-box" id="branches-list-box">
+          <div class="no-branches-placeholder">
+            No declaraste sucursales de entrega adicionales. Se tomará la dirección fiscal de facturación como punto de entrega por defecto.
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 4: CONFIRMACIÓN Y ENVÍO -->
+      <div class="wizard-step" id="step-4">
+        <div class="step-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          Paso 4: Confirmación y Envío
+        </div>
+
+        <p style="color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 25px;">
+          Confirmá que los datos declarados a continuación sean correctos antes de enviar la solicitud de registro al sistema contable.
+        </p>
+
+        <!-- RESUMEN DE DATOS -->
+        <div class="summary-grid">
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Razón Social</span>
+            <span class="summary-cell-val" id="sum-social">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl" id="lbl-sum-cuit">CUIT</span>
+            <span class="summary-cell-val" id="sum-cuit">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Nombre de Contacto</span>
+            <span class="summary-cell-val" id="sum-contact-name">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Nombre de Fantasía</span>
+            <span class="summary-cell-val" id="sum-fantasy">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Condición IVA</span>
+            <span class="summary-cell-val" id="sum-iva">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Email de Facturación</span>
+            <span class="summary-cell-val" id="sum-email">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Domicilio Fiscal (Calle y Altura)</span>
+            <span class="summary-cell-val" id="sum-address">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Localidad</span>
+            <span class="summary-cell-val" id="sum-city">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Provincia</span>
+            <span class="summary-cell-val" id="sum-province">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-cell-lbl">Código Postal</span>
+            <span class="summary-cell-val" id="sum-zip">-</span>
+          </div>
+          <div class="summary-cell full-width">
+            <span class="summary-cell-lbl">Sucursales de despacho</span>
+            <span class="summary-cell-val" id="sum-branches">-</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.15); padding: 15px; border-radius: var(--radius-md); font-size: 0.82rem; color: #a5b4fc; display:flex; gap:10px; align-items:center; line-height:1.4;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <span>Declaro bajo juramento que los datos declarados son correctos y coinciden con la constancia de inscripción emitida por la AFIP.</span>
+        </div>
+      </div>
+
+      <!-- PANTALLA ÉXITO (FINAL) -->
+      <div class="wizard-step" id="step-success">
+        <div class="success-panel">
+          <div class="success-check-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <div class="success-title">Registro Exitoso</div>
+          <div class="success-text">
+            Los datos de tu empresa han sido validados e impactados de forma inmediata en el sistema de facturación.
+          </div>
+          
+          <div class="success-card-details">
+            <div class="success-card-row">
+              <span style="color: var(--text-secondary); font-weight: 500;">Empresa:</span>
+              <span style="font-weight: 600; color: #ffffff;" id="suc-social-name">-</span>
+            </div>
+            <div class="success-card-row">
+              <span style="color: var(--text-secondary); font-weight: 500;">Número de cliente:</span>
+              <span style="font-weight: 600; color: var(--accent);" id="suc-client-id">-</span>
+            </div>
+            <div class="success-card-row">
+              <span style="color: var(--text-secondary); font-weight: 500;">CUIT:</span>
+              <span style="font-weight: 600; color: #ffffff;" id="suc-cuit">-</span>
+            </div>
+            <div class="success-card-row">
+              <span style="color: var(--text-secondary); font-weight: 500;">Sucursales de entrega:</span>
+              <span style="font-weight: 600; color: #ffffff;" id="suc-branches">-</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="restartFormFlow()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            Registrar nueva empresa
+          </button>
+        </div>
+      </div>
+
+      <!-- FOOTER NAVEGACIÓN -->
+      <div class="wizard-footer" id="wizard-footer">
+        <button class="btn btn-secondary" id="btn-back" onclick="navigateStep(-1)" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Atrás
+        </button>
+        <button class="btn btn-primary" id="btn-next" onclick="navigateStep(1)">
+          Continuar
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICACIONES -->
+  <div class="app-toast" id="app-toast"></div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // --- ESTADO GENERAL ---
+    let currentStep = 1;
+    let branches = [];
+
+    const PROVINCIAS_MAP = {
+      "1": "CABA",
+      "2": "Buenos Aires",
+      "3": "Catamarca",
+      "4": "Córdoba",
+      "5": "Corrientes",
+      "6": "Chaco",
+      "7": "Chubut",
+      "8": "Entre Ríos",
+      "9": "Formosa",
+      "10": "Jujuy",
+      "11": "La Pampa",
+      "12": "La Rioja",
+      "13": "Mendoza",
+      "14": "Misiones",
+      "15": "Neuquén",
+      "16": "Río Negro",
+      "17": "Salta",
+      "18": "San Juan",
+      "19": "San Luis",
+      "20": "Santa Cruz",
+      "21": "Santa Fe",
+      "22": "Santiago del Estero",
+      "23": "Tierra del Fuego",
+      "24": "Tucumán"
+    };
+
+    // Datos Falsos AFIP para Demo/Simulación
+    const AFIP_MOCK_DATA = {
+      "30-76543210-9": {
+        social: "Distribuidora Sol S.A.",
+        fantasy: "Sol Mayorista",
+        iva: "1", // Exento
+        address: "Av. Rivadavia 4500, CABA",
+        email: "facturacion@distribuidorasol.com.ar",
+        phone: "11-9876-5432",
+        inicioActividades: "2015-06-01T00:00:00",
+        iibb: "30765432109",
+        subconceptoGanancias: 86
+      },
+      "30-12345678-9": {
+        social: "LOZAMETAL S.R.L.",
+        fantasy: "Lozametal Inyección",
+        iva: "2", // Responsable Inscripto
+        address: "Formosa 3762, La Tablada, Buenos Aires",
+        email: "administracion@lozametal.com.ar",
+        phone: "11-4652-9011",
+        inicioActividades: "2010-03-15T00:00:00",
+        iibb: "30123456789",
+        subconceptoGanancias: 86
+      },
+      "20-99999999-1": {
+        social: "Juan Perez",
+        fantasy: "JP Revestimientos",
+        iva: "3", // Monotributista
+        address: "Calle de las Flores 123, Rosario, Santa Fe",
+        email: "juanperez@gmail.com",
+        phone: "341-432-1090",
+        inicioActividades: "2018-11-01T00:00:00",
+        iibb: "20999999991",
+        subconceptoGanancias: 86
+      }
+    };
+
+    // Modo de Registro: "CUIT" o "DNI"
+    let registrationMode = "CUIT";
+
+    // Parámetros de Configuración y Seguridad
+    let apiConfig = {
+      connectionMode: "proxy", // "direct" o "proxy"
+      url: "https://api.yiqi.com.ar",
+      schemaId: "1491",
+      user: "",
+      pass: "",
+      proxyUrl: "https://altaclienteproxy-vb5plcbgra-uc.a.run.app",
+      afipProxyUrl: "https://consultarcuitafip-vb5plcbgra-uc.a.run.app",
+      simulated: false // Simulación local desactivada
+    };
+
+    // Cargar parámetros locales guardados
+    const localConfig = localStorage.getItem("YIQI_ALTA_CONFIG_PROD");
+    if (localConfig) {
+      try {
+        const parsed = JSON.parse(localConfig);
+        // Migración automática: si no tienen usuario de conexión directa configurado, forzar "proxy"
+        if (parsed.connectionMode === "direct" && !parsed.user) {
+          parsed.connectionMode = "proxy";
+        }
+        apiConfig = { ...apiConfig, ...parsed };
+        apiConfig.simulated = false; // Forzar simulación desactivada siempre
+      } catch (e) {
+        console.warn("No se pudo cargar la configuración de API guardada:", e);
+      }
+    }
+
+    // --- CARGA DE PAGINA ---
+    document.addEventListener("DOMContentLoaded", () => {
+      // Cargar inputs del modal de configuración
+      document.getElementById("cfg-conn-mode").value = apiConfig.connectionMode;
+      document.getElementById("cfg-url").value = apiConfig.url;
+      document.getElementById("cfg-schema").value = apiConfig.schemaId;
+      document.getElementById("cfg-user").value = apiConfig.user || "";
+      document.getElementById("cfg-pass").value = apiConfig.pass || "";
+      document.getElementById("cfg-proxy-url").value = apiConfig.proxyUrl;
+      document.getElementById("cfg-afip-url").value = apiConfig.afipProxyUrl || "https://consultarcuitafip-vb5plcbgra-uc.a.run.app";
+
+       // CUIT auto-formatter
+      setupCuitFormatter();
+      setupInicioActividadesFormatter();
+      setupPhoneFormatter();
+      
+      toggleConfigFormDisplay();
+      updateSimulationBanner();
+      renderBranchesList();
+    });
+
+    // --- FORMATEADOR CUIT / DNI (UX) ---
+    function setupCuitFormatter() {
+      const cuitInput = document.getElementById("cust-cuit");
+      cuitInput.addEventListener("input", (e) => {
+        let value = e.target.value.replace(/\D/g, ""); // Solo números
+        
+        if (registrationMode === "DNI") {
+          // Limitar a 8 dígitos para DNI, sin formatear con guiones
+          if (value.length > 8) {
+            value = value.substring(0, 8);
+          }
+          e.target.value = value;
+          return; // Omitir flujo CUIT/AFIP
+        }
+
+        // Formatear a XX-XXXXXXXX-X (Modo CUIT)
+        if (value.length > 2 && value.length <= 10) {
+          value = value.substring(0, 2) + "-" + value.substring(2);
+        } else if (value.length > 10) {
+          value = value.substring(0, 2) + "-" + value.substring(2, 10) + "-" + value.substring(10, 11);
+        }
+        
+        e.target.value = value;
+
+        // Desbloquear campos para volver a consultar si edita el CUIT
+        lockAfipFields(false);
+        const badge = document.getElementById("afip-badge");
+        if (badge) badge.style.display = "none";
+
+        // Ocultar campos desplegados y limpiar datos anteriores para forzar consulta
+        document.getElementById("billing-expanded-fields").style.display = "none";
+        document.body.classList.remove("header-compact"); // Restaurar encabezado grande
+        document.getElementById("cust-social").value = "";
+        document.getElementById("cust-fantasy").value = "";
+        document.getElementById("cust-address").value = "";
+        document.getElementById("cust-city").value = "";
+        document.getElementById("cust-zip").value = "";
+        document.getElementById("cust-email").value = "";
+        document.getElementById("cust-phone").value = "";
+        document.getElementById("cust-iibb").value = "";
+        document.getElementById("cust-inicio-actividades").value = "";
+      });
+
+      cuitInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (registrationMode === "CUIT") {
+            triggerAfipLookup();
+          }
+        }
+      });
+    }
+
+    // --- CAMBIAR MODO DE REGISTRO (CUIT / DNI) ---
+    function toggleRegistrationMode() {
+      const label = document.getElementById("lbl-cuit");
+      const input = document.getElementById("cust-cuit");
+      const btnAfip = document.getElementById("btn-afip");
+      const afipBadge = document.getElementById("afip-badge");
+      const dniBadge = document.getElementById("dni-badge");
+      const toggleBtn = document.getElementById("btn-toggle-dni");
+      const expandedFields = document.getElementById("billing-expanded-fields");
+
+      // Limpiar errores previos
+      input.classList.remove("input-error");
+
+      if (registrationMode === "CUIT") {
+        // Cambiar a DNI
+        registrationMode = "DNI";
+        label.textContent = "DNI del Cliente (Solo números)";
+        input.placeholder = "Ej: 12345678";
+        input.value = "";
+        input.maxLength = 8;
+        btnAfip.style.display = "none";
+        afipBadge.style.display = "none";
+        dniBadge.style.display = "inline-flex";
+        toggleBtn.textContent = "¿Registrar con CUIT?";
+        
+        // Desplegar campos de facturación vacíos y editables
+        expandedFields.style.display = "grid";
+        document.body.classList.add("header-compact");
+        lockAfipFields(false);
+
+        // Limpiar campos para carga manual
+        document.getElementById("cust-social").value = "";
+        document.getElementById("cust-fantasy").value = "";
+        document.getElementById("cust-iva").value = "7"; // Consumidor Final default
+        document.getElementById("cust-address").value = "";
+        document.getElementById("cust-city").value = "";
+        document.getElementById("cust-country").value = "1";
+        handleCountryChange('cust');
+        document.getElementById("cust-province").value = "";
+        document.getElementById("cust-zip").value = "";
+        document.getElementById("cust-email").value = "";
+        document.getElementById("cust-phone").value = "";
+        document.getElementById("cust-iibb").value = "";
+        document.getElementById("cust-inicio-actividades").value = "";
+        document.getElementById("cust-subconcepto-ganancias").value = "86";
+      } else {
+        // Cambiar a CUIT
+        registrationMode = "CUIT";
+        label.textContent = "CUIT de la Empresa (Solo números)";
+        input.placeholder = "Ej: 30-76543210-9";
+        input.value = "";
+        input.maxLength = 14;
+        btnAfip.style.display = "inline-flex";
+        afipBadge.style.display = "none";
+        dniBadge.style.display = "none";
+        toggleBtn.textContent = "¿No tenés CUIT? Ingresar con DNI";
+
+        // Ocultar campos y restablecer
+        expandedFields.style.display = "none";
+        document.body.classList.remove("header-compact");
+        lockAfipFields(false);
+
+        // Limpiar
+        document.getElementById("cust-social").value = "";
+        document.getElementById("cust-fantasy").value = "";
+        document.getElementById("cust-iva").value = "";
+        document.getElementById("cust-address").value = "";
+        document.getElementById("cust-city").value = "";
+        document.getElementById("cust-zip").value = "";
+        document.getElementById("cust-email").value = "";
+        document.getElementById("cust-phone").value = "";
+        document.getElementById("cust-iibb").value = "";
+        document.getElementById("cust-inicio-actividades").value = "";
+      }
+    }
+
+    // --- FORMATEADOR INICIO DE ACTIVIDADES (UX) ---
+    function setupInicioActividadesFormatter() {
+      const input = document.getElementById("cust-inicio-actividades");
+      if (!input) return;
+      input.addEventListener("input", (e) => {
+        let value = e.target.value.replace(/\D/g, ""); // Solo números
+        if (value.length > 2) {
+          value = value.substring(0, 2) + "/" + value.substring(2, 6);
+        }
+        e.target.value = value;
+      });
+    }
+
+    // --- FORMATEADOR DE TELÉFONO (UX) ---
+    function setupPhoneFormatter() {
+      const phoneInput = document.getElementById("cust-phone");
+      if (!phoneInput) return;
+      
+      phoneInput.addEventListener("input", (e) => {
+        let value = e.target.value;
+        // Permitir solo números y el signo +
+        let cleaned = value.replace(/[^0-9+]/g, "");
+        
+        // Si contiene un '+', asegurar que sólo esté al principio
+        if (cleaned.includes("+")) {
+          const hasPlusAtStart = cleaned.startsWith("+");
+          const numbersOnly = cleaned.replace(/\+/g, "");
+          cleaned = (hasPlusAtStart ? "+" : "") + numbersOnly;
+        }
+        
+        e.target.value = cleaned;
+      });
+    }
+
+    function lockAfipFields(locked) {
+      const socialInput = document.getElementById("cust-social");
+      const ivaInput = document.getElementById("cust-iva");
+      const addressInput = document.getElementById("cust-address");
+      const cityInput = document.getElementById("cust-city");
+      const countryInput = document.getElementById("cust-country");
+      const provinceInput = document.getElementById("cust-province");
+      const zipInput = document.getElementById("cust-zip");
+      const iibbInput = document.getElementById("cust-iibb");
+      const inicioInput = document.getElementById("cust-inicio-actividades");
+      const subconceptoInput = document.getElementById("cust-subconcepto-ganancias");
+
+      if (locked) {
+        // Bloquear Razón Social si viene con valor
+        socialInput.readOnly = (socialInput.value.trim() !== "");
+        socialInput.classList.toggle("input-readonly", socialInput.readOnly);
+
+        // Bloquear Condición IVA si viene con valor diferente de Consumidor Final ("7")
+        ivaInput.disabled = (ivaInput.value !== "" && ivaInput.value !== "7");
+        ivaInput.classList.toggle("input-readonly", ivaInput.disabled);
+
+        // Bloquear Domicilio si viene con valor
+        addressInput.readOnly = (addressInput.value.trim() !== "");
+        addressInput.classList.toggle("input-readonly", addressInput.readOnly);
+
+        // Bloquear Localidad si viene con valor
+        cityInput.readOnly = (cityInput.value.trim() !== "");
+        cityInput.classList.toggle("input-readonly", cityInput.readOnly);
+
+        // Bloquear País si viene con valor
+        countryInput.disabled = (countryInput.value !== "");
+        countryInput.classList.toggle("input-readonly", countryInput.disabled);
+
+        // Bloquear Provincia si viene con valor
+        provinceInput.disabled = (provinceInput.value !== "");
+        provinceInput.classList.toggle("input-readonly", provinceInput.disabled);
+
+        // Bloquear Código Postal si viene con valor
+        zipInput.readOnly = (zipInput.value.trim() !== "");
+        zipInput.classList.toggle("input-readonly", zipInput.readOnly);
+
+        // Ingresos Brutos queda editable para Convenio Multilateral (ej: 901-...)
+        iibbInput.readOnly = false;
+        iibbInput.classList.remove("input-readonly");
+
+        // Inicio de Actividades se bloquea si tiene valor
+        inicioInput.readOnly = (inicioInput.value.trim() !== "");
+        inicioInput.classList.toggle("input-readonly", inicioInput.readOnly);
+
+        // Subconcepto Ganancias siempre bloqueado
+        subconceptoInput.disabled = true;
+        subconceptoInput.classList.add("input-readonly");
+      } else {
+        // Desbloquear todos al resetear (ej: al borrar/cambiar CUIT)
+        socialInput.readOnly = false;
+        socialInput.classList.remove("input-readonly");
+        ivaInput.disabled = false;
+        ivaInput.classList.remove("input-readonly");
+        addressInput.readOnly = false;
+        addressInput.classList.remove("input-readonly");
+        cityInput.readOnly = false;
+        cityInput.classList.remove("input-readonly");
+        countryInput.disabled = false;
+        countryInput.classList.remove("input-readonly");
+        provinceInput.disabled = false;
+        provinceInput.classList.remove("input-readonly");
+        zipInput.readOnly = false;
+        zipInput.classList.remove("input-readonly");
+        iibbInput.readOnly = false;
+        iibbInput.classList.remove("input-readonly");
+        inicioInput.readOnly = false;
+        inicioInput.classList.remove("input-readonly");
+        subconceptoInput.disabled = false;
+        subconceptoInput.classList.remove("input-readonly");
+      }
+    }
+
+    function handleCountryChange(prefix) {
+      const countrySelect = document.getElementById(`${prefix}-country`);
+      const provinceSelect = document.getElementById(`${prefix}-province`);
+      
+      if (countrySelect.value === "1") {
+        provinceSelect.disabled = false;
+        provinceSelect.classList.remove("input-readonly");
+      } else {
+        provinceSelect.disabled = true;
+        provinceSelect.classList.add("input-readonly");
+        provinceSelect.value = "";
+      }
+    }
+
+    // --- CONFIGURACIÓN DE BANNER Y VISUALIZACIÓN ---
+    function updateSimulationBanner() {
+      const banner = document.getElementById("sim-banner");
+      if (banner) {
+        banner.style.display = "none !important";
+        banner.style.setProperty("display", "none", "important");
+      }
+    }
+
+    function toggleSimulationMode() {
+      // No-op
+    }
+
+    function toggleConfigFormDisplay() {
+      const mode = document.getElementById("cfg-conn-mode").value;
+      const directBox = document.getElementById("direct-api-config");
+      const proxyBox = document.getElementById("proxy-api-config");
+      
+      if (mode === "direct") {
+        directBox.style.display = "block";
+        proxyBox.style.display = "none";
+      } else {
+        directBox.style.display = "none";
+        proxyBox.style.display = "block";
+      }
+    }
+
+    function openConfigModal() {
+      document.getElementById("config-modal").style.display = "flex";
+    }
+
+    function closeConfigModal() {
+      document.getElementById("config-modal").style.display = "none";
+    }
+
+    function saveConfiguration() {
+      apiConfig.connectionMode = document.getElementById("cfg-conn-mode").value;
+      apiConfig.url = document.getElementById("cfg-url").value.trim();
+      apiConfig.schemaId = document.getElementById("cfg-schema").value.trim();
+      apiConfig.user = document.getElementById("cfg-user").value.trim();
+      apiConfig.pass = document.getElementById("cfg-pass").value.trim();
+      apiConfig.proxyUrl = document.getElementById("cfg-proxy-url").value.trim();
+      apiConfig.afipProxyUrl = document.getElementById("cfg-afip-url").value.trim();
+      
+      // Si el usuario configuró datos reales de conexión, salimos de simulación automáticamente
+      if ((apiConfig.connectionMode === "direct" && apiConfig.user && apiConfig.pass) || 
+          (apiConfig.connectionMode === "proxy" && apiConfig.proxyUrl)) {
+        apiConfig.simulated = false;
+      }
+
+      saveLocalConfig();
+      updateSimulationBanner();
+      closeConfigModal();
+      showToast("Configuración de integración guardada correctamente.", "success");
+    }
+
+    function resetConfiguration() {
+      apiConfig = {
+        connectionMode: "proxy",
+        url: "https://api.yiqi.com.ar",
+        schemaId: "1491",
+        user: "",
+        pass: "",
+        proxyUrl: "https://altaclienteproxy-vb5plcbgra-uc.a.run.app",
+        afipProxyUrl: "https://consultarcuitafip-vb5plcbgra-uc.a.run.app",
+        simulated: true
+      };
+      
+      saveLocalConfig();
+      
+      document.getElementById("cfg-conn-mode").value = apiConfig.connectionMode;
+      document.getElementById("cfg-url").value = apiConfig.url;
+      document.getElementById("cfg-schema").value = apiConfig.schemaId;
+      document.getElementById("cfg-user").value = "";
+      document.getElementById("cfg-pass").value = "";
+      document.getElementById("cfg-proxy-url").value = apiConfig.proxyUrl;
+      document.getElementById("cfg-afip-url").value = apiConfig.afipProxyUrl;
+
+      toggleConfigFormDisplay();
+      updateSimulationBanner();
+      closeConfigModal();
+      showToast("Configuración reestablecida a valores iniciales de prueba.", "warning");
+    }
+
+    function saveLocalConfig() {
+      localStorage.setItem("YIQI_ALTA_CONFIG_PROD", JSON.stringify(apiConfig));
+    }
+
+    // --- NOTIFICACIONES (TOAST) ---
+    function showToast(message, type = "success") {
+      const toast = document.getElementById("app-toast");
+      toast.textContent = message;
+      toast.className = `app-toast show ${type}`;
+      
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3500);
+    }
+
+    // --- WIZARD NAVEGACIÓN ---
+    function navigateToStep(step) {
+      if (step > currentStep && !validateStepInputs()) return;
+      if (currentStep === "success") return; // no navegar si ya terminó todo
+
+      currentStep = step;
+      updateWizardUI();
+    }
+
+    function navigateStep(direction) {
+      if (direction === 1 && !validateStepInputs()) return;
+      
+      currentStep += direction;
+      updateWizardUI();
+    }
+
+    function updateWizardUI() {
+      // Ocultar todos
+      document.querySelectorAll(".wizard-step").forEach(s => s.classList.remove("active"));
+      
+      // Mostrar actual
+      if (currentStep === 5) {
+        document.getElementById("step-success").classList.add("active");
+      } else {
+        const stepEl = document.getElementById(`step-${currentStep}`);
+        if (stepEl) stepEl.classList.add("active");
+      }
+      
+      // Indicadores
+      document.querySelectorAll(".step-item").forEach((ind, i) => {
+        const stepNum = i + 1;
+        ind.className = "step-item";
+        if (currentStep === 5) {
+          ind.classList.add("completed");
+        } else if (stepNum === currentStep) {
+          ind.classList.add("active");
+        } else if (stepNum < currentStep) {
+          ind.classList.add("completed");
+        }
+      });
+
+      // Botones navegación
+      const btnBack = document.getElementById("btn-back");
+      const btnNext = document.getElementById("btn-next");
+      const footer = document.getElementById("wizard-footer");
+
+      if (currentStep === 5) {
+        footer.style.display = "none";
+        document.querySelectorAll(".step-item").forEach(item => {
+          item.onclick = null;
+        });
+      } else {
+        footer.style.display = "flex";
+        btnBack.disabled = (currentStep === 1);
+        
+        if (currentStep === 4) {
+          btnNext.className = "btn btn-accent";
+          btnNext.innerHTML = `
+            Confirmar y Registrar
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          `;
+          buildReviewSummary();
+        } else {
+          btnNext.className = "btn btn-primary";
+          btnNext.innerHTML = `
+            Continuar
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          `;
+        }
+      }
+    }
+
+    // --- VALIDACIONES DE CAMPOS ---
+    function validateStepInputs() {
+      // Remover errores previos
+      document.querySelectorAll("input").forEach(i => i.classList.remove("input-error"));
+
+      if (currentStep === 1) {
+        const cuitVal = document.getElementById("cust-cuit").value.replace(/\D/g, "");
+        const social = document.getElementById("cust-social").value.trim();
+        const address = document.getElementById("cust-address").value.trim();
+        const city = document.getElementById("cust-city").value.trim();
+        const country = document.getElementById("cust-country").value;
+        const province = document.getElementById("cust-province").value;
+        const zip = document.getElementById("cust-zip").value.trim();
+        
+        let valid = true;
+
+        if (registrationMode === "DNI") {
+          if (cuitVal.length < 7 || cuitVal.length > 8) {
+            document.getElementById("cust-cuit").classList.add("input-error");
+            showToast("El DNI debe tener 7 u 8 números.", "error");
+            valid = false;
+            return false;
+          }
+        } else {
+          if (cuitVal.length !== 11) {
+            document.getElementById("cust-cuit").classList.add("input-error");
+            showToast("El CUIT debe tener exactamente 11 números.", "error");
+            valid = false;
+            return false;
+          }
+
+          const expandedFields = document.getElementById("billing-expanded-fields");
+          if (!expandedFields || expandedFields.style.display === "none") {
+            showToast("Debe consultar el CUIT primero para verificar y completar los datos fiscales.", "error");
+            valid = false;
+            return false;
+          }
+        }
+
+        if (!social) {
+          document.getElementById("cust-social").classList.add("input-error");
+          showToast("La Razón Social es requerida.", "error");
+          valid = false;
+        }
+        if (!address) {
+          document.getElementById("cust-address").classList.add("input-error");
+          showToast("El Domicilio Fiscal es requerido.", "error");
+          valid = false;
+        }
+        if (!city) {
+          document.getElementById("cust-city").classList.add("input-error");
+          showToast("La Localidad es requerida.", "error");
+          valid = false;
+        }
+        if (country === "1" && !province) {
+          document.getElementById("cust-province").classList.add("input-error");
+          showToast("La Provincia es requerida.", "error");
+          valid = false;
+        }
+        if (!zip) {
+          document.getElementById("cust-zip").classList.add("input-error");
+          showToast("El Código Postal es requerido.", "error");
+          valid = false;
+        }
+
+        return valid;
+      }
+      
+      if (currentStep === 2) {
+        const contactName = document.getElementById("cust-contact-name").value.trim();
+        const fantasy = document.getElementById("cust-fantasy").value.trim();
+        const email = document.getElementById("cust-email").value.trim();
+        const phone = document.getElementById("cust-phone").value.trim();
+        
+        let valid = true;
+        
+        if (!contactName) {
+          document.getElementById("cust-contact-name").classList.add("input-error");
+          showToast("El Nombre de Contacto es requerido.", "error");
+          valid = false;
+        }
+        if (!fantasy) {
+          document.getElementById("cust-fantasy").classList.add("input-error");
+          showToast("El Nombre de Fantasía es requerido.", "error");
+          valid = false;
+        }
+        if (!email || !email.includes("@")) {
+          document.getElementById("cust-email").classList.add("input-error");
+          showToast("Ingresá un correo electrónico de facturación válido.", "error");
+          valid = false;
+        }
+        if (!phone) {
+          document.getElementById("cust-phone").classList.add("input-error");
+          showToast("El Teléfono de Contacto es requerido.", "error");
+          valid = false;
+        }
+        
+        return valid;
+      }
+      
+      if (currentStep === 3) {
+        // Sucursales es opcional y se puede saltar sin validaciones
+        return true;
+      }
+      
+      if (currentStep === 4) {
+        procesarGuardadoYiQi();
+        return false; // Bloquear avance para controlar flujo asíncrono
+      }
+
+      return true;
+    }
+
+    function parseAddressString(fullAddress) {
+      if (!fullAddress) {
+        return { address: "", localidad: "", provincia: "", provinciaId: 2, zip: "" };
+      }
+      fullAddress = fullAddress.replace(/\s+/g, " ");
+      const parts = fullAddress.split(",").map(p => p.trim());
+      let address = "";
+      let localidad = "";
+      let provincia = "";
+      let zip = "";
+      
+      if (parts.length >= 3) {
+        address = parts[0];
+        localidad = parts[1];
+        provincia = parts[2];
+      } else if (parts.length === 2) {
+        address = parts[0];
+        provincia = parts[1];
+        localidad = parts[1];
+      } else {
+        address = fullAddress;
+      }
+      
+      // Extraer Código Postal si viene como 4 números consecutivos en alguna parte
+      const zipRegex = /\b(\d{4})\b/;
+      for (let i = 0; i < parts.length; i++) {
+        const m = parts[i].match(zipRegex);
+        if (m) {
+          zip = m[1];
+          parts[i] = parts[i].replace(zipRegex, "").trim();
+          if (i === 1) localidad = parts[i];
+          if (i === 2) provincia = parts[i];
+        }
+      }
+      
+      // Mapear provincia a ID
+      let provinceId = 2; // Default
+      const p = String(provincia || localidad).toLowerCase();
+      if (p.includes("caba") || p.includes("capital federal") || p.includes("capital") || p.includes("ciudad autonoma") || p.includes("ciudad autónoma") || p.includes("ciudad de buenos aires") || p.includes("autonoma de buenos aires")) {
+        provinceId = 1;
+      } else if (p.includes("buenos aires") || p.includes("b.a.") || p.includes("bs.as.") || p.includes("bs as")) {
+        provinceId = 2;
+      } else if (p.includes("catamarca")) {
+        provinceId = 3;
+      } else if (p.includes("cordoba") || p.includes("crdoba") || p.includes("córdoba")) {
+        provinceId = 4;
+      } else if (p.includes("corrientes")) {
+        provinceId = 5;
+      } else if (p.includes("chaco")) {
+        provinceId = 6;
+      } else if (p.includes("chubut")) {
+        provinceId = 7;
+      } else if (p.includes("entre rios") || p.includes("entre ríos")) {
+        provinceId = 8;
+      } else if (p.includes("formosa")) {
+        provinceId = 9;
+      } else if (p.includes("jujuy")) {
+        provinceId = 10;
+      } else if (p.includes("pampa")) {
+        provinceId = 11;
+      } else if (p.includes("rioja") || p.includes("la rioja")) {
+        provinceId = 12;
+      } else if (p.includes("mendoza")) {
+        provinceId = 13;
+      } else if (p.includes("misiones")) {
+        provinceId = 14;
+      } else if (p.includes("neuquen") || p.includes("neuquén")) {
+        provinceId = 15;
+      } else if (p.includes("rio negro") || p.includes("río negro")) {
+        provinceId = 16;
+      } else if (p.includes("salta")) {
+        provinceId = 17;
+      } else if (p.includes("san juan")) {
+        provinceId = 18;
+      } else if (p.includes("san luis")) {
+        provinceId = 19;
+      } else if (p.includes("santa cruz")) {
+        provinceId = 20;
+      } else if (p.includes("santa fe") || p.includes("santa fé")) {
+        provinceId = 21;
+      } else if (p.includes("santiago del estero")) {
+        provinceId = 22;
+      } else if (p.includes("tierra del fuego")) {
+        provinceId = 23;
+      } else if (p.includes("tucuman") || p.includes("tucumán")) {
+        provinceId = 24;
+      }
+      
+      return {
+        address: address.trim(),
+        localidad: localidad.trim(),
+        provincia: provincia.trim(),
+        provinciaId: provinceId,
+        zip: zip.trim()
+      };
+    }
+
+    // Formateador de Fecha de Inicio de Actividades a mm/aaaa
+    function formatInicioActividades(dateStr) {
+      if (!dateStr) return "";
+      try {
+        const cleanStr = dateStr.split("T")[0]; // "2015-06-01"
+        const parts = cleanStr.split("-");
+        if (parts.length >= 2) {
+          const year = parts[0];
+          const month = parts[1];
+          if (year.length === 4 && month.length === 2) {
+            return `${month}/${year}`;
+          }
+        }
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          return `${month}/${year}`;
+        }
+      } catch (e) {
+        console.warn("No se pudo formatear la fecha:", dateStr, e);
+      }
+      return dateStr;
+    }
+
+    // --- CONSULTA CUIT / AFIP (HÍBRIDO: MOCK / REAL PROXY) ---
+    async function triggerAfipLookup() {
+      const cuit = document.getElementById("cust-cuit").value.trim();
+      const cuitRaw = cuit.replace(/\D/g, "");
+      
+      if (cuitRaw.length !== 11) {
+        showToast("Por favor, ingresá un CUIT válido (11 dígitos).", "error");
+        return;
+      }
+
+      showLoader("Consultando Padrón AFIP...", "Verificando el estado fiscal del contribuyente.");
+
+      // --- MODO SIMULADO LOCAL ---
+      if (apiConfig.simulated) {
+        await new Promise(r => setTimeout(r, 1000));
+        hideLoader();
+
+        const key = cuit.includes("-") ? cuit : cuit.substring(0, 2) + "-" + cuit.substring(2, 10) + "-" + cuit.substring(10);
+        
+        if (AFIP_MOCK_DATA[key]) {
+          const data = AFIP_MOCK_DATA[key];
+          document.getElementById("cust-social").value = data.social;
+          document.getElementById("cust-fantasy").value = data.fantasy;
+          document.getElementById("cust-iva").value = data.iva;
+          
+          const parsed = parseAddressString(data.address);
+          document.getElementById("cust-address").value = parsed.address;
+          document.getElementById("cust-city").value = parsed.localidad || "";
+          document.getElementById("cust-country").value = "1";
+          handleCountryChange('cust');
+          document.getElementById("cust-province").value = parsed.provinciaId || "2";
+          document.getElementById("cust-zip").value = parsed.zip || "";
+          
+          document.getElementById("cust-email").value = data.email;
+          document.getElementById("cust-phone").value = data.phone;
+
+          document.getElementById("cust-iibb").value = data.iibb || cuitRaw;
+          document.getElementById("cust-inicio-actividades").value = formatInicioActividades(data.inicioActividades || "2020-01-01T00:00:00");
+          document.getElementById("cust-subconcepto-ganancias").value = data.subconceptoGanancias || "86";
+          
+          document.getElementById("afip-badge").style.display = "inline-flex";
+          lockAfipFields(true);
+          document.getElementById("billing-expanded-fields").style.display = "grid";
+          document.body.classList.add("header-compact"); // Reducir encabezado para optimizar espacio
+          showToast("Datos fiscales autocompletados desde AFIP (Simulado local).", "success");
+        } else {
+          const nro = cuitRaw.substring(2, 10);
+          document.getElementById("cust-social").value = `NUEVA EMPRESA CUIT ${nro} S.A.`;
+          document.getElementById("cust-fantasy").value = `Sucursal ${nro}`;
+          document.getElementById("cust-iva").value = "2"; // RI
+          
+          document.getElementById("cust-address").value = `Calle Principal ${nro}`;
+          document.getElementById("cust-city").value = "Localidad Comercial";
+          document.getElementById("cust-country").value = "1";
+          handleCountryChange('cust');
+          document.getElementById("cust-province").value = "2"; // Buenos Aires
+          document.getElementById("cust-zip").value = "1000";
+          
+          document.getElementById("cust-email").value = `contacto_${nro}@empresa.com.ar`;
+          document.getElementById("cust-phone").value = `11-4500-${cuitRaw.substring(7, 11)}`;
+
+          document.getElementById("cust-iibb").value = cuitRaw;
+          document.getElementById("cust-inicio-actividades").value = formatInicioActividades("2020-01-01T00:00:00");
+          document.getElementById("cust-subconcepto-ganancias").value = "86";
+          
+          document.getElementById("afip-badge").style.display = "inline-flex";
+          lockAfipFields(true);
+          document.getElementById("billing-expanded-fields").style.display = "grid";
+          document.body.classList.add("header-compact"); // Reducir encabezado para optimizar espacio
+          showToast("CUIT no predefinido en demo. Generando datos genéricos simulados.", "warning");
+        }
+        return;
+      }
+
+      // --- MODO CONEXIÓN REAL A BACKEND PROXY ---
+      try {
+        const targetUrl = `${apiConfig.afipProxyUrl}?cuit=${cuitRaw}`;
+        const response = await fetch(targetUrl);
+        if (!response.ok) {
+          throw new Error(`Error en el servidor de padrón: HTTP ${response.status}`);
+        }
+        
+        const resData = await response.json();
+        hideLoader();
+
+        if (resData.success && resData.data) {
+          const data = resData.data;
+          document.getElementById("cust-social").value = data.socialName || "";
+          document.getElementById("cust-fantasy").value = data.fantasyName || "";
+          document.getElementById("cust-iva").value = data.ivaCondition || "7";
+          
+          document.getElementById("cust-address").value = data.address || "";
+          document.getElementById("cust-city").value = data.localidad || "";
+          document.getElementById("cust-country").value = "1";
+          handleCountryChange('cust');
+          document.getElementById("cust-province").value = data.provinciaId || "2";
+          document.getElementById("cust-zip").value = data.zip || "";
+          
+          document.getElementById("cust-email").value = data.email || "";
+          document.getElementById("cust-phone").value = data.phone || "";
+
+          document.getElementById("cust-iibb").value = data.iibb || cuitRaw;
+          document.getElementById("cust-inicio-actividades").value = formatInicioActividades(data.inicioActividades || "");
+          document.getElementById("cust-subconcepto-ganancias").value = data.subconceptoGanancias || "86";
+
+          document.getElementById("afip-badge").style.display = "inline-flex";
+          lockAfipFields(true);
+          document.getElementById("billing-expanded-fields").style.display = "grid";
+          document.body.classList.add("header-compact"); // Reducir encabezado para optimizar espacio
+          
+          showToast("Datos fiscales recuperados y validados de AFIP en tiempo real.", "success");
+        } else {
+          throw new Error(resData.error || "No se pudieron recuperar los datos impositivos del CUIT.");
+        }
+      } catch (err) {
+        hideLoader();
+        showToast(err.message || "Error al conectar con el servidor de padrón.", "error");
+      }
+    }
+
+    // --- LOCALIDADES Y MAPEO CONTABLE ---
+    const LOCALIDADES_MAP = {
+      "belgrano": 56,
+      "berazategui": 192,
+      "caleta olivia": 196,
+      "ciudad de cordoba": 31,
+      "cordoba": 31,
+      "ciudad de san luis": 107,
+      "san luis": 107,
+      "ciudadela": 200,
+      "colegiales": 1,
+      "concordia": 131,
+      "daireaux": 109,
+      "esperanza": 152,
+      "flores": 61,
+      "guernica": 127,
+      "ituzaingo": 101,
+      "lavallol": 72,
+      "llavallol": 72,
+      "lomas de zamora": 91,
+      "longchamps": 181,
+      "mataderos": 43,
+      "monte maiz": 159,
+      "moron": 163,
+      "nunez": 47,
+      "nuñez": 47,
+      "olavarria": 75,
+      "palermo": 30,
+      "parana": 114,
+      "presidente roque saenz pena": 166,
+      "presidente roque saenz peña": 166,
+      "quemu quemu": 138,
+      "quilmes": 111,
+      "reconquista": 137,
+      "rodeo del medio": 99,
+      "rosario": 9,
+      "saavedra": 46,
+      "san justo": 6,
+      "san martin": 134,
+      "san miguel": 26,
+      "santo pipo": 82,
+      "tortuguitas": 162,
+      "villa crespo": 70,
+      "villa ortuzar": 168,
+      "villa del parque": 71,
+      "wilde": 125,
+      "caba": 1,
+      "capital federal": 1
+    };
+
+    const LOCALIDADES_BY_PROVINCE = {
+      "1": [ // CABA
+        { name: "Colegiales", id: 1 },
+        { name: "Palermo", id: 30 },
+        { name: "Belgrano", id: 56 },
+        { name: "Flores", id: 61 },
+        { name: "Nuñez", id: 47 },
+        { name: "Saavedra", id: 46 },
+        { name: "Mataderos", id: 43 },
+        { name: "Villa Crespo", id: 70 },
+        { name: "Villa Ortuzar", id: 168 },
+        { name: "Villa del Parque", id: 71 },
+        { name: "CABA", id: 1 }
+      ],
+      "2": [ // Buenos Aires
+        { name: "Lavallol", id: 72 },
+        { name: "Lomas de Zamora", id: 91 },
+        { name: "Wilde", id: 125 },
+        { name: "Quilmes", id: 111 },
+        { name: "Ituzaingo", id: 101 },
+        { name: "Moron", id: 163 },
+        { name: "Ciudadela", id: 200 },
+        { name: "Berazategui", id: 192 },
+        { name: "Longchamps", id: 181 },
+        { name: "Guernica", id: 127 },
+        { name: "San Justo", id: 6 },
+        { name: "San Martin", id: 134 },
+        { name: "San Miguel", id: 26 },
+        { name: "Tortuguitas", id: 162 },
+        { name: "Olavarria", id: 75 },
+        { name: "Daireaux", id: 109 }
+      ],
+      "4": [ // Córdoba
+        { name: "Córdoba", id: 31 },
+        { name: "Monte Maíz", id: 159 }
+      ],
+      "19": [ // San Luis
+        { name: "San Luis", id: 107 }
+      ],
+      "8": [ // Entre Ríos
+        { name: "Concordia", id: 131 },
+        { name: "Paraná", id: 114 }
+      ],
+      "21": [ // Santa Fe
+        { name: "Esperanza", id: 152 },
+        { name: "Reconquista", id: 137 },
+        { name: "Rosario", id: 9 }
+      ],
+      "13": [ // Mendoza
+        { name: "Rodeo del Medio", id: 99 }
+      ],
+      "14": [ // Misiones
+        { name: "Santo Pipó", id: 82 }
+      ],
+      "6": [ // Chaco
+        { name: "Presidente Roque Sáenz Peña", id: 166 }
+      ],
+      "11": [ // La Pampa
+        { name: "Quemú Quemú", id: 138 }
+      ],
+      "20": [ // Santa Cruz
+        { name: "Caleta Olivia", id: 196 }
+      ]
+    };
+
+    function normalizeString(str) {
+      if (!str) return "";
+      return str.toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function updateLocalidadesDatalist(prefix) {
+      const provVal = document.getElementById(`${prefix}-province`).value;
+      const datalist = document.getElementById("localidades-list");
+      if (!datalist) return;
+      
+      datalist.innerHTML = "";
+      const locList = LOCALIDADES_BY_PROVINCE[provVal] || [];
+      locList.forEach(loc => {
+        const opt = document.createElement("option");
+        opt.value = loc.name;
+        datalist.appendChild(opt);
+      });
+    }
+
+    // --- SUCURSALES MANAGER ---
+    function openBranchForm() {
+      document.getElementById("add-branch-inline-form").style.display = "block";
+      updateLocalidadesDatalist('br');
+    }
+
+    function closeBranchForm() {
+      document.getElementById("add-branch-inline-form").style.display = "none";
+      // Resetear campos
+      document.getElementById("br-name").value = "";
+      document.getElementById("br-address").value = "";
+      document.getElementById("br-city").value = "";
+      document.getElementById("br-country").value = "1";
+      handleCountryChange('br');
+      document.getElementById("br-province").value = "2";
+      updateLocalidadesDatalist('br');
+    }
+
+    function addBranchToList() {
+      const name = document.getElementById("br-name").value.trim();
+      const address = document.getElementById("br-address").value.trim();
+      const city = document.getElementById("br-city").value.trim();
+      const countryIdVal = parseInt(document.getElementById("br-country").value, 10);
+      const provId = document.getElementById("br-province").value;
+
+      if (!name || !address || !city) {
+        showToast("Completá todos los campos para agregar la sucursal.", "error");
+        return;
+      }
+
+      const normalizedCity = normalizeString(city);
+      const lobaId = LOCALIDADES_MAP[normalizedCity] || null;
+
+      const newBranch = {
+        id_local: Date.now(),
+        SUCU_NOMBRE: name,
+        SUCU_DIRECCION: address,
+        CLIE_LOCALIDAD: city,
+        LOCALIDAD: city,
+        LOBA_ID_LOBA: lobaId,
+        PAIS_ID_PAIS: countryIdVal,
+        PAIS: countryIdVal
+      };
+
+      if (countryIdVal === 1) {
+        newBranch.PROV_ID_PROV = parseInt(provId, 10);
+        newBranch.PROVINCIA = parseInt(provId, 10);
+      } else {
+        newBranch.PROV_ID_PROV = null;
+        newBranch.PROVINCIA = null;
+      }
+
+      branches.push(newBranch);
+
+      renderBranchesList();
+      closeBranchForm();
+      showToast("Sucursal de entrega añadida.", "success");
+    }
+
+    function removeBranchFromList(id_local) {
+      branches = branches.filter(b => b.id_local !== id_local);
+      renderBranchesList();
+      showToast("Sucursal removida.", "warning");
+    }
+
+    const COUNTRIES_MAP = {
+      "1": "Argentina",
+      "2": "Brasil",
+      "3": "Uruguay",
+      "4": "Paraguay",
+      "5": "Chile",
+      "6": "Bolivia"
+    };
+
+    function renderBranchesList() {
+      const container = document.getElementById("branches-list-box");
+      if (branches.length === 0) {
+        container.innerHTML = `
+          <div class="no-branches-placeholder">
+            No declaraste sucursales de entrega adicionales. Se tomará la dirección fiscal de facturación como punto de entrega por defecto.
+          </div>
+        `;
+        return;
+      }
+
+      let html = "";
+      branches.forEach(b => {
+        const countryText = COUNTRIES_MAP[b.PAIS_ID_PAIS] || "Argentina";
+        const provText = b.PAIS_ID_PAIS === 1 ? (PROVINCIAS_MAP[b.PROV_ID_PROV] || "Buenos Aires") : "";
+        const locationText = provText ? `${b.CLIE_LOCALIDAD} (${provText}), ${countryText}` : `${b.CLIE_LOCALIDAD}, ${countryText}`;
+        html += `
+          <div class="branch-item-card">
+            <div class="branch-item-text">
+              <span class="branch-item-name">🏢 ${b.SUCU_NOMBRE}</span>
+              <span class="branch-item-address">Dirección: ${b.SUCU_DIRECCION} - ${locationText}</span>
+            </div>
+            <button class="btn-delete-branch" onclick="removeBranchFromList(${b.id_local})" title="Eliminar Sucursal">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    // --- CONSTRUIR PASO 3 (REVIEW) ---
+    function buildReviewSummary() {
+      document.getElementById("sum-social").textContent = document.getElementById("cust-social").value.trim();
+      document.getElementById("lbl-sum-cuit").textContent = registrationMode === "DNI" ? "DNI" : "CUIT";
+      document.getElementById("sum-cuit").textContent = document.getElementById("cust-cuit").value.trim();
+      document.getElementById("sum-contact-name").textContent = document.getElementById("cust-contact-name").value.trim() || "(No declarado)";
+      document.getElementById("sum-fantasy").textContent = document.getElementById("cust-fantasy").value.trim() || "(No declarado)";
+      
+      const ivaSelect = document.getElementById("cust-iva");
+      document.getElementById("sum-iva").textContent = ivaSelect.options[ivaSelect.selectedIndex].text;
+      
+      document.getElementById("sum-email").textContent = document.getElementById("cust-email").value.trim();
+      document.getElementById("sum-address").textContent = document.getElementById("cust-address").value.trim();
+      document.getElementById("sum-city").textContent = document.getElementById("cust-city").value.trim();
+      
+      const countrySelect = document.getElementById("cust-country");
+      const countryText = countrySelect.options[countrySelect.selectedIndex].text;
+      const provSelect = document.getElementById("cust-province");
+      const isArg = countrySelect.value === "1";
+      const provText = isArg ? provSelect.options[provSelect.selectedIndex].text : "N/A";
+      document.getElementById("sum-province").textContent = `${provText} (País: ${countryText})`;
+      
+      document.getElementById("sum-zip").textContent = document.getElementById("cust-zip").value.trim();
+      
+      const count = branches.length;
+      document.getElementById("sum-branches").textContent = `${count} ${count === 1 ? 'sucursal' : 'sucursales'} de entrega agregada/s.`;
+    }
+
+    // --- GUARDADO FINAL (INTEGRACIÓN YIQI ERP / PROXY BACKEND) ---
+    async function procesarGuardadoYiQi() {
+      const cuit = document.getElementById("cust-cuit").value.replace(/\D/g, ""); // Solo números
+      const social = document.getElementById("cust-social").value.trim();
+      const contactName = document.getElementById("cust-contact-name").value.trim();
+      const fantasy = document.getElementById("cust-fantasy").value.trim();
+      const ivaVal = document.getElementById("cust-iva").value;
+      const address = document.getElementById("cust-address").value.trim();
+      const city = document.getElementById("cust-city").value.trim();
+      const countryVal = document.getElementById("cust-country").value;
+      const provinceVal = document.getElementById("cust-province").value;
+      const zip = document.getElementById("cust-zip").value.trim();
+      const email = document.getElementById("cust-email").value.trim();
+      const phone = document.getElementById("cust-phone").value.trim();
+
+      const iibbVal = document.getElementById("cust-iibb").value.trim() || cuit;
+      const inicioActividadesVal = document.getElementById("cust-inicio-actividades").value.trim();
+      const subconceptoVal = document.getElementById("cust-subconcepto-ganancias").value || "86";
+
+      // Convertir "mm/aaaa" a "yyyy-mm-01" para transmitir al ERP/Proxy sin errores
+      let inicioActividadesFormatted = inicioActividadesVal;
+      if (/^\d{2}\/\d{4}$/.test(inicioActividadesVal)) {
+        const parts = inicioActividadesVal.split("/");
+        inicioActividadesFormatted = `${parts[1]}-${parts[0]}-01`;
+      }
+
+      // Concatenar Nombre de Contacto - Nombre de Fantasía
+      const combinedFantasyName = `${contactName} - ${fantasy}`;
+
+      // Formato form strings para YiQi API
+      const formStr = [
+        `2468=${encodeURIComponent(social)}`,
+        `948=${encodeURIComponent(combinedFantasyName)}`,
+        `5681=${registrationMode === "DNI" ? 3 : 1}`, // Tipo de documento (CUIT = 1, DNI = 3)
+        `1686=${encodeURIComponent(cuit)}`,
+        `1085=${encodeURIComponent(address)}`,
+        `1086=${encodeURIComponent(city)}`,
+        `1087=${countryVal === "1" ? (parseInt(provinceVal, 10) || 2) : ""}`,
+        `1088=${parseInt(countryVal, 10) || 1}`, // País
+        `3936=${encodeURIComponent(zip)}`,
+        `1089=${encodeURIComponent(phone)}`,
+        `5774=${encodeURIComponent(email)}`,
+        `6055=1`, // Lista por defecto
+        `6239=11`, // Condición de pago default (Pago Anticipado)
+        `3821=${ivaVal}`,
+        `1268=on`, // Activo
+        `5772=off`,
+        `9971=off`,
+        `5782=${encodeURIComponent(iibbVal)}`, // IIBB
+        `6671=${encodeURIComponent(inicioActividadesFormatted)}`, // Inicio Actividades
+        `3148=${parseInt(subconceptoVal, 10) || 86}` // Subconcepto
+      ].join('&');
+
+      showLoader("Iniciando Proceso...", "Paso 1 de 3: Comprobando duplicidad de documento.");
+
+      try {
+        let clientNewId = null;
+        let successBranches = 0;
+
+        // --- MODO SIMULACIÓN ---
+        if (apiConfig.simulated) {
+          await new Promise(r => setTimeout(r, 1200));
+          
+          // Simular validación de CUIT duplicado si termina en '00'
+          if (cuit.endsWith("00") || cuit.startsWith("99")) {
+            throw new Error(`El CUIT ${cuit} ya se encuentra registrado en el ERP.`);
+          }
+
+          showLoader("Guardando empresa...", "Paso 2 de 3: Registrando la cabecera fiscal.");
+          await new Promise(r => setTimeout(r, 1500));
+          clientNewId = Math.floor(100000 + Math.random() * 900000);
+
+          if (branches.length > 0) {
+            showLoader("Guardando sucursales...", `Paso 3 de 3: Registrando las ${branches.length} sucursales.`);
+            await new Promise(r => setTimeout(r, 1200));
+            successBranches = branches.length;
+          }
+        } 
+        
+        // --- MODO PROXY SEGURO (PRODUCCIÓN RECOMENDADO) ---
+        else if (apiConfig.connectionMode === "proxy") {
+          showLoader("Conectando con Servidor Seguro...", "Paso 2 de 3: Transmitiendo datos de facturación.");
+          
+          // Estructurar el array limpio de sucursales a enviar
+          const cleanBranches = branches.map(b => {
+            const { id_local, ...rest } = b;
+            return rest;
+          });
+
+          const response = await fetch(apiConfig.proxyUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              socialName: social,
+              fantasyName: combinedFantasyName,
+              cuit: cuit,
+              documentType: registrationMode === "DNI" ? 3 : 1,
+              address: address,
+              city: city,
+              provinceId: countryVal === "1" ? (parseInt(provinceVal, 10) || 2) : null,
+              countryId: parseInt(countryVal, 10) || 1,
+              zip: zip,
+              email: email,
+              phone: phone,
+              ivaCondition: parseInt(ivaVal),
+              branches: cleanBranches,
+              iibb: iibbVal,
+              inicioActividades: inicioActividadesFormatted,
+              subconceptoGanancias: parseInt(subconceptoVal, 10)
+            })
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Error en el servidor de seguridad: ${errText}`);
+          }
+
+          const resData = await response.json();
+          if (!resData.success) {
+            throw new Error(resData.error || "Ocurrió un error en el guardado a través de tu proxy.");
+          }
+
+          clientNewId = resData.clientId;
+          successBranches = resData.branchesRegistered || 0;
+        } 
+        
+        // --- MODO CONEXIÓN DIRECTA (TESTING LOCAL) ---
+        else {
+          showLoader("Autenticando con YiQi ERP...", "Paso 2 de 4: Generando token de acceso.");
+          const token = await executeDirectLogin();
+          if (!token) throw new Error("Fallo en la autenticación. Verificá las credenciales en la Configuración API.");
+
+          showLoader("Verificando duplicados...", "Paso 3 de 4: Comprobando base de datos contable.");
+          const existe = await executeCuitDuplicateCheck(cuit, token);
+          if (existe) {
+            throw new Error(`El CUIT ${cuit} ya se encuentra registrado como cliente en el ERP.`);
+          }
+
+          showLoader("Guardando ficha de cliente...", "Paso 4 de 4: Guardando cabecera Empresa.");
+          clientNewId = await executeDirectSaveHeader(formStr, token);
+          if (!clientNewId) throw new Error("El sistema rechazó el registro. Por favor, reintentá más tarde.");
+
+          if (branches.length > 0) {
+            showLoader("Guardando sucursales...", `Grabando ${branches.length} sucursales en YiQi.`);
+            const cleanBranches = branches.map(b => {
+              const { id_local, ...rest } = b;
+              return rest;
+            });
+            const succ = await executeDirectSaveBranches(clientNewId, cleanBranches, token);
+            if (succ) successBranches = cleanBranches.length;
+          }
+        }
+
+        // --- FINALIZACIÓN CON ÉXITO ---
+        hideLoader();
+        
+        // Rellenar datos en pantalla éxito
+        document.getElementById("suc-social-name").textContent = social;
+        document.getElementById("suc-client-id").textContent = clientNewId;
+        document.getElementById("suc-cuit").textContent = cuit;
+        document.getElementById("suc-branches").textContent = successBranches > 0 
+          ? `${successBranches} sucursales cargadas` 
+          : "0 sucursales (Se utiliza domicilio fiscal)";
+
+        // Avanzar a paso de Éxito
+        currentStep = 5;
+        updateWizardUI();
+        showToast("Alta de cliente e impacto en YiQi ERP completado con éxito.", "success");
+
+      } catch (err) {
+        hideLoader();
+        showToast(err.message || "Ocurrió un error inesperado al dar de alta el cliente.", "error");
+      }
+    }
+
+    // --- SUB-FUNCIONES DIRECT API YIQI ---
+
+    async function executeDirectLogin() {
+      const bodyParams = new URLSearchParams({
+        grant_type: "password",
+        username: apiConfig.user,
+        password: apiConfig.pass
+      });
+
+      const urls = [
+        `${apiConfig.url}/token`,
+        `${apiConfig.url}/connect/token`,
+        "https://me.yiqi.com.ar/connect/token"
+      ];
+
+      for (const targetUrl of urls) {
+        try {
+          const r = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: bodyParams
+          });
+          if (r.ok) {
+            const res = await r.json();
+            return res.access_token;
+          }
+        } catch (e) {
+          console.warn("Fallo login en endpoint direct:", targetUrl);
+        }
+      }
+      return null;
+    }
+
+    async function executeCuitDuplicateCheck(cuit, token) {
+      const url = `${apiConfig.url}/api/instancesApi/GetList?entityId=345&schemaId=${apiConfig.schemaId}&smartieId=2603`;
+      const searchBody = {
+        page: 1,
+        pageSize: 5,
+        search: cuit
+      };
+
+      try {
+        const r = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(searchBody)
+        });
+        if (r.ok) {
+          const data = await r.json();
+          const list = data.data || data.rows || data.instances || [];
+          const matched = list.filter(row => String(row.CLIE_CUIT || "").replace(/\D/g, "") === cuit);
+          return matched.length > 0;
+        }
+      } catch (e) {
+        console.error("Error al consultar CUIT duplicado en YiQi:", e);
+      }
+      return false;
+    }
+
+    async function executeDirectSaveHeader(formStr, token) {
+      const url = `${apiConfig.url}/api/instancesApi/Save`;
+      const payload = {
+        schemaId: parseInt(apiConfig.schemaId),
+        entityId: "345",
+        form: formStr,
+        uploads: "",
+        parentId: null,
+        childId: null
+      };
+
+      const r = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (r.ok) {
+        const data = await r.json();
+        return data.newId || data.id || (data.ok && data.data ? data.data.id : null);
+      } else {
+        const txt = await r.text();
+        throw new Error(`Error en cabecera: ${txt}`);
+      }
+    }
+
+    async function executeDirectSaveBranches(clientId, listBranches, token) {
+      const url = `${apiConfig.url}/api/childrenApi/SaveChildInstances?instanceId=${clientId}&schemaId=${apiConfig.schemaId}`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          entityId: "345",
+          schemaId: parseInt(apiConfig.schemaId),
+          childId: 262,
+          instanceId: String(clientId),
+          childInstances: listBranches.map(b => JSON.stringify({
+            NOMBRE: b.SUCU_NOMBRE || b.NOMBRE,
+            SUCU_NOMBRE: b.SUCU_NOMBRE || b.NOMBRE,
+            DIRECCION: b.SUCU_DIRECCION || b.DIRECCION,
+            SUCU_DIRECCION: b.SUCU_DIRECCION || b.DIRECCION,
+            CLIE_LOCALIDAD: b.CLIE_LOCALIDAD || b.LOCALIDAD,
+            LOCALIDAD: b.CLIE_LOCALIDAD || b.LOCALIDAD,
+            LOBA_ID_LOBA: b.LOBA_ID_LOBA ? parseInt(b.LOBA_ID_LOBA, 10) : null,
+            PROV_ID_PROV: b.PROV_ID_PROV ? parseInt(b.PROV_ID_PROV, 10) : null,
+            PROVINCIA: b.PROV_ID_PROV ? parseInt(b.PROV_ID_PROV, 10) : null,
+            PAIS_ID_PAIS: b.PAIS_ID_PAIS ? parseInt(b.PAIS_ID_PAIS, 10) : 1,
+            PAIS: b.PAIS_ID_PAIS ? parseInt(b.PAIS_ID_PAIS, 10) : 1
+          })),
+          append: true
+        })
+      });
+      if (r.ok) {
+        const res = await r.json();
+        return res.ok !== false;
+      }
+      return false;
+    }
+
+    // --- REINICIAR FORMULARIO ---
+    function restartFormFlow() {
+      // Limpiar inputs
+      document.getElementById("cust-cuit").value = "";
+      document.getElementById("cust-social").value = "";
+      document.getElementById("cust-contact-name").value = "";
+      document.getElementById("cust-fantasy").value = "";
+      document.getElementById("cust-iva").value = "7";
+      document.getElementById("cust-address").value = "";
+      document.getElementById("cust-city").value = "";
+      document.getElementById("cust-country").value = "1";
+      handleCountryChange('cust');
+      document.getElementById("cust-province").value = "2";
+      document.getElementById("cust-zip").value = "";
+      document.getElementById("cust-email").value = "";
+      document.getElementById("cust-phone").value = "";
+      
+      document.getElementById("cust-iibb").value = "";
+      document.getElementById("cust-inicio-actividades").value = "";
+      document.getElementById("cust-subconcepto-ganancias").value = "86";
+      
+      document.getElementById("afip-badge").style.display = "none";
+      document.getElementById("billing-expanded-fields").style.display = "none";
+      document.body.classList.remove("header-compact"); // Restaurar encabezado grande
+
+      branches = [];
+      renderBranchesList();
+
+      currentStep = 1;
+
+      // Habilitar de nuevo clicks indicators
+      document.getElementById("step-ind-1").onclick = () => navigateToStep(1);
+      document.getElementById("step-ind-2").onclick = () => navigateToStep(2);
+      document.getElementById("step-ind-3").onclick = () => navigateToStep(3);
+      document.getElementById("step-ind-4").onclick = () => navigateToStep(4);
+
+      updateWizardUI();
+    }
+
+    // --- LOADER ---
+    function showLoader(title, subtitle = "Por favor, espera unos segundos.") {
+      document.getElementById("loader-title").textContent = title;
+      document.getElementById("loader-subtitle").textContent = subtitle;
+      document.getElementById("loader-overlay").style.display = "flex";
+    }
+
+    function hideLoader() {
+      document.getElementById("loader-overlay").style.display = "none";
+    }
+  </script>
+</body>
+</html>
