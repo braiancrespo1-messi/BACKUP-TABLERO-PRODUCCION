@@ -13,6 +13,16 @@
   <!-- PDF.js for client-side PDF processing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <style>
+    /* Hide up/down spin arrows for numeric inputs */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
     /* Design System Tokens */
     :root {
       --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -194,6 +204,24 @@
       .app-grid, .app-grid.has-preview {
         grid-template-columns: 1fr !important;
       }
+      #document-viewer-card {
+        position: relative !important;
+        top: 0 !important;
+        height: 600px !important;
+        min-height: 600px !important;
+      }
+    }
+
+    #document-viewer-card {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 48px);
+      position: sticky;
+      top: 24px;
+      overflow: hidden;
+      flex-direction: column;
+      gap: 16px;
+      align-self: start;
     }
 
     /* Cards */
@@ -296,6 +324,26 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
       margin-top: 4px;
       display: none;
+    }
+
+    /* Supplier Hover Tooltip */
+    .supplier-tooltip {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 110;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 12px;
+      pointer-events: auto;
     }
 
     .autocomplete-item {
@@ -576,34 +624,33 @@
       </div>
     </header>
 
-    <!-- OCR Capture Section -->
-    <div class="card" id="ocr-capture-card" style="border: 1px dashed rgba(59, 130, 246, 0.4); background: rgba(30, 41, 59, 0.4);">
-      <div class="card-header" style="border: none; padding-bottom: 0;">
-        <span class="card-title">
+    <!-- OCR & Control Section -->
+    <div class="card" id="ocr-capture-card" style="border: 1px dashed rgba(59, 130, 246, 0.4); background: rgba(30, 41, 59, 0.4); padding: 12px 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <span class="card-title" style="margin: 0; display: flex; align-items: center; gap: 8px;">
           <i data-lucide="scan-line" style="width: 18px; height: 18px; color: var(--primary);"></i>
-          Lectura Rápida OCR — Ingesta Inteligente (Cloud Vision)
+          Lectura Rápida OCR — Ingesta Inteligente
         </span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <!-- Subir Archivo button -->
+          <label id="btn-ocr-upload-label" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; border-radius: 8px; cursor: pointer; border: 1px dashed rgba(255, 255, 255, 0.2); background: rgba(15, 23, 42, 0.4); margin: 0; height: 38px;">
+            <i data-lucide="upload-cloud" style="width: 16px; height: 16px; color: var(--success);"></i>
+            Subir Archivo (PDF / Imagen)
+            <input type="file" id="ocr-file-input" accept="image/*,application/pdf" style="display: none;">
+          </label>
+          
+          <!-- Limpiar Todo button -->
+          <button type="button" id="btn-clear-all" class="btn btn-danger" style="padding: 8px 16px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; border-radius: 8px; height: 38px;">
+            <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
+            Limpiar Todo
+          </button>
+        </div>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px; align-items: center;">
-        <!-- Tomar Foto button -->
-        <button id="btn-ocr-camera" class="btn btn-primary" style="height: 70px; font-size: 16px; font-weight: 700; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: 1px solid rgba(255, 255, 255, 0.15);">
-          <i data-lucide="camera" style="width: 24px; height: 24px;"></i>
-          Tomar Foto (Cámara)
-        </button>
-        <!-- Subir Archivo button -->
-        <label id="btn-ocr-upload-label" class="btn btn-secondary" style="height: 70px; font-size: 16px; font-weight: 700; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; border-radius: 12px; cursor: pointer; border: 1px dashed rgba(255, 255, 255, 0.2); background: rgba(15, 23, 42, 0.4); margin: 0;">
-          <i data-lucide="upload-cloud" style="width: 24px; height: 24px; color: var(--success);"></i>
-          Subir Archivo (PDF / Imagen)
-          <input type="file" id="ocr-file-input" accept="image/*,application/pdf" style="display: none;">
-        </label>
-        <!-- Camera capture input for mobile devices (directly activates camera) -->
-        <input type="file" id="ocr-camera-input" accept="image/*" capture="environment" style="display: none;">
-      </div>
-      <div id="ocr-status-container" style="display: none; margin-top: 12px; align-items: center; gap: 12px; font-size: 14px; background: rgba(15, 23, 42, 0.6); padding: 12px; border-radius: 8px; border: var(--card-border);">
-        <svg class="spinner" viewBox="0 0 50 50" style="width: 20px; height: 20px; color: var(--primary);">
+      <div id="ocr-status-container" style="display: none; margin-top: 12px; align-items: center; gap: 12px; font-size: 13px; background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: var(--card-border);">
+        <svg class="spinner" viewBox="0 0 50 50" style="width: 16px; height: 16px; color: var(--primary);">
           <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
         </svg>
-        <span id="ocr-status-text">Procesando archivo con Google Cloud Vision...</span>
+        <span id="ocr-status-text">Procesando archivo...</span>
       </div>
     </div>
 
@@ -639,6 +686,16 @@
           </div>
           <div id="supplier-autocomplete" class="autocomplete-results"></div>
           <input type="hidden" id="selected-supplier-id">
+          <!-- Supplier Hover Tooltip -->
+          <div id="supplier-tooltip" class="supplier-tooltip">
+            <div style="font-weight: 700; color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="building" style="width: 14px; height: 14px;"></i>
+              <span>Datos del Proveedor (YiQi ERP)</span>
+            </div>
+            <div id="tooltip-content" style="display: flex; flex-direction: column; gap: 4px;">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
         </div>
 
         <!-- Tipo, Punto de Venta y Número -->
@@ -662,20 +719,16 @@
           </div>
         </div>
 
-        <!-- Fechas -->
-        <div class="form-row">
+        <!-- Fechas, Moneda y Cotización -->
+        <div style="display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 0.6fr; gap: 12px;">
           <div class="form-group">
             <label for="date-emission">Fecha Emisión</label>
             <input type="date" id="date-emission">
           </div>
           <div class="form-group">
-            <label for="date-due">Fecha Vencimiento</label>
+            <label for="date-due">Fecha Vence</label>
             <input type="date" id="date-due">
           </div>
-        </div>
-
-        <!-- Moneda y cotizacion -->
-        <div class="form-row">
           <div class="form-group">
             <label for="currency">Moneda</label>
             <select id="currency">
@@ -684,7 +737,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="exchange-rate">Cotización</label>
+            <label for="exchange-rate">Cotiz.</label>
             <input type="number" id="exchange-rate" value="1" step="0.01" readonly>
           </div>
         </div>
@@ -729,6 +782,12 @@
             </select>
           </div>
         </div>
+
+        <!-- Observaciones -->
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="invoice-observations">Observaciones</label>
+          <textarea id="invoice-observations" placeholder="Escriba comentarios u observaciones aquí..." rows="2" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(15,23,42,0.3); color: var(--text-main); padding: 8px; font-family: inherit; font-size: 13px; resize: none;"></textarea>
+        </div>
       </div>
 
       <!-- Right Panel: Items Table -->
@@ -745,11 +804,12 @@
           <table id="items-table">
             <thead>
               <tr>
-                <th style="width: 35%;">Concepto / Descripción</th>
+                <th style="width: 32%;">Concepto / Descripción</th>
                 <th style="width: 8%;">Cant.</th>
-                <th style="width: 24%;">Unitario ($)</th>
-                <th style="width: 15%;">Alícuota IVA</th>
-                <th style="width: 18%; text-align: right;">Subtotal</th>
+                <th style="width: 18%;">Unitario ($)</th>
+                <th style="width: 10%;">Dto. (%)</th>
+                <th style="width: 14%;">Alícuota IVA</th>
+                <th style="width: 15%; text-align: right;">Subtotal</th>
                 <th style="width: 60px; text-align: center;"></th>
               </tr>
             </thead>
@@ -782,6 +842,13 @@
             <div class="summary-row">
               <span>IVA Total:</span>
               <span id="lbl-iva">$ 0.00</span>
+            </div>
+            <div class="summary-row" style="align-items: center;">
+              <span>Dto. Global:</span>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <input type="number" id="global-discount" value="0" min="0" max="100" style="width: 55px; text-align: right; padding: 4px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; background: rgba(15,23,42,0.3); color: var(--text-main); font-weight: 600; font-size: 13px;">
+                <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">%</span>
+              </div>
             </div>
             <div class="summary-row" id="summary-row-perceptions">
               <span>Percepciones:</span>
@@ -829,17 +896,31 @@
       </div> <!-- Cierre de #data-entry-container -->
 
       <!-- Third Panel: Document Viewer -->
-      <div class="card" id="document-viewer-card" style="display: flex; flex: 1; min-height: 800px; overflow: hidden; flex-direction: column; gap: 16px; align-self: stretch;">
+      <div class="card" id="document-viewer-card">
         <div class="card-header" style="padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
           <span class="card-title" style="display: flex; align-items: center; gap: 8px;">
             <i data-lucide="eye" style="width: 18px; height: 18px; color: var(--primary);"></i>
             Vista del Comprobante
           </span>
-          <button type="button" id="btn-close-viewer" class="btn btn-secondary btn-icon-only" style="background: none; border: none; padding: 4px;" title="Ocultar visor">
-            <i data-lucide="eye-off" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
-          </button>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <!-- Zoom controls -->
+            <button type="button" id="btn-zoom-out" class="btn btn-secondary btn-icon-only" style="padding: 4px; background: none; border: none; cursor: pointer;" title="Alejar (Zoom Out)">
+              <i data-lucide="zoom-out" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+            </button>
+            <span id="zoom-level-text" style="font-size: 12px; color: var(--text-muted); min-width: 36px; text-align: center; font-weight: 600;">100%</span>
+            <button type="button" id="btn-zoom-in" class="btn btn-secondary btn-icon-only" style="padding: 4px; background: none; border: none; cursor: pointer;" title="Acercar (Zoom In)">
+              <i data-lucide="zoom-in" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+            </button>
+            <button type="button" id="btn-zoom-reset" class="btn btn-secondary btn-icon-only" style="padding: 4px; background: none; border: none; cursor: pointer;" title="Restablecer Zoom">
+              <i data-lucide="maximize-2" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+            </button>
+            <span style="border-left: 1px solid rgba(255,255,255,0.15); height: 16px; margin: 0 4px;"></span>
+            <button type="button" id="btn-close-viewer" class="btn btn-secondary btn-icon-only" style="background: none; border: none; padding: 4px;" title="Ocultar visor">
+              <i data-lucide="eye-off" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+            </button>
+          </div>
         </div>
-        <div id="viewer-container" style="flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; background: #0f172a; border-radius: 8px; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.05); min-height: 600px;">
+        <div id="viewer-container" style="flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; background: #0f172a; border-radius: 8px; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.05); user-select: none; -webkit-user-select: none;">
           <!-- Preview content (Image or Canvas) -->
           <img id="viewer-img" style="max-width: 100%; display: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
           <canvas id="viewer-canvas" style="max-width: 100%; display: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></canvas>
@@ -939,7 +1020,7 @@
             <input type="text" id="cfg-delete-rule-url" value="https://us-central1-tmc-backend-2f5c4.cloudfunctions.net/eliminarReglaOcrProxy">
           </div>
           <div class="form-group">
-            <label for="cfg-vision-key">Google Cloud Vision API Key</label>
+            <label for="cfg-vision-key">API Key del Motor OCR</label>
             <input type="text" id="cfg-vision-key" placeholder="AIzaSy...">
           </div>
         </div>
@@ -1157,6 +1238,23 @@
     </div>
   </div>
 
+  <!-- Custom Confirmation Modal -->
+  <div id="confirm-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 400px; padding: 24px;">
+      <div class="modal-body" style="padding: 0; gap: 16px; align-items: center; text-align: center;">
+        <div class="status-icon-container status-icon-warning" style="background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+          <i data-lucide="help-circle" style="width: 28px; height: 28px;"></i>
+        </div>
+        <h3 id="confirm-title" style="font-size: 18px; font-weight: 700; color: var(--text-main); margin: 0;">¿Estás seguro?</h3>
+        <p id="confirm-message" style="font-size: 14px; color: var(--text-muted); line-height: 1.5; margin: 0;">¿Deseas realizar esta acción?</p>
+        <div style="display: flex; gap: 12px; width: 100%; margin-top: 8px;">
+          <button id="btn-confirm-cancel" class="btn btn-secondary" style="flex: 1; justify-content: center; height: 40px; margin: 0;">Cancelar</button>
+          <button id="btn-confirm-accept" class="btn btn-danger" style="flex: 1; justify-content: center; height: 40px; background: var(--danger); margin: 0;">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Auto-migrate old placeholder URLs in localStorage
     if (localStorage.getItem('tmc_supplier_search_url') && localStorage.getItem('tmc_supplier_search_url').includes('vb5plcbgra-uc')) {
@@ -1177,6 +1275,10 @@
       guardarReglaOcrUrl: localStorage.getItem('tmc_guardar_regla_ocr_url') || "https://us-central1-tmc-backend-2f5c4.cloudfunctions.net/guardarReglaOcrProxy",
       eliminarReglaOcrUrl: localStorage.getItem('tmc_eliminar_regla_ocr_url') || "https://us-central1-tmc-backend-2f5c4.cloudfunctions.net/eliminarReglaOcrProxy"
     };
+
+    let selectedFileBase64 = "";
+    let selectedFileName = "";
+    let selectedFileType = "";
 
     // Initialize Lucide Icons
     lucide.createIcons();
@@ -1221,8 +1323,6 @@
 
     // OCR Elements
     const ocrFileInput = document.getElementById('ocr-file-input');
-    const ocrCameraInput = document.getElementById('ocr-camera-input');
-    const btnOcrCamera = document.getElementById('btn-ocr-camera');
     const ocrStatusContainer = document.getElementById('ocr-status-container');
     const ocrStatusText = document.getElementById('ocr-status-text');
 
@@ -1230,6 +1330,118 @@
     let lastParsedCuit = "";
     // Global OCR tracker for auto-learning feedback loop
     let lastOcrResult = null;
+    let selectedSupplierObj = null;
+    let currentZoom = 100;
+
+    const PROVINCES_MAP = {
+      1: "CABA",
+      2: "Buenos Aires",
+      3: "Catamarca",
+      4: "Córdoba",
+      5: "Corrientes",
+      6: "Chaco",
+      7: "Chubut",
+      8: "Entre Ríos",
+      9: "Formosa",
+      10: "Jujuy",
+      11: "La Pampa",
+      12: "La Rioja",
+      13: "Mendoza",
+      14: "Misiones",
+      15: "Neuquén",
+      16: "Río Negro",
+      17: "Salta",
+      18: "San Juan",
+      19: "San Luis",
+      20: "Santa Cruz",
+      21: "Santa Fe",
+      22: "Santiago del Estero",
+      23: "Tierra del Fuego",
+      24: "Tucumán"
+    };
+
+    function formatNumber(value) {
+      if (value === undefined || value === null || isNaN(value)) value = 0;
+      const parts = parseFloat(value).toFixed(2).split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      return parts.join(',');
+    }
+
+    function parseFormattedNumber(str) {
+      if (str === undefined || str === null) return 0;
+      const clean = String(str).replace(/\./g, '').replace(',', '.');
+      return parseFloat(clean) || 0;
+    }
+
+    function handleInputFocus(e) {
+      // Select the content to make replacement easier
+      setTimeout(() => e.target.select(), 50);
+    }
+
+    function handleInputBlur(e) {
+      const raw = e.target.value.trim();
+      if (!raw) {
+        e.target.value = '';
+        return;
+      }
+      const val = parseFormattedNumber(raw);
+      e.target.value = formatNumber(val);
+    }
+
+    function formatAsYouType(val) {
+      if (!val) return "";
+      
+      let decimalIndex = val.lastIndexOf(',');
+      if (decimalIndex === -1) {
+        const lastDotIdx = val.lastIndexOf('.');
+        if (lastDotIdx !== -1) {
+          const afterDot = val.substring(lastDotIdx + 1);
+          if (afterDot.length !== 3 || /\D/.test(afterDot)) {
+            decimalIndex = lastDotIdx;
+          }
+        }
+      }
+      
+      let integerPart = "";
+      let decimalPart = "";
+      let hasDecimal = false;
+      
+      if (decimalIndex !== -1) {
+        integerPart = val.substring(0, decimalIndex).replace(/\D/g, '');
+        decimalPart = val.substring(decimalIndex + 1).replace(/\D/g, '');
+        hasDecimal = true;
+      } else {
+        integerPart = val.replace(/\D/g, '');
+      }
+      
+      let formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      
+      let result = formattedInteger;
+      if (hasDecimal) {
+        result += ',' + decimalPart;
+      }
+      return result;
+    }
+
+    function handleInputFormatting(e) {
+      const input = e.target;
+      const val = input.value;
+      if (!val) return;
+      
+      const selectionStart = input.selectionStart;
+      const originalLength = val.length;
+      const formatted = formatAsYouType(val);
+      
+      if (formatted !== val) {
+        input.value = formatted;
+        const newLength = formatted.length;
+        const cursorOffset = newLength - originalLength;
+        let newCursorPos = selectionStart + cursorOffset;
+        if (newCursorPos < 0) newCursorPos = 0;
+        if (newCursorPos > newLength) newCursorPos = newLength;
+        input.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }
 
     // Configure PDF.js Worker
     if (window.pdfjsLib) {
@@ -1258,6 +1470,41 @@
       statusMessage.innerHTML = message;
       statusModal.style.display = 'flex';
       lucide.createIcons();
+    }
+
+    // Custom Styled Confirmation Dialog
+    function showCustomConfirm(message, title = "¿Estás seguro?") {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-title');
+        const msgEl = document.getElementById('confirm-message');
+        const btnCancel = document.getElementById('btn-confirm-cancel');
+        const btnAccept = document.getElementById('btn-confirm-accept');
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        modal.style.display = 'flex';
+        lucide.createIcons();
+
+        function cleanup() {
+          modal.style.display = 'none';
+          btnCancel.removeEventListener('click', onCancel);
+          btnAccept.removeEventListener('click', onAcceptClick);
+        }
+
+        function onCancel() {
+          cleanup();
+          resolve(false);
+        }
+
+        function onAcceptClick() {
+          cleanup();
+          resolve(true);
+        }
+
+        btnCancel.addEventListener('click', onCancel);
+        btnAccept.addEventListener('click', onAcceptClick);
+      });
     }
 
     function updateLockStatesBasedOnSupplierIva() {
@@ -1317,6 +1564,7 @@
       // Reset supplier dataset iva and disabled states if the input is cleared
       if (query === "") {
         selectedSupplierId.value = "";
+        selectedSupplierObj = null;
         supplierInput.dataset.iva = "";
         updateLockStatesBasedOnSupplierIva();
       }
@@ -1368,6 +1616,7 @@
               div.addEventListener('click', () => {
                 supplierInput.value = `${supplier.nombre} (${supplier.cuit || 'S/D'})`;
                 selectedSupplierId.value = supplier.id;
+                selectedSupplierObj = supplier;
                 supplierAutocomplete.style.display = 'none';
                 
                 // Store selected supplier's IVA condition in dataset
@@ -1375,6 +1624,11 @@
                 
                 if (supplier.ivaCondition) {
                   selectInvoiceTypeByIva(supplier.ivaCondition);
+                }
+
+                // Auto-run rules learning reprocessing if CUIT is available
+                if (supplier.cuit) {
+                  reprocessOcrWithSupplierRules(supplier.cuit);
                 }
               });
               supplierAutocomplete.appendChild(div);
@@ -1421,7 +1675,7 @@
       { id: "6", name: "No gravado" }
     ];
 
-    function createRow(concepto = "", cantidad = 1, precio = 0, alicuotaId = "3") {
+    function createRow(concepto = "", cantidad = 1, precio = 0, alicuotaId = "3", descuento = "") {
       // If selected supplier is No Oficial, default new items to 0% IVA (alicuotaId = "1")
       const supplierIva = String(supplierInput.dataset.iva || "").trim().toLowerCase();
       if (supplierIva.includes("no oficial")) {
@@ -1434,6 +1688,7 @@
       const inputConcepto = document.createElement('input');
       inputConcepto.type = 'text';
       inputConcepto.value = concepto;
+      inputConcepto.className = 'item-concept';
       inputConcepto.placeholder = "Ingrese descripción del concepto...";
       tdConcepto.appendChild(inputConcepto);
       tr.appendChild(tdConcepto);
@@ -1443,24 +1698,63 @@
       const inputCant = document.createElement('input');
       inputCant.type = 'number';
       inputCant.value = cantidad;
+      inputCant.className = 'item-qty';
       inputCant.min = '1';
       inputCant.style.textAlign = 'center';
       tdCant.appendChild(inputCant);
       tr.appendChild(tdCant);
 
-      // Precio Unitario
+      // Precio Unitario (Formatted input)
       const tdPrice = document.createElement('td');
       const inputPrice = document.createElement('input');
-      inputPrice.type = 'number';
-      inputPrice.value = precio;
-      inputPrice.placeholder = "0.00";
+      inputPrice.type = 'text';
+      inputPrice.value = formatNumber(precio);
+      inputPrice.className = 'item-price';
+      inputPrice.placeholder = "0,00";
       inputPrice.style.textAlign = 'right';
+      inputPrice.addEventListener('focus', handleInputFocus);
+      inputPrice.addEventListener('blur', handleInputBlur);
+      inputPrice.addEventListener('input', handleInputFormatting);
       tdPrice.appendChild(inputPrice);
       tr.appendChild(tdPrice);
+
+      // Descuento (%)
+      const tdDiscount = document.createElement('td');
+      const discountWrapper = document.createElement('div');
+      discountWrapper.style.display = 'flex';
+      discountWrapper.style.alignItems = 'center';
+      discountWrapper.style.justifyContent = 'center';
+      discountWrapper.style.gap = '4px';
+
+      const inputDiscount = document.createElement('input');
+      inputDiscount.type = 'number';
+      inputDiscount.value = descuento;
+      inputDiscount.className = 'item-discount';
+      inputDiscount.placeholder = "0";
+      inputDiscount.min = '0';
+      inputDiscount.max = '100';
+      inputDiscount.style.width = '45px';
+      inputDiscount.style.textAlign = 'center';
+      inputDiscount.style.border = '1px solid rgba(255,255,255,0.1)';
+      inputDiscount.style.borderRadius = '4px';
+      inputDiscount.style.background = 'rgba(15,23,42,0.3)';
+      inputDiscount.style.color = 'var(--text-main)';
+      inputDiscount.style.padding = '4px 2px';
+
+      const percentSpan = document.createElement('span');
+      percentSpan.style.fontSize = '12px';
+      percentSpan.style.color = 'var(--text-muted)';
+      percentSpan.textContent = '%';
+
+      discountWrapper.appendChild(inputDiscount);
+      discountWrapper.appendChild(percentSpan);
+      tdDiscount.appendChild(discountWrapper);
+      tr.appendChild(tdDiscount);
 
       // Alicuota IVA
       const tdAlic = document.createElement('td');
       const selectAlic = document.createElement('select');
+      selectAlic.className = 'item-vat';
       taxRates.forEach(rate => {
         const opt = document.createElement('option');
         opt.value = rate.id;
@@ -1501,8 +1795,9 @@
       // Listeners for auto calculation
       const updateCalculations = () => {
         const qty = parseFloat(inputCant.value) || 0;
-        const up = parseFloat(inputPrice.value) || 0;
-        const net = qty * up;
+        const up = parseFormattedNumber(inputPrice.value);
+        const itemDiscount = parseFloat(inputDiscount.value) || 0;
+        const net = qty * up * (1 - itemDiscount / 100);
         let vatRate = 0;
 
         if (selectAlic.value === "3") vatRate = 0.21;
@@ -1512,12 +1807,13 @@
         const vat = net * vatRate;
         const total = net + vat;
 
-        tdSub.textContent = `$ ${total.toFixed(2)}`;
+        tdSub.textContent = `$ ${formatNumber(total)}`;
         calculateTotals();
       };
 
       inputCant.addEventListener('input', updateCalculations);
       inputPrice.addEventListener('input', updateCalculations);
+      inputDiscount.addEventListener('input', updateCalculations);
       selectAlic.addEventListener('change', updateCalculations);
 
       itemsTbody.appendChild(tr);
@@ -1534,17 +1830,16 @@
     function calculateTotals() {
       let grandNet = 0;
       let grandVat = 0;
-      let grandTotal = 0;
 
       const rows = itemsTbody.querySelectorAll('tr');
       rows.forEach(tr => {
-        const inputs = tr.querySelectorAll('input');
-        const select = tr.querySelector('select');
-        const qty = parseFloat(inputs[1].value) || 0;
-        const up = parseFloat(inputs[2].value) || 0;
-        const net = qty * up;
+        const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
+        const up = parseFormattedNumber(tr.querySelector('.item-price').value);
+        const itemDiscount = parseFloat(tr.querySelector('.item-discount').value) || 0;
+        const net = qty * up * (1 - itemDiscount / 100);
+        
         let vatRate = 0;
-
+        const select = tr.querySelector('.item-vat');
         if (select.value === "3") vatRate = 0.21;
         else if (select.value === "2") vatRate = 0.105;
         else if (select.value === "4") vatRate = 0.27;
@@ -1553,23 +1848,27 @@
         
         grandNet += net;
         grandVat += vat;
-        grandTotal += (net + vat);
       });
 
       // Sumar percepciones
       let grandPerceptions = 0;
       const perceptionInputs = perceptionsTbody.querySelectorAll('.perception-importe');
       perceptionInputs.forEach(input => {
-        grandPerceptions += parseFloat(input.value) || 0;
+        grandPerceptions += parseFormattedNumber(input.value);
       });
 
-      grandTotal += grandPerceptions;
+      const globalDiscountPct = parseFloat(document.getElementById('global-discount').value) || 0;
+      const discountedNet = grandNet * (1 - globalDiscountPct / 100);
+      const discountedVat = grandVat * (1 - globalDiscountPct / 100);
+      const grandTotal = discountedNet + discountedVat + grandPerceptions;
 
-      document.getElementById('lbl-neto').textContent = `$ ${grandNet.toFixed(2)}`;
-      document.getElementById('lbl-iva').textContent = `$ ${grandVat.toFixed(2)}`;
-      document.getElementById('lbl-percepciones').textContent = `$ ${grandPerceptions.toFixed(2)}`;
-      document.getElementById('lbl-total').textContent = `$ ${grandTotal.toFixed(2)}`;
+      document.getElementById('lbl-neto').textContent = `$ ${formatNumber(discountedNet)}`;
+      document.getElementById('lbl-iva').textContent = `$ ${formatNumber(discountedVat)}`;
+      document.getElementById('lbl-percepciones').textContent = `$ ${formatNumber(grandPerceptions)}`;
+      document.getElementById('lbl-total').textContent = `$ ${formatNumber(grandTotal)}`;
     }
+
+    document.getElementById('global-discount').addEventListener('input', calculateTotals);
 
     // Settings Modal triggers
     btnSettings.addEventListener('click', () => {
@@ -1698,7 +1997,8 @@
 
         tr.querySelector('.btn-delete-template').addEventListener('click', async (e) => {
           const cuit = e.currentTarget.dataset.cuit;
-          if (confirm(`¿Estás seguro de que deseas eliminar la plantilla OCR para el CUIT ${cuit}?`)) {
+          const confirmed = await showCustomConfirm(`¿Estás seguro de que deseas eliminar la plantilla OCR para el CUIT ${cuit}?`, "Eliminar Plantilla");
+          if (confirmed) {
             try {
               const delRes = await fetch(config.eliminarReglaOcrUrl, {
                 method: "POST",
@@ -1759,6 +2059,11 @@
         // Show viewer card and apply grid styling
         document.getElementById('document-viewer-card').style.display = 'flex';
         document.querySelector('.app-grid').classList.add('has-preview');
+        
+        // Reset zoom state
+        currentZoom = 100;
+        applyZoom();
+        
         lucide.createIcons();
       } catch (err) {
         console.error("Error al renderizar PDF en el visor:", err);
@@ -1777,6 +2082,11 @@
         // Show viewer card and apply grid styling
         document.getElementById('document-viewer-card').style.display = 'flex';
         document.querySelector('.app-grid').classList.add('has-preview');
+        
+        // Reset zoom state
+        currentZoom = 100;
+        applyZoom();
+        
         lucide.createIcons();
       };
       reader.readAsDataURL(file);
@@ -1785,7 +2095,241 @@
     document.getElementById('btn-close-viewer').addEventListener('click', () => {
       document.getElementById('document-viewer-card').style.display = 'none';
       document.querySelector('.app-grid').classList.remove('has-preview');
+      currentZoom = 100;
+      applyZoom();
     });
+
+    // Zoom and Lupa Functions
+    function applyZoom() {
+      const zoomText = document.getElementById('zoom-level-text');
+      if (zoomText) {
+        zoomText.textContent = `${currentZoom}%`;
+      }
+      const canvas = document.getElementById('viewer-canvas');
+      const img = document.getElementById('viewer-img');
+      const container = document.getElementById('viewer-container');
+      
+      if (currentZoom === 100) {
+        if (container) {
+          container.style.display = 'flex';
+          container.style.justifyContent = 'center';
+          container.style.alignItems = 'flex-start';
+          container.style.cursor = 'default';
+        }
+        if (canvas) {
+          canvas.style.width = '';
+          canvas.style.height = '';
+          canvas.style.maxWidth = '100%';
+          canvas.style.margin = '0 auto';
+          canvas.style.userSelect = 'none';
+          canvas.style.pointerEvents = 'none';
+        }
+        if (img) {
+          img.style.width = '';
+          img.style.height = '';
+          img.style.maxWidth = '100%';
+          img.style.margin = '0 auto';
+          img.style.userSelect = 'none';
+          img.style.pointerEvents = 'none';
+        }
+      } else {
+        if (container) {
+          container.style.display = 'block';
+          container.style.cursor = 'grab';
+        }
+        if (canvas) {
+          canvas.style.width = `${currentZoom}%`;
+          canvas.style.height = 'auto';
+          canvas.style.maxWidth = 'none';
+          canvas.style.margin = '0 auto';
+          canvas.style.userSelect = 'none';
+          canvas.style.pointerEvents = 'none';
+        }
+        if (img) {
+          img.style.width = `${currentZoom}%`;
+          img.style.height = 'auto';
+          img.style.maxWidth = 'none';
+          img.style.margin = '0 auto';
+          img.style.userSelect = 'none';
+          img.style.pointerEvents = 'none';
+        }
+      }
+    }
+
+    // Drag and Pan events for viewer-container
+    const viewerContainer = document.getElementById('viewer-container');
+    let isDragging = false;
+    let startX, startY;
+    let scrollLeft, scrollTop;
+
+    viewerContainer.addEventListener('mousedown', (e) => {
+      if (currentZoom <= 100) return;
+      isDragging = true;
+      viewerContainer.style.cursor = 'grabbing';
+      startX = e.pageX - viewerContainer.offsetLeft;
+      startY = e.pageY - viewerContainer.offsetTop;
+      scrollLeft = viewerContainer.scrollLeft;
+      scrollTop = viewerContainer.scrollTop;
+    });
+
+    viewerContainer.addEventListener('mouseleave', () => {
+      isDragging = false;
+      viewerContainer.style.cursor = currentZoom > 100 ? 'grab' : 'default';
+    });
+
+    viewerContainer.addEventListener('mouseup', () => {
+      isDragging = false;
+      viewerContainer.style.cursor = currentZoom > 100 ? 'grab' : 'default';
+    });
+
+    viewerContainer.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const x = e.pageX - viewerContainer.offsetLeft;
+      const y = e.pageY - viewerContainer.offsetTop;
+      const walkX = (x - startX) * 1.5;
+      const walkY = (y - startY) * 1.5;
+      viewerContainer.scrollLeft = scrollLeft - walkX;
+      viewerContainer.scrollTop = scrollTop - walkY;
+    });
+
+    // Touch events for mobile/tablet panning
+    viewerContainer.addEventListener('touchstart', (e) => {
+      if (currentZoom <= 100) return;
+      if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].pageX - viewerContainer.offsetLeft;
+        startY = e.touches[0].pageY - viewerContainer.offsetTop;
+        scrollLeft = viewerContainer.scrollLeft;
+        scrollTop = viewerContainer.scrollTop;
+      }
+    }, { passive: true });
+
+    viewerContainer.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      if (e.touches.length === 1) {
+        // Prevent default screen scrolling while dragging inside the zoomed voucher
+        e.preventDefault();
+        const x = e.touches[0].pageX - viewerContainer.offsetLeft;
+        const y = e.touches[0].pageY - viewerContainer.offsetTop;
+        const walkX = (x - startX) * 1.5;
+        const walkY = (y - startY) * 1.5;
+        viewerContainer.scrollLeft = scrollLeft - walkX;
+        viewerContainer.scrollTop = scrollTop - walkY;
+      }
+    }, { passive: false });
+
+    viewerContainer.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+
+    viewerContainer.addEventListener('touchcancel', () => {
+      isDragging = false;
+    });
+
+    // Zoom-to-cursor using mouse wheel
+    viewerContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      
+      let newZoom = currentZoom;
+      if (e.deltaY < 0) {
+        newZoom = Math.min(400, currentZoom + 15);
+      } else {
+        newZoom = Math.max(100, currentZoom - 15);
+      }
+      
+      if (newZoom !== currentZoom) {
+        const rect = viewerContainer.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const contentX = mouseX + viewerContainer.scrollLeft;
+        const contentY = mouseY + viewerContainer.scrollTop;
+        
+        const oldZoom = currentZoom;
+        currentZoom = newZoom;
+        applyZoom();
+        
+        const ratio = currentZoom / oldZoom;
+        viewerContainer.scrollLeft = contentX * ratio - mouseX;
+        viewerContainer.scrollTop = contentY * ratio - mouseY;
+      }
+    }, { passive: false });
+
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+      currentZoom = Math.min(400, currentZoom + 25);
+      applyZoom();
+    });
+
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+      currentZoom = Math.max(100, currentZoom - 25);
+      applyZoom();
+    });
+
+    document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+      currentZoom = 100;
+      applyZoom();
+    });
+
+    // Tooltip validation event listeners
+    const supplierTooltip = document.getElementById('supplier-tooltip');
+    const tooltipContent = document.getElementById('tooltip-content');
+    let tooltipTimeout = null;
+
+    function showTooltip() {
+      if (tooltipTimeout) clearTimeout(tooltipTimeout);
+      if (selectedSupplierObj) {
+        const nombre = selectedSupplierObj.razonSocial || 'S/D';
+        const nombreYiqi = selectedSupplierObj.nombre || 'S/D';
+        const cuit = selectedSupplierObj.cuit || 'S/D';
+        const iva = selectedSupplierObj.ivaCondition || 'S/D';
+        const direccion = selectedSupplierObj.direccion || selectedSupplierObj.address || selectedSupplierObj.domicilio || 'S/D';
+        const localidad = selectedSupplierObj.localidad || 'S/D';
+        
+        let provincia = 'S/D';
+        if (selectedSupplierObj.provinciaId) {
+          provincia = PROVINCES_MAP[selectedSupplierObj.provinciaId] || selectedSupplierObj.provinciaId;
+        } else if (selectedSupplierObj.provincia) {
+          provincia = selectedSupplierObj.provincia;
+        }
+
+        const yiqiUrl = `https://me.yiqi.com.ar/view/CLIENTE?schemaId=1491#/${selectedSupplierObj.id}`;
+
+        tooltipContent.innerHTML = `
+          <div><strong>ID YiQi:</strong> <span style="color: var(--primary); font-weight: 600;">#${selectedSupplierObj.id}</span></div>
+          <div><strong>Razón Social:</strong> <span>${nombre}</span></div>
+          <div><strong>Nombre YiQi:</strong> <span>${nombreYiqi}</span></div>
+          <div><strong>CUIT:</strong> <span>${cuit}</span></div>
+          <div><strong>Condición IVA:</strong> <span style="color: var(--warning); font-weight: 500;">${iva}</span></div>
+          <div><strong>Provincia:</strong> <span>${provincia}</span></div>
+          <div><strong>Localidad:</strong> <span>${localidad}</span></div>
+          <div><strong>Dirección:</strong> <span>${direccion}</span></div>
+          <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; display: flex; justify-content: flex-end; pointer-events: auto;">
+            <a href="${yiqiUrl}" target="_blank" class="btn btn-primary" style="padding: 6px 12px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; border-radius: 6px; background: var(--primary); color: white; cursor: pointer; pointer-events: auto;">
+              <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+              Ver en YiQi
+            </a>
+          </div>
+        `;
+        supplierTooltip.style.display = 'flex';
+        lucide.createIcons();
+      }
+    }
+
+    function hideTooltip() {
+      if (tooltipTimeout) clearTimeout(tooltipTimeout);
+      tooltipTimeout = setTimeout(() => {
+        supplierTooltip.style.display = 'none';
+      }, 200);
+    }
+
+    supplierInput.addEventListener('mouseenter', showTooltip);
+    supplierInput.addEventListener('mouseleave', hideTooltip);
+
+    supplierTooltip.addEventListener('mouseenter', () => {
+      if (tooltipTimeout) clearTimeout(tooltipTimeout);
+    });
+    supplierTooltip.addEventListener('mouseleave', hideTooltip);
 
     // Save Invoice Call
     btnSaveInvoice.addEventListener('click', async () => {
@@ -1831,12 +2375,11 @@
       let nonZeroIvaForNoOficial = false;
 
       rows.forEach(tr => {
-        const inputs = tr.querySelectorAll('input');
-        const select = tr.querySelector('select');
-        const concepto = inputs[0].value.trim();
-        const cantidad = parseFloat(inputs[1].value) || 0;
-        const precioUnitario = parseFloat(inputs[2].value) || 0;
-        const alicuotaId = select.value;
+        const concepto = tr.querySelector('.item-concept').value.trim();
+        const cantidad = parseFloat(tr.querySelector('.item-qty').value) || 0;
+        const precioUnitario = parseFormattedNumber(tr.querySelector('.item-price').value);
+        const itemDiscount = parseFloat(tr.querySelector('.item-discount').value) || 0;
+        const alicuotaId = tr.querySelector('.item-vat').value;
 
         if (!concepto || cantidad <= 0 || precioUnitario <= 0) {
           missingFields = true;
@@ -1846,11 +2389,17 @@
           nonZeroIvaForNoOficial = true;
         }
 
+        // Combine discounts:
+        // CombinedPct = 100 * (1 - (1 - ItemDiscount/100) * (1 - GlobalDiscount/100))
+        const globalDiscount = parseFloat(document.getElementById('global-discount').value) || 0;
+        const combinedDiscount = 100 * (1 - (1 - itemDiscount / 100) * (1 - globalDiscount / 100));
+
         items.push({
           concepto,
           cantidad,
           precioUnitario,
-          alicuotaId
+          alicuotaId,
+          porcBonificacion: combinedDiscount > 0 ? Number(combinedDiscount.toFixed(4)) : ""
         });
       });
 
@@ -1873,7 +2422,7 @@
         const select = tr.querySelector('.perception-concept');
         const input = tr.querySelector('.perception-importe');
         const conceptId = select.value;
-        const importe = parseFloat(input.value) || 0;
+        const importe = parseFormattedNumber(input.value);
 
         if (conceptId && importe > 0) {
           perceptions.push({
@@ -1921,7 +2470,13 @@
             jurisdiccionId: parseInt(jurisdiccionId, 10),
             items,
             perceptions,
-            autoTransition
+            autoTransition,
+            observaciones: document.getElementById('invoice-observations').value.trim(),
+            file: selectedFileBase64 ? {
+              base64: selectedFileBase64,
+              name: selectedFileName,
+              type: selectedFileType
+            } : null
           })
         });
 
@@ -1952,8 +2507,13 @@
           });
 
           // Auto-learning feedback loop check
-          if (lastOcrResult && lastOcrResult.cuit === supplierCuit) {
+          if (lastOcrResult && supplierCuit) {
+            // Force CUIT match to selected supplier
+            lastOcrResult.cuit = supplierCuit;
             let updatedRules = null;
+            let rulesChanged = false;
+            let rules = lastOcrResult.rulesApplied || { ignoreKeywords: [], isServiceInvoice: false, preferDigits: null };
+            if (!rules.ignoreKeywords) rules.ignoreKeywords = [];
             
             const currentPos = parseInt(pos, 10);
             const currentNum = parseInt(number, 10);
@@ -1963,18 +2523,15 @@
             // Check if POS or Number was corrected by the user
             if (currentPos !== originalPos || currentNum !== originalNum) {
               console.log("Diferencia en número detectada. Generando regla de lectura...");
-              let rules = lastOcrResult.rulesApplied || { ignoreKeywords: [], isServiceInvoice: false, preferDigits: null };
-              
               if (String(currentNum).length === 8) {
                 rules.preferDigits = 8;
               }
-              
               if (lastOcrResult.rawText.toLowerCase().includes("tel")) {
                 if (!rules.ignoreKeywords.includes("tel")) {
                   rules.ignoreKeywords.push("tel");
                 }
               }
-              updatedRules = rules;
+              rulesChanged = true;
             }
 
             // Check if it is a service invoice (items changed from 1 to multiple with quantity 1)
@@ -1982,8 +2539,35 @@
             const allItemsHaveQtyOne = items.every(it => Number(it.cantidad) === 1);
             if (lastOcrResult.itemsCount <= 1 && allItemsHaveQtyOne && currentItemsCount > 1) {
               console.log("Diferencia en ítems detectada. Forzando formato de servicio/logística...");
-              let rules = lastOcrResult.rulesApplied || { ignoreKeywords: [], isServiceInvoice: false, preferDigits: null };
               rules.isServiceInvoice = true;
+              rulesChanged = true;
+            }
+
+            // Compare OCR items with User items to detect deleted rows
+            const ocrParsedItems = lastOcrResult.items || [];
+            ocrParsedItems.forEach(ocrItem => {
+              const isKept = items.some(userItem => 
+                userItem.concepto.toLowerCase().trim().includes(ocrItem.concepto.toLowerCase().trim()) ||
+                ocrItem.concepto.toLowerCase().trim().includes(userItem.concepto.toLowerCase().trim())
+              );
+              
+              if (!isKept) {
+                const cleanConcept = ocrItem.concepto.trim();
+                if (cleanConcept && cleanConcept.length > 2) {
+                  if (cleanConcept.includes("Concepto general (Carga OCR)")) return;
+                  
+                  // Extract first 3 words to avoid overly generic terms
+                  const words = cleanConcept.split(/\s+/).slice(0, 3).join(" ");
+                  if (words && !rules.ignoreKeywords.includes(words)) {
+                    rules.ignoreKeywords.push(words);
+                    rulesChanged = true;
+                    console.log(`Auto-learning: Added ignore keyword: "${words}"`);
+                  }
+                }
+              }
+            });
+
+            if (rulesChanged) {
               updatedRules = rules;
             }
 
@@ -2022,6 +2606,8 @@
           document.getElementById('viewer-img').style.display = 'none';
           document.getElementById('viewer-canvas').style.display = 'none';
           document.getElementById('viewer-placeholder').style.display = 'flex';
+          currentZoom = 100;
+          applyZoom();
         } else {
           throw new Error(result.error || "Ocurrió un error inesperado al procesar la factura.");
         }
@@ -2162,6 +2748,7 @@
             
              card.querySelector('.btn-select-existing').addEventListener('click', () => {
               selectedSupplierId.value = match.id;
+              selectedSupplierObj = match;
               supplierInput.value = `${match.razonSocial || match.nombre} (${cuitRaw})`;
               
               // Store selected supplier's IVA condition in dataset
@@ -2350,9 +2937,29 @@
         const selectedIvaText = provIva.options[provIva.selectedIndex].text;
         supplierInput.dataset.iva = selectedIvaText;
         
+        // Populate selectedSupplierObj
+        selectedSupplierObj = {
+          id: supplierId,
+          nombre: social,
+          cuit: cuitRaw,
+          razonSocial: social,
+          ivaCondition: selectedIvaText,
+          direccion: address,
+          address: address,
+          direccionCompleta: `${address}, ${city}`
+        };
+        
         // Auto-select invoice type based on the saved IVA condition in the modal
         if (selectedIvaText) {
           selectInvoiceTypeByIva(selectedIvaText);
+        }
+        
+        // Update lastOcrResult cuit to trigger learning and fetch rules
+        if (lastOcrResult) {
+          lastOcrResult.cuit = cuitRaw;
+        }
+        if (cuitRaw) {
+          reprocessOcrWithSupplierRules(cuitRaw);
         }
         
         // Close modal
@@ -2371,7 +2978,7 @@
     async function analyzeImageWithVision(base64Image) {
       const visionKey = localStorage.getItem('tmc_vision_api_key') || "";
       if (!visionKey) {
-        throw new Error("Por favor, abre la configuración (icono de engranaje ⚙️ arriba a la derecha) e ingresa tu API Key de Google Cloud Vision para habilitar la lectura OCR.");
+        throw new Error("Por favor, abre la configuración (icono de engranaje ⚙️ arriba a la derecha) e ingresa tu API Key del Motor OCR para habilitar la lectura OCR.");
       }
       
       const url = `https://vision.googleapis.com/v1/images:annotate?key=${visionKey}`;
@@ -2399,7 +3006,7 @@
       });
       
       if (!res.ok) {
-        throw new Error(`Error en Google Cloud Vision API: HTTP ${res.status}`);
+        throw new Error(`Error en el motor OCR: HTTP ${res.status}`);
       }
       
       return await res.json();
@@ -2408,6 +3015,16 @@
     async function handleOcrFileSelected(e) {
       const file = e.target.files[0];
       if (!file) return;
+
+      selectedFileName = file.name;
+      selectedFileType = file.type;
+      selectedFileBase64 = ""; // Reset until read
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        selectedFileBase64 = evt.target.result.split(',')[1];
+      };
+      reader.readAsDataURL(file);
 
       ocrStatusContainer.style.display = 'flex';
       ocrStatusText.textContent = "Leyendo archivo e iniciando procesamiento OCR...";
@@ -2428,7 +3045,7 @@
           throw new Error("Formato de archivo no soportado. Por favor use PDF o imágenes.");
         }
 
-        ocrStatusText.textContent = "Enviando imagen a Google Cloud Vision API...";
+        ocrStatusText.textContent = "Procesando lectura OCR...";
         const visionResult = await analyzeImageWithVision(base64Image);
         
         if (visionResult.responses && visionResult.responses[0] && visionResult.responses[0].fullTextAnnotation) {
@@ -2477,6 +3094,7 @@
             total: parsedData.total,
             neto: parsedData.neto,
             iva: parsedData.iva,
+            items: parsedData.items, // Keep the full items list
             itemsCount: parsedData.items.length,
             perceptionsCount: parsedData.perceptions.length,
             rulesApplied: ocrRules
@@ -2496,6 +3114,38 @@
         showAlert(err.message || "Error al procesar el comprobante mediante OCR.", "error");
       } finally {
         e.target.value = ""; // Reset input file
+      }
+    }
+
+    async function reprocessOcrWithSupplierRules(cuit) {
+      if (!lastOcrResult || !lastOcrResult.rawText || !cuit) return;
+      
+      try {
+        console.log(`Buscando reglas aprendidas para CUIT ${cuit} debido a selección de proveedor...`);
+        const rulesRes = await fetch(`${config.obtenerReglasOcrUrl}?cuit=${cuit}`);
+        const rulesJson = await rulesRes.json();
+        
+        let ocrRules = null;
+        if (rulesJson.success && rulesJson.exists) {
+          ocrRules = rulesJson.data.reglas || null;
+          console.log("Reglas OCR personalizadas encontradas:", ocrRules);
+        }
+        
+        // Re-parse and auto-fill
+        const parsedData = parseOcrText(lastOcrResult.rawText, ocrRules);
+        
+        // Update lastOcrResult rules applied
+        lastOcrResult.cuit = cuit;
+        lastOcrResult.rulesApplied = ocrRules;
+        lastOcrResult.items = parsedData.items; // Store re-parsed items
+        lastOcrResult.itemsCount = parsedData.items.length;
+        
+        // Auto fill form
+        await autoFillForm(parsedData);
+        
+        showAlert("Se aplicaron las reglas de lectura personalizadas para este proveedor.", "success");
+      } catch (err) {
+        console.error("Error al re-procesar reglas OCR:", err);
       }
     }
 
@@ -2525,6 +3175,46 @@
       return canvas.toDataURL('image/jpeg').split(',')[1];
     }
 
+    function cleanOcrAmount(amtStr) {
+      if (!amtStr) return 0;
+      let clean = amtStr.replace(/[$sS]/g, '').trim();
+      clean = clean.replace(/[\.,\-~]+$/, '').trim();
+      
+      const matches = clean.match(/[\.,]/g) || [];
+      if (matches.length === 0) {
+        return parseFloat(clean) || 0;
+      }
+      
+      const lastSeparator = clean.includes(',') && clean.includes('.') 
+        ? (clean.lastIndexOf(',') > clean.lastIndexOf('.') ? ',' : '.')
+        : matches[matches.length - 1];
+        
+      const lastSepIdx = clean.lastIndexOf(lastSeparator);
+      const afterSeparator = clean.substring(lastSepIdx + 1);
+      
+      if (clean.includes(',') && clean.includes('.')) {
+        const thousandsSeparator = lastSeparator === ',' ? '.' : ',';
+        const regex = new RegExp('\\' + thousandsSeparator, 'g');
+        clean = clean.replace(regex, '');
+        clean = clean.replace(lastSeparator, '.');
+        return parseFloat(clean) || 0;
+      } else {
+        if (matches.length > 1) {
+          const regex = new RegExp('\\' + lastSeparator, 'g');
+          clean = clean.replace(regex, '');
+          return parseFloat(clean) || 0;
+        }
+        
+        if (afterSeparator.length === 3) {
+          clean = clean.replace(lastSeparator, '');
+          return parseFloat(clean) || 0;
+        } else {
+          clean = clean.replace(lastSeparator, '.');
+          return parseFloat(clean) || 0;
+        }
+      }
+    }
+
     function parseOcrText(text, rules = null) {
       const data = {
         cuit: "",
@@ -2545,16 +3235,7 @@
         const matches = txt.match(regex);
         if (matches && matches.length > 0) {
           let amtStr = matches[matches.length - 1];
-          const numMatch = amtStr.match(/\d+(?:[\.,]\d{3})*[\.,]\d{2}/) || amtStr.match(/\d+/);
-          if (numMatch) {
-            let clean = numMatch[0];
-            if (clean.includes(",") && clean.includes(".")) {
-              clean = clean.replace(/\./g, "").replace(",", ".");
-            } else if (clean.includes(",")) {
-              clean = clean.replace(",", ".");
-            }
-            return parseFloat(clean) || 0;
-          }
+          return cleanOcrAmount(amtStr);
         }
         return 0;
       };
@@ -2597,49 +3278,37 @@
       while ((posMatch = posRegex.exec(text)) !== null) {
         const posStr = posMatch[1];
         const numStr = posMatch[2];
-        
         if (posStr === numStr) continue;
         if (posStr.length <= 2 && numStr.length === 4 && (numStr.startsWith("20") || numStr.startsWith("19"))) continue;
-        
-        // Check if part of CUIT
         const nextCharIdx = posMatch.index + posMatch[0].length;
         const nextText = text.substring(nextCharIdx, nextCharIdx + 5);
         if (/^-\d\b/.test(nextText)) continue;
-        
         let score = 0;
         if (numStr.length === 8) score += 10;
         if (posStr.length === 4 || posStr.length === 5) score += 5;
-        
-        // Rules override for digits preference
         if (rules && rules.preferDigits && numStr.length === rules.preferDigits) {
           score += 15;
         }
-
         const contextStart = Math.max(0, posMatch.index - 55);
         const contextEnd = Math.min(text.length, posMatch.index + posMatch[0].length + 55);
         const context = text.substring(contextStart, contextEnd).toLowerCase();
-        
         if (context.includes("factura") || context.includes("nro") || context.includes("nº") || context.includes("comp") || context.includes("num")) {
           score += 15;
         }
-
         const customIgnore = (rules && rules.ignoreKeywords) || [];
         const finalIgnoreList = ["tel", "tf", "phone", ...customIgnore];
-        const containsIgnore = finalIgnoreList.some(word => context.includes(word.toLowerCase()));
-        if (containsIgnore) {
-          score -= 30; // penalize heavily if matches any ignore keywords
+        if (finalIgnoreList.some(word => context.includes(word.toLowerCase()))) {
+          score -= 30;
         }
-
         posCandidates.push({ pos: posStr, number: numStr, score: score });
       }
-
       posCandidates.sort((a, b) => b.score - a.score);
       if (posCandidates.length > 0) {
         data.pos = posCandidates[0].pos;
         data.number = posCandidates[0].number;
       }
 
-      // 4. Date (with dot notation support)
+      // 4. Date
       const dateMatch = text.match(/\b(\d{2})[/\.-](\d{2})[/\.-](\d{4})\b/);
       if (dateMatch) {
         const [_, day, month, year] = dateMatch;
@@ -2647,130 +3316,342 @@
       }
 
       // 5. Total, Neto, IVA
-      data.total = parseAmount(/(?:\btotal\b|importe total|\btotal\s*\$)\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d{3})*[\.,]\d{2})/i, text);
-      data.neto = parseAmount(/(?:neto|subtotal|neto gravado|gravado)\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d{3})*[\.,]\d{2})/i, text);
-      data.iva = parseAmount(/(?<!condición\s|condicion\s)\b(?:iva|i\.v\.a\.)\b\s*(?:21%|10\.5%|contenido|total|liquidado)?\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d{3})*[\.,]\d{2})/i, text);
+      data.total = parseAmount(/(?:\btotal\b|importe total|\btotal\s*\$)\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, text);
+      data.neto = parseAmount(/(?:neto|subtotal|neto gravado|gravado)\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, text);
+      data.iva = parseAmount(/(?<!condición\s|condicion\s)\b(?:iva|i\.v\.a\.)\b\s*(?:21%|10\.5%|contenido|total|liquidado)?\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, text);
 
-      if (data.total === 0) {
-        const moneyMatches = text.match(/\b\d+(?:[\.,]\d{3})*[\.,]\d{2}\b/g) || [];
-        const floatAmounts = moneyMatches.map(m => {
-          let clean = m;
-          if (clean.includes(",") && clean.includes(".")) {
-            clean = clean.replace(/\./g, "").replace(",", ".");
-          } else if (clean.includes(",")) {
-            clean = clean.replace(",", ".");
-          }
-          return parseFloat(clean) || 0;
-        });
-        if (floatAmounts.length > 0) data.total = Math.max(...floatAmounts);
-      }
-      if (data.neto === 0 && data.total > 0) data.neto = data.total - data.iva;
-      if (data.iva === 0 && data.total > data.neto) data.iva = data.total - data.neto;
+      const ocrLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-      // 6. Perceptions
-      const ocrLines = text.split('\n');
-      ocrLines.forEach(line => {
+      // Block-alignment for separate columns of labels and amounts
+      const footerLabelRegex = /(?:\bsubtotal\b|\bneto\b|\biva\b|\bi\.v\.a\.|\btotal\b|\bpercep|\bperc\.|\bganancia\b|\binterno\b|\biibb\b)/i;
+      const labelIgnore = ["responsable", "inscripto", "cuit", "ing. brutos", "inicio de actividad", "cliente:", "nombre:", "dirección:", "localidad:", "c.u.i.t."];
+      
+      const labelLines = [];
+      ocrLines.forEach((line, idx) => {
         const lineLower = line.toLowerCase();
-        if (lineLower.includes("percep") || lineLower.includes("perc.")) {
-          const numMatch = line.match(/(\d+(?:[\.,]\d{3})*[\.,]\d{2})\s*$/) || line.match(/(\d+(?:[\.,]\d{3})*[\.,]\d{2})\b/);
-          if (numMatch) {
-            let amountStr = numMatch[1];
-            if (amountStr.includes(",") && amountStr.includes(".")) {
-              amountStr = amountStr.replace(/\./g, "").replace(",", ".");
-            } else if (amountStr.includes(",")) {
-              amountStr = amountStr.replace(",", ".");
-            }
-            const amount = parseFloat(amountStr) || 0;
-            if (amount > 0) {
-              let detectedTaxType = "iibb";
-              if (lineLower.includes("iva")) detectedTaxType = "iva";
-              else if (lineLower.includes("gan") || lineLower.includes("ganancia")) detectedTaxType = "ganancias";
-              else if (lineLower.includes("int") || lineLower.includes("interno")) detectedTaxType = "internos";
-              
-              data.perceptions.push({
-                taxType: detectedTaxType,
-                rawLabel: line.trim(),
-                importe: amount
-              });
+        if (footerLabelRegex.test(line)) {
+          const shouldIgnore = labelIgnore.some(kw => lineLower.includes(kw));
+          if (!shouldIgnore) {
+            // Exclude percentage values like "21,00%"
+            const hasAmt = line.match(/\b\d+(?:[\.,]\d{3})*[\.,]\d{2}\b(?!\s*%)/);
+            if (!hasAmt) {
+              labelLines.push({ text: line, lineIdx: idx });
             }
           }
         }
       });
 
-      // 7. Items
-      const lines = text.split('\n');
-      
-      const forceService = rules && rules.isServiceInvoice === true;
-      
-      // First pass: try standard quantity + description + price + subtotal rows
-      if (!forceService) {
-        lines.forEach(line => {
-          const matchRow = line.match(/^\s*(\d+(?:[\.,]\d+)?)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\d\-_\/\+\*\.\(\)%#ºª]+?)\s+(\d+(?:\.\d{3})*(?:[\.,]\d{2}))\s+(\d+(?:\.\d{3})*(?:[\.,]\d{2}))/);
-          if (matchRow) {
-            const qty = parseFloat(matchRow[1].replace(",", "."));
-            const desc = matchRow[2].trim();
-            let priceStr = matchRow[3];
-            if (priceStr.includes(",") && priceStr.includes(".")) {
-              priceStr = priceStr.replace(/\./g, "").replace(",", ".");
-            } else if (priceStr.includes(",")) {
-              priceStr = priceStr.replace(",", ".");
-            }
-            const price = parseFloat(priceStr) || 0;
-            if (qty > 0 && desc && price > 0) {
-              data.items.push({ concepto: desc, cantidad: qty, precioUnitario: price });
+      const separateAmounts = [];
+      if (labelLines.length > 0) {
+        const firstLabelIdx = labelLines[0].lineIdx;
+        ocrLines.forEach((line, idx) => {
+          if (idx > firstLabelIdx) {
+            const amtMatch = line.match(/^\s*[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/);
+            if (amtMatch) {
+              const amtVal = cleanOcrAmount(amtMatch[1]);
+              if (amtVal > 0) {
+                separateAmounts.push({ val: amtVal, lineIdx: idx });
+              }
             }
           }
         });
       }
 
-      // Second pass: if no items detected, search for text description + amount rows (for service/logistics invoices)
-      if (data.items.length === 0 || forceService) {
-        if (forceService) data.items = []; // Ensure empty before service pass
-        const ignoreKeywords = ["total", "subtotal", "neto", "iva", "i.v.a.", "percep", "perc.", "cae", "cuit", "ing. brutos", "inicio de actividad", "tel:", "cliente:", "dirección:", "localidad:", "c.u.i.t."];
-        const customIgnore = (rules && rules.ignoreKeywords) || [];
-        const finalItemIgnore = [...ignoreKeywords, ...customIgnore];
-        
-        lines.forEach(line => {
-          // Line format: [Description text] [Amount]
-          const matchRow = line.match(/^\s*([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\d\-_\/\+\*\.\(\)%#ºª&]+?)\s+(\d+(?:\.\d{3})*(?:[\.,]\d{2}))\s*$/);
-          if (matchRow) {
-            const desc = matchRow[1].trim();
-            let amountStr = matchRow[2];
+      if (labelLines.length > 0 && separateAmounts.length === labelLines.length) {
+        for (let i = 0; i < labelLines.length; i++) {
+          const lbl = labelLines[i].text.toLowerCase();
+          const val = separateAmounts[i].val;
+          
+          if (lbl.includes("subtotal") || lbl.includes("neto") || lbl.includes("neto gravado") || lbl.includes("gravado")) {
+            if (data.neto === 0) data.neto = val;
+          }
+          if (lbl.includes("iva") || lbl.includes("i.v.a.")) {
+            if (data.iva === 0) data.iva = val;
+          }
+          if (lbl.includes("total")) {
+            if (data.total === 0) data.total = val;
+          }
+          if (lbl.includes("percep") || lbl.includes("perc.")) {
+            let detectedTaxType = "iibb";
+            if (lbl.includes("iva")) detectedTaxType = "iva";
+            else if (lbl.includes("gan") || lbl.includes("ganancia")) detectedTaxType = "ganancias";
+            else if (lbl.includes("int") || lbl.includes("interno")) detectedTaxType = "internos";
             
-            // Check ignore list
-            const descLower = desc.toLowerCase();
-            const shouldIgnore = finalItemIgnore.some(kw => descLower.includes(kw.toLowerCase()));
-            if (shouldIgnore) return;
-
-            if (amountStr.includes(",") && amountStr.includes(".")) {
-              amountStr = amountStr.replace(/\./g, "").replace(",", ".");
-            } else if (amountStr.includes(",")) {
-              amountStr = amountStr.replace(",", ".");
+            const exists = data.perceptions.some(p => Math.abs(p.importe - val) < 0.05);
+            if (!exists) {
+              data.perceptions.push({ taxType: detectedTaxType, rawLabel: labelLines[i].text, importe: val });
             }
-            const amount = parseFloat(amountStr) || 0;
-            
-            if (desc && amount > 0) {
+          }
+        }
+      }
+
+      // Fallbacks
+      if (data.total === 0) {
+        const moneyMatches = text.match(/\b\d+(?:[\.,]\d+)*\b/g) || [];
+        const floatAmounts = moneyMatches.map(m => cleanOcrAmount(m));
+        if (floatAmounts.length > 0) data.total = Math.max(...floatAmounts);
+      }
+      if (data.neto === 0 && data.total > 0) data.neto = data.total - data.iva;
+      if (data.iva === 0 && data.total > data.neto) data.iva = data.total - data.neto;
+
+      // --- LINE-BY-LINE EXTRACTION STRATEGY ---
+      const parsedItems = [];
+      const parsedPerceptions = [];
+      const lineIgnoreKeywords = ["total", "subtotal", "neto", "iva", "i.v.a.", "percep", "perc.", "cae", "cuit", "ing. brutos", "inicio de actividad", "tel:", "cliente:", "dirección:", "localidad:", "c.u.i.t.", "precio", "descripción", "descripcion", "cantidad", "concepto", "pago", "vencimiento", "fecha", "nro", "nº", "número", "factura", "original", "duplicado", "remito", "domicilio", "dto", "dto.", "descuento", "bonif", "bonificacion", "bonificación"];
+      const customIgnore = (rules && rules.ignoreKeywords) || [];
+      const finalItemIgnore = [...lineIgnoreKeywords, ...customIgnore];
+
+      ocrLines.forEach(line => {
+        const lineTrimmed = line.trim();
+        const lineLower = lineTrimmed.toLowerCase();
+        
+        // Skip header/footer lines using ignore keywords
+        const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
+        if (shouldIgnore) return;
+
+        // Extract one or two trailing amounts from the end of the line
+        const twoAmountsRegex = /\s+[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s+[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/;
+        const oneAmountRegex = /\s+[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/;
+
+        let restOfLine = lineTrimmed;
+        let val1 = 0;
+        let val2 = 0;
+
+        const twoMatch = lineTrimmed.match(twoAmountsRegex);
+        if (twoMatch) {
+          val1 = cleanOcrAmount(twoMatch[1]);
+          val2 = cleanOcrAmount(twoMatch[2]);
+          restOfLine = lineTrimmed.substring(0, twoMatch.index).trim();
+        } else {
+          const oneMatch = lineTrimmed.match(oneAmountRegex);
+          if (oneMatch) {
+            val1 = cleanOcrAmount(oneMatch[1]);
+            restOfLine = lineTrimmed.substring(0, oneMatch.index).trim();
+          }
+        }
+
+        if (val1 === 0 && val2 === 0) {
+          return; // Not a valid item line
+        }
+
+        // Parse quantity and concept from restOfLine
+        const qtyRegex = /^(\d+(?:[\.,]\d+)?)\s*(?:[xX\*]|\s)\s*(.*)$/;
+        const qtyMatch = restOfLine.match(qtyRegex);
+
+        let qty = 1;
+        let concepto = restOfLine;
+
+        if (qtyMatch) {
+          qty = parseFloat(qtyMatch[1].replace(',', '.'));
+          concepto = qtyMatch[2].trim();
+        }
+
+        // Verify that the concept is not empty and contains letters
+        if (!concepto || !/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(concepto)) {
+          return;
+        }
+
+        let unitPrice = val1;
+        if (val2 > 0) {
+          if (Math.abs(qty * val1 - val2) < 2.0) {
+            unitPrice = val1;
+          } else if (Math.abs(qty * val2 - val1) < 2.0) {
+            unitPrice = val2;
+          } else {
+            unitPrice = val2 / qty;
+          }
+        }
+
+        // Exclude perceptions masquerading as items
+        if (concepto.toLowerCase().includes("percepcion") || concepto.toLowerCase().includes("percepción") || concepto.toLowerCase().includes("perc.")) {
+          let detectedTaxType = "iibb";
+          if (concepto.toLowerCase().includes("iva")) detectedTaxType = "iva";
+          else if (concepto.toLowerCase().includes("gan") || concepto.toLowerCase().includes("ganancia")) detectedTaxType = "ganancias";
+          else if (concepto.toLowerCase().includes("int") || concepto.toLowerCase().includes("interno")) detectedTaxType = "internos";
+          
+          parsedPerceptions.push({
+            taxType: detectedTaxType,
+            rawLabel: concepto,
+            importe: val2 || val1
+          });
+        } else {
+          parsedItems.push({
+            concepto: concepto,
+            cantidad: qty,
+            precioUnitario: unitPrice
+          });
+        }
+      });
+
+      if (parsedItems.length > 0) {
+        data.items = parsedItems;
+        if (parsedPerceptions.length > 0) {
+          data.perceptions = parsedPerceptions;
+        }
+      } else {
+        // --- TRIPLE-TIERED ITEMS PARSING STRATEGY ---
+        const ignoreKeywords = ["total", "subtotal", "neto", "iva", "i.v.a.", "percep", "perc.", "cae", "cuit", "ing. brutos", "inicio de actividad", "tel:", "cliente:", "dirección:", "localidad:", "c.u.i.t.", "precio", "descripción", "descripcion", "cantidad", "concepto", "pago", "vencimiento", "fecha", "nro", "nº", "número", "factura", "original", "duplicado", "remito", "domicilio", "dto", "dto.", "descuento", "bonif", "bonificacion", "bonificación"];
+      const customIgnore = (rules && rules.ignoreKeywords) || [];
+      const finalItemIgnore = [...ignoreKeywords, ...customIgnore];
+
+      // Collect all single amount lines with original line index
+      const amounts = [];
+      ocrLines.forEach((line, idx) => {
+        // Only collect item amounts before the first footer label
+        if (labelLines.length === 0 || idx < labelLines[0].lineIdx) {
+          const amtMatch = line.match(/^\s*[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/);
+          if (amtMatch) {
+            const amtVal = cleanOcrAmount(amtMatch[1]);
+            if (amtVal > 0) {
+              amounts.push({ val: amtVal, lineIdx: idx });
+            }
+          }
+        }
+      });
+
+      const amountValues = amounts.map(a => a.val);
+
+      // Tier 1: Quantity Multiplication Check (for standard tabular layout)
+      const qtyItemLines = [];
+      ocrLines.forEach(line => {
+        const lineTrimmed = line.trim();
+        const qtyMatch = lineTrimmed.match(/^\s*(\d+(?:[\.,]\d+)?)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ].*)$/);
+        if (qtyMatch) {
+          const lineLower = lineTrimmed.toLowerCase();
+          const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
+          if (!shouldIgnore) {
+            qtyItemLines.push({
+              concepto: qtyMatch[2].trim(),
+              cantidad: parseFloat(qtyMatch[1].replace(",", ".")),
+              rawLine: lineTrimmed
+            });
+          }
+        }
+      });
+
+      let tier1Success = false;
+      if (qtyItemLines.length > 0 && amountValues.length >= qtyItemLines.length * 2) {
+        const tempItems = [];
+        let amtIdx = 0;
+        let paired = true;
+        for (let i = 0; i < qtyItemLines.length; i++) {
+          const item = qtyItemLines[i];
+          const p1 = amountValues[amtIdx];
+          const p2 = amountValues[amtIdx + 1];
+          if (p1 && p2 && Math.abs(p2 - (item.cantidad * p1)) < 1.5) {
+            tempItems.push({
+              concepto: item.concepto,
+              cantidad: item.cantidad,
+              precioUnitario: p1
+            });
+            amtIdx += 2;
+          } else {
+            paired = false;
+            break;
+          }
+        }
+        if (paired && tempItems.length === qtyItemLines.length) {
+          data.items = tempItems;
+          tier1Success = true;
+        }
+      }
+
+      // Tier 2: Net Sum Matching
+      let tier2Success = false;
+      if (!tier1Success) {
+        const targetNet = data.neto || (data.total - data.iva) || 0;
+        if (targetNet > 0 && amounts.length > 0) {
+          let matchedSubsegment = null;
+          for (let len = 1; len <= amounts.length; len++) {
+            for (let start = 0; start <= amounts.length - len; start++) {
+              const sub = amounts.slice(start, start + len);
+              const sum = sub.reduce((a, b) => a + b.val, 0);
+              if (Math.abs(sum - targetNet) < 2.0) {
+                matchedSubsegment = { start, len, sum };
+                break;
+              }
+            }
+            if (matchedSubsegment) break;
+          }
+
+          if (matchedSubsegment) {
+            const itemAmounts = amounts.slice(matchedSubsegment.start, matchedSubsegment.start + matchedSubsegment.len);
+            const firstAmountLineIdx = itemAmounts[0].lineIdx;
+
+            const descCandidates = [];
+            ocrLines.forEach((line, idx) => {
+              if (idx < firstAmountLineIdx) {
+                const lineTrimmed = line.trim();
+                if (/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(lineTrimmed)) {
+                  const lineLower = lineTrimmed.toLowerCase();
+                  const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
+                  if (!shouldIgnore) {
+                    descCandidates.push(lineTrimmed);
+                  }
+                }
+              }
+            });
+
+            const len = matchedSubsegment.len;
+            if (descCandidates.length >= len) {
+              const selectedDescs = descCandidates.slice(-len);
+              for (let i = 0; i < len; i++) {
+                data.items.push({
+                  concepto: selectedDescs[i],
+                  cantidad: 1,
+                  precioUnitario: itemAmounts[i].val
+                });
+              }
+              tier2Success = true;
+            }
+          }
+        }
+
+        // Fallback Tier 3: simple 1-to-1 fallback
+        if (!tier2Success) {
+          const descs = [];
+          ocrLines.forEach(line => {
+            const lineTrimmed = line.trim();
+            const isAmt = lineTrimmed.match(/^\s*[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/);
+            if (isAmt) return;
+
+            if (/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(lineTrimmed)) {
+              const lineLower = lineTrimmed.toLowerCase();
+              const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
+              if (shouldIgnore) return;
+
+              descs.push({
+                concepto: lineTrimmed,
+                cantidad: 1
+              });
+            }
+          });
+
+          if (descs.length > 0 && amountValues.length > 0) {
+            const alignLength = Math.min(descs.length, amountValues.length);
+            for (let i = 0; i < alignLength; i++) {
               data.items.push({
-                concepto: desc,
-                cantidad: 1,
-                precioUnitario: amount
+                concepto: descs[i].concepto,
+                cantidad: descs[i].cantidad,
+                precioUnitario: amountValues[i]
               });
             }
           }
-        });
+        }
+      }
       }
 
-      // Fallback
-      if (data.items.length === 0) {
-        data.items.push({
-          concepto: "Concepto general (Carga OCR)",
-          cantidad: 1,
-          precioUnitario: data.neto || data.total || 0
-        });
-      }
+       // Fallback row
+       if (data.items.length === 0) {
+         data.items.push({
+           concepto: "Concepto general (Carga OCR)",
+           cantidad: 1,
+           precioUnitario: data.neto || data.total || 0
+         });
+       }
 
-      return data;
-    }
+       return data;
+     }
 
     async function autoFillForm(data) {
       if (data.invoiceType) {
@@ -2858,6 +3739,7 @@
           const supplier = json.data[0];
           supplierInput.value = `${supplier.nombre} (${supplier.cuit || 'S/D'})`;
           selectedSupplierId.value = supplier.id;
+          selectedSupplierObj = supplier;
           supplierInput.dataset.iva = supplier.ivaCondition || "";
           
           if (supplier.ivaCondition) {
@@ -2872,11 +3754,7 @@
     }
 
     // Connect OCR UI events
-    btnOcrCamera.addEventListener('click', () => {
-      ocrCameraInput.click();
-    });
     ocrFileInput.addEventListener('change', handleOcrFileSelected);
-    ocrCameraInput.addEventListener('change', handleOcrFileSelected);
 
     // --- LÓGICA DE PERCEPCIONES (FRONTEND) ---
     const perceptionsTbody = document.getElementById('perceptions-tbody');
@@ -2912,7 +3790,7 @@
           </select>
         </td>
         <td>
-          <input type="number" class="perception-importe" value="${importe}" placeholder="0.00" step="0.01" style="text-align: right;">
+          <input type="text" class="perception-importe" value="${formatNumber(importe)}" placeholder="0,00" style="text-align: right;">
         </td>
         <td style="text-align: center;">
           <button type="button" class="btn-del-perception" style="background: none; border: none; cursor: pointer; color: var(--danger);">
@@ -2921,8 +3799,13 @@
         </td>
       `;
 
+      const inputImp = tr.querySelector('.perception-importe');
+      inputImp.addEventListener('focus', handleInputFocus);
+      inputImp.addEventListener('blur', handleInputBlur);
+      inputImp.addEventListener('input', handleInputFormatting);
+
       tr.querySelector('.perception-concept').addEventListener('change', calculateTotals);
-      tr.querySelector('.perception-importe').addEventListener('input', calculateTotals);
+      inputImp.addEventListener('input', calculateTotals);
       tr.querySelector('.btn-del-perception').addEventListener('click', () => {
         tr.remove();
         calculateTotals();
@@ -2971,7 +3854,7 @@
             <div>${item.invoiceTypeName}</div>
             <div style="font-size: 11px; color: var(--text-muted);">${item.posNumber}</div>
           </td>
-          <td style="padding: 12px; font-size: 13px; text-align: right; font-weight: 600; color: var(--success);">$ ${item.total.toFixed(2)}</td>
+          <td style="padding: 12px; font-size: 13px; text-align: right; font-weight: 600; color: var(--success);">$ ${formatNumber(item.total)}</td>
           <td style="padding: 12px; text-align: center;">
             <a href="https://me.yiqi.com.ar/instances/edit?entityId=660&schemaId=1491&id=${item.invoiceId}" target="_blank" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; gap: 4px;">
               <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
@@ -3004,10 +3887,80 @@
       loadHistory();
     }
 
-    btnClearHistory.addEventListener('click', () => {
-      if (confirm("¿Estás seguro de que deseas limpiar el historial de ingestas?")) {
+    btnClearHistory.addEventListener('click', async () => {
+      const confirmed = await showCustomConfirm("¿Estás seguro de que deseas limpiar el historial de ingestas?", "Limpiar Historial");
+      if (confirmed) {
         localStorage.removeItem('tmc_invoice_history');
         loadHistory();
+      }
+    });
+
+    // Limpiar Todo (Formulario y Comprobante)
+    document.getElementById('btn-clear-all').addEventListener('click', async () => {
+      const confirmed = await showCustomConfirm("¿Estás seguro de que deseas limpiar todos los datos del formulario y el comprobante cargado?", "Confirmar Reinicio");
+      if (confirmed) {
+        // 1. Reset OCR file input
+        ocrFileInput.value = '';
+
+        // 2. Reset file variables
+        selectedFileBase64 = "";
+        selectedFileName = "";
+        selectedFileType = "";
+
+        // 3. Reset Supplier state
+        supplierInput.value = '';
+        delete supplierInput.dataset.iva;
+        document.getElementById('selected-supplier-id').value = '';
+        selectedSupplierObj = null;
+        lastParsedCuit = "";
+        lastOcrResult = null;
+        document.getElementById('supplier-autocomplete').style.display = 'none';
+        document.getElementById('supplier-tooltip').style.display = 'none';
+        updateLockStatesBasedOnSupplierIva();
+
+        // 4. Reset invoice header fields
+        document.getElementById('invoice-type').value = '17';
+        document.getElementById('invoice-pos').value = '99';
+        document.getElementById('invoice-number').value = '';
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date-emission').value = today;
+        const due = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        document.getElementById('date-due').value = due;
+        document.getElementById('currency').value = '171';
+        document.getElementById('exchange-rate').value = '1';
+        document.getElementById('rubro').value = '5';
+        document.getElementById('jurisdiccion').value = '2';
+        document.getElementById('invoice-observations').value = '';
+        document.getElementById('global-discount').value = '0';
+
+        // 5. Reset details
+        document.getElementById('items-tbody').innerHTML = '';
+        createRow();
+
+        // 6. Reset perceptions
+        perceptionsTbody.innerHTML = '';
+
+        // 7. Recalculate totals
+        calculateTotals();
+
+        // 8. Reset Document Viewer
+        document.getElementById('document-viewer-card').style.display = 'none';
+        document.querySelector('.app-grid').classList.remove('has-preview');
+        const viewerImg = document.getElementById('viewer-img');
+        if (viewerImg) {
+          viewerImg.src = '';
+          viewerImg.style.display = 'none';
+        }
+        const viewerCanvas = document.getElementById('viewer-canvas');
+        if (viewerCanvas) {
+          viewerCanvas.style.display = 'none';
+        }
+        const viewerPlaceholder = document.getElementById('viewer-placeholder');
+        if (viewerPlaceholder) {
+          viewerPlaceholder.style.display = 'flex';
+        }
+        currentZoom = 100;
+        applyZoom();
       }
     });
 
