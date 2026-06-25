@@ -920,14 +920,19 @@
             </button>
           </div>
         </div>
-        <div id="viewer-container" style="flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; background: #0f172a; border-radius: 8px; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.05); user-select: none; -webkit-user-select: none;">
-          <!-- Preview content (Image or Canvas) -->
-          <img id="viewer-img" style="max-width: 100%; display: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-          <canvas id="viewer-canvas" style="max-width: 100%; display: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></canvas>
+        <div id="viewer-container" style="flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; background: #0f172a; border-radius: 8px; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.05); user-select: none; -webkit-user-select: none; position: relative;">
+          <!-- Wrapper relative wrapper to scale overlay canvas exactly with the image/canvas size -->
+          <div id="viewer-wrapper" style="position: relative; display: inline-block; max-width: 100%; margin: 0 auto;">
+            <img id="viewer-img" style="max-width: 100%; display: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); vertical-align: top;">
+            <canvas id="viewer-canvas" style="max-width: 100%; display: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); vertical-align: top;"></canvas>
+            <canvas id="viewer-highlight-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 5; cursor: default;"></canvas>
+          </div>
           <div id="viewer-placeholder" style="color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
             <i data-lucide="image" style="width: 32px; height: 32px; stroke-width: 1.5;"></i>
             <span>Suba un comprobante para visualizarlo aquí.</span>
           </div>
+          <!-- Floating Tooltip for OCR Highlights -->
+          <div id="viewer-tooltip" style="position: absolute; display: none; z-index: 1000; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; padding: 8px 12px; color: var(--text-main); font-size: 11px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); pointer-events: none; max-width: 250px; font-weight: 500;"></div>
         </div>
       </div>
     </div>
@@ -1675,13 +1680,28 @@
       { id: "6", name: "No gravado" }
     ];
 
-    function createRow(concepto = "", cantidad = 1, precio = 0, alicuotaId = "3", descuento = "") {
+    function createRow(concepto = "", cantidad = 1, precio = 0, alicuotaId = "3", descuento = "", ocrIndex = null) {
       // If selected supplier is No Oficial, default new items to 0% IVA (alicuotaId = "1")
       const supplierIva = String(supplierInput.dataset.iva || "").trim().toLowerCase();
       if (supplierIva.includes("no oficial")) {
         alicuotaId = "1";
       }
       const tr = document.createElement('tr');
+      
+      if (ocrIndex !== null) {
+        tr.dataset.ocrIndex = ocrIndex;
+      }
+      
+      // Wire hover events for OCR highlighter
+      tr.addEventListener('mouseenter', () => {
+        const idx = tr.dataset.ocrIndex;
+        if (idx !== undefined) {
+          setActiveHighlight(`item-${idx}`);
+        }
+      });
+      tr.addEventListener('mouseleave', () => {
+        clearActiveHighlight();
+      });
       
       // Concepto
       const tdConcepto = document.createElement('td');
@@ -2064,6 +2084,12 @@
         currentZoom = 100;
         applyZoom();
         
+        updateOriginalImageDimensions();
+        if (ocrAnnotations && ocrAnnotations.length > 0) {
+          document.getElementById('viewer-highlight-canvas').style.display = 'block';
+          updateHighlightCanvasSize();
+        }
+        
         lucide.createIcons();
       } catch (err) {
         console.error("Error al renderizar PDF en el visor:", err);
@@ -2074,6 +2100,13 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = document.getElementById('viewer-img');
+        img.onload = () => {
+          updateOriginalImageDimensions();
+          if (ocrAnnotations && ocrAnnotations.length > 0) {
+            document.getElementById('viewer-highlight-canvas').style.display = 'block';
+            updateHighlightCanvasSize();
+          }
+        };
         img.src = e.target.result;
         img.style.display = 'block';
         document.getElementById('viewer-canvas').style.display = 'none';
@@ -2099,6 +2132,214 @@
       applyZoom();
     });
 
+    // --- LÓGICA DE RESALTADO VISUAL DE OCR EN EL COMPROBANTE ---
+    let ocrAnnotations = [];
+    let originalImageWidth = 1000;
+    let originalImageHeight = 1000;
+    let mappedHighlights = {};
+    let activeHighlightId = null;
+
+    function updateOriginalImageDimensions() {
+      const img = document.getElementById('viewer-img');
+      const canvas = document.getElementById('viewer-canvas');
+      if (img && img.style.display !== 'none' && img.naturalWidth) {
+        originalImageWidth = img.naturalWidth;
+        originalImageHeight = img.naturalHeight;
+      } else if (canvas && canvas.style.display !== 'none' && canvas.width) {
+        originalImageWidth = canvas.width;
+        originalImageHeight = canvas.height;
+      }
+      console.log(`Dimensiones originales actualizadas: ${originalImageWidth}x${originalImageHeight}`);
+    }
+
+    function findPhraseBoundingBox(phrase) {
+      if (!phrase || !ocrAnnotations || ocrAnnotations.length === 0) return null;
+      
+      const stopwords = ["de", "la", "el", "un", "x", "y", "en", "para", "con", "por", "a", "los", "las", "no", "oficial", "nro", "nº", "fecha", "cliente", "cuit"];
+      const wordsToFind = String(phrase).toLowerCase().replace(/[\.,\-~]/g, ' ').split(/\s+/).filter(w => w.length > 1 && !stopwords.includes(w));
+      if (wordsToFind.length === 0) return null;
+      
+      const matchedAnnotations = [];
+      
+      for (const ann of ocrAnnotations) {
+        const text = ann.description.toLowerCase().replace(/[\.,\-~]/g, '');
+        if (wordsToFind.some(w => text.includes(w) || w.includes(text))) {
+          matchedAnnotations.push(ann);
+        }
+      }
+      
+      if (matchedAnnotations.length === 0) return null;
+      
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      matchedAnnotations.forEach(ann => {
+        const vertices = ann.boundingPoly.vertices;
+        vertices.forEach(v => {
+          const x = v.x || 0;
+          const y = v.y || 0;
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        });
+      });
+      
+      return { minX, minY, maxX, maxY };
+    }
+
+    function mapHighlightsFromOcr(data) {
+      mappedHighlights = {};
+      if (!ocrAnnotations || ocrAnnotations.length === 0) return;
+      
+      mappedHighlights['cuit'] = findPhraseBoundingBox(data.cuit);
+      mappedHighlights['pos'] = findPhraseBoundingBox(data.pos);
+      mappedHighlights['number'] = findPhraseBoundingBox(data.number);
+      mappedHighlights['date'] = findPhraseBoundingBox(data.date ? data.date.split('-').reverse().join('/') : '');
+      mappedHighlights['total'] = findPhraseBoundingBox(data.total);
+      mappedHighlights['neto'] = findPhraseBoundingBox(data.neto);
+      mappedHighlights['iva'] = findPhraseBoundingBox(data.iva);
+
+      if (data.items) {
+        data.items.forEach((item, idx) => {
+          mappedHighlights[`item-${idx}`] = findPhraseBoundingBox(item.concepto);
+        });
+      }
+      console.log("Coordenadas mapeadas para resaltado:", mappedHighlights);
+    }
+
+    function setActiveHighlight(id) {
+      activeHighlightId = id;
+      drawHighlights();
+    }
+
+    function clearActiveHighlight() {
+      activeHighlightId = null;
+      drawHighlights();
+    }
+
+    function drawHighlights() {
+      const canvas = document.getElementById('viewer-highlight-canvas');
+      if (!canvas || canvas.style.display === 'none') return;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const containerWidth = canvas.width;
+      const containerHeight = canvas.height;
+      
+      if (!originalImageWidth || !originalImageHeight) return;
+      
+      const scaleX = containerWidth / originalImageWidth;
+      const scaleY = containerHeight / originalImageHeight;
+      const hasActive = activeHighlightId !== null;
+      
+      for (const [id, box] of Object.entries(mappedHighlights)) {
+        if (!box) continue;
+        
+        const isCurrent = activeHighlightId === id;
+        let colorTheme = { fill: 'rgba(59, 130, 246, 0.08)', border: 'rgba(59, 130, 246, 0.3)', activeFill: 'rgba(59, 130, 246, 0.25)', activeBorder: 'rgba(59, 130, 246, 0.85)' }; // Blue
+        
+        if (id === 'total') {
+          colorTheme = { fill: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.3)', activeFill: 'rgba(34, 197, 94, 0.3)', activeBorder: 'rgba(34, 197, 94, 0.85)' }; // Green
+        } else if (id === 'iva') {
+          colorTheme = { fill: 'rgba(168, 85, 247, 0.08)', border: 'rgba(168, 85, 247, 0.3)', activeFill: 'rgba(168, 85, 247, 0.3)', activeBorder: 'rgba(168, 85, 247, 0.85)' }; // Purple
+        } else if (id === 'pos' || id === 'number') {
+          colorTheme = { fill: 'rgba(234, 179, 8, 0.08)', border: 'rgba(234, 179, 8, 0.3)', activeFill: 'rgba(234, 179, 8, 0.3)', activeBorder: 'rgba(234, 179, 8, 0.85)' }; // Yellow
+        } else if (id === 'date') {
+          colorTheme = { fill: 'rgba(6, 182, 212, 0.08)', border: 'rgba(6, 182, 212, 0.3)', activeFill: 'rgba(6, 182, 212, 0.3)', activeBorder: 'rgba(6, 182, 212, 0.85)' }; // Cyan
+        } else if (id.startsWith('item-')) {
+          colorTheme = { fill: 'rgba(249, 115, 22, 0.05)', border: 'rgba(249, 115, 22, 0.25)', activeFill: 'rgba(249, 115, 22, 0.25)', activeBorder: 'rgba(249, 115, 22, 0.9)' }; // Orange
+        } else if (id === 'cuit') {
+          colorTheme = { fill: 'rgba(239, 68, 68, 0.05)', border: 'rgba(239, 68, 68, 0.25)', activeFill: 'rgba(239, 68, 68, 0.25)', activeBorder: 'rgba(239, 68, 68, 0.9)' }; // Red
+        }
+        
+        const x = box.minX * scaleX;
+        const y = box.minY * scaleY;
+        const w = (box.maxX - box.minX) * scaleX;
+        const h = (box.maxY - box.minY) * scaleY;
+        
+        ctx.beginPath();
+        ctx.rect(x - 2, y - 2, w + 4, h + 4);
+        
+        if (hasActive) {
+          if (isCurrent) {
+            ctx.fillStyle = colorTheme.activeFill;
+            ctx.strokeStyle = colorTheme.activeBorder;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = colorTheme.activeBorder;
+            ctx.shadowBlur = 8;
+          } else {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 0;
+          }
+        } else {
+          ctx.fillStyle = colorTheme.fill;
+          ctx.strokeStyle = colorTheme.border;
+          ctx.lineWidth = 1.5;
+          ctx.shadowBlur = 0;
+        }
+        
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function updateHighlightCanvasSize() {
+      const canvas = document.getElementById('viewer-highlight-canvas');
+      const wrapper = document.getElementById('viewer-wrapper');
+      if (canvas && wrapper && canvas.style.display !== 'none') {
+        canvas.width = wrapper.clientWidth;
+        canvas.height = wrapper.clientHeight;
+        drawHighlights();
+      }
+    }
+
+    function wireHighlightHoverEvents() {
+      const inputPos = document.getElementById('invoice-pos');
+      if (inputPos) {
+        inputPos.addEventListener('mouseenter', () => setActiveHighlight('pos'));
+        inputPos.addEventListener('mouseleave', () => clearActiveHighlight());
+      }
+      
+      const inputNum = document.getElementById('invoice-number');
+      if (inputNum) {
+        inputNum.addEventListener('mouseenter', () => setActiveHighlight('number'));
+        inputNum.addEventListener('mouseleave', () => clearActiveHighlight());
+      }
+      
+      const inputDate = document.getElementById('date-emission');
+      if (inputDate) {
+        inputDate.addEventListener('mouseenter', () => setActiveHighlight('date'));
+        inputDate.addEventListener('mouseleave', () => clearActiveHighlight());
+      }
+      
+      const lblNeto = document.getElementById('lbl-neto');
+      if (lblNeto) {
+        const row = lblNeto.parentElement;
+        row.style.cursor = 'help';
+        row.addEventListener('mouseenter', () => setActiveHighlight('neto'));
+        row.addEventListener('mouseleave', () => clearActiveHighlight());
+      }
+      
+      const lblIva = document.getElementById('lbl-iva');
+      if (lblIva) {
+        const row = lblIva.parentElement;
+        row.style.cursor = 'help';
+        row.addEventListener('mouseenter', () => setActiveHighlight('iva'));
+        row.addEventListener('mouseleave', () => clearActiveHighlight());
+      }
+      
+      const lblTotal = document.getElementById('lbl-total');
+      if (lblTotal) {
+        const row = lblTotal.parentElement;
+        row.style.cursor = 'help';
+        row.addEventListener('mouseenter', () => setActiveHighlight('total'));
+        row.addEventListener('mouseleave', () => clearActiveHighlight());
+      }
+    }
+
     // Zoom and Lupa Functions
     function applyZoom() {
       const zoomText = document.getElementById('zoom-level-text');
@@ -2108,6 +2349,7 @@
       const canvas = document.getElementById('viewer-canvas');
       const img = document.getElementById('viewer-img');
       const container = document.getElementById('viewer-container');
+      const wrapper = document.getElementById('viewer-wrapper');
       
       if (currentZoom === 100) {
         if (container) {
@@ -2116,17 +2358,21 @@
           container.style.alignItems = 'flex-start';
           container.style.cursor = 'default';
         }
+        if (wrapper) {
+          wrapper.style.width = '100%';
+          wrapper.style.maxWidth = '100%';
+        }
         if (canvas) {
-          canvas.style.width = '';
-          canvas.style.height = '';
+          canvas.style.width = '100%';
+          canvas.style.height = 'auto';
           canvas.style.maxWidth = '100%';
           canvas.style.margin = '0 auto';
           canvas.style.userSelect = 'none';
           canvas.style.pointerEvents = 'none';
         }
         if (img) {
-          img.style.width = '';
-          img.style.height = '';
+          img.style.width = '100%';
+          img.style.height = 'auto';
           img.style.maxWidth = '100%';
           img.style.margin = '0 auto';
           img.style.userSelect = 'none';
@@ -2137,8 +2383,12 @@
           container.style.display = 'block';
           container.style.cursor = 'grab';
         }
+        if (wrapper) {
+          wrapper.style.width = `${currentZoom}%`;
+          wrapper.style.maxWidth = 'none';
+        }
         if (canvas) {
-          canvas.style.width = `${currentZoom}%`;
+          canvas.style.width = '100%';
           canvas.style.height = 'auto';
           canvas.style.maxWidth = 'none';
           canvas.style.margin = '0 auto';
@@ -2154,6 +2404,8 @@
           img.style.pointerEvents = 'none';
         }
       }
+      
+      updateHighlightCanvasSize();
     }
 
     // Drag and Pan events for viewer-container
@@ -3100,6 +3352,18 @@
             rulesApplied: ocrRules
           };
 
+          // Guardar anotaciones para el resaltado visual
+          ocrAnnotations = visionResult.responses[0].textAnnotations ? visionResult.responses[0].textAnnotations.slice(1) : [];
+          updateOriginalImageDimensions();
+          mapHighlightsFromOcr(parsedData);
+
+          // Mostrar lienzo de resaltado
+          const highlightCanvas = document.getElementById('viewer-highlight-canvas');
+          if (highlightCanvas) {
+            highlightCanvas.style.display = 'block';
+            updateHighlightCanvasSize();
+          }
+
           ocrStatusText.textContent = "Completando campos del formulario...";
           await autoFillForm(parsedData);
           
@@ -3139,6 +3403,10 @@
         lastOcrResult.rulesApplied = ocrRules;
         lastOcrResult.items = parsedData.items; // Store re-parsed items
         lastOcrResult.itemsCount = parsedData.items.length;
+        
+        // Update highlights map for the new parsed data
+        mapHighlightsFromOcr(parsedData);
+        updateHighlightCanvasSize();
         
         // Auto fill form
         await autoFillForm(parsedData);
@@ -3678,10 +3946,10 @@
 
       if (data.items && data.items.length > 0) {
         itemsTbody.innerHTML = '';
-        data.items.forEach(item => {
+        data.items.forEach((item, idx) => {
           const supplierIva = String(supplierInput.dataset.iva || "").trim().toLowerCase();
           const defaultAlic = supplierIva.includes("no oficial") ? "1" : "3";
-          createRow(item.concepto, item.cantidad, item.precioUnitario, defaultAlic);
+          createRow(item.concepto, item.cantidad, item.precioUnitario, defaultAlic, "", idx);
         });
       }
 
@@ -3959,9 +4227,148 @@
         if (viewerPlaceholder) {
           viewerPlaceholder.style.display = 'flex';
         }
+        
+        // Clear highlights state
+        ocrAnnotations = [];
+        mappedHighlights = {};
+        activeHighlightId = null;
+        const highlightCanvas = document.getElementById('viewer-highlight-canvas');
+        if (highlightCanvas) {
+          highlightCanvas.style.display = 'none';
+          const ctx = highlightCanvas.getContext('2d');
+          ctx.clearRect(0, 0, highlightCanvas.width, highlightCanvas.height);
+        }
+        
         currentZoom = 100;
         applyZoom();
       }
+    });
+
+    // Bind hover/click event listeners to the highlights canvas
+    const highlightCanvas = document.getElementById('viewer-highlight-canvas');
+    const viewerTooltip = document.getElementById('viewer-tooltip');
+    
+    if (highlightCanvas) {
+      highlightCanvas.addEventListener('mousemove', (e) => {
+        const rect = highlightCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const containerWidth = highlightCanvas.width;
+        const containerHeight = highlightCanvas.height;
+        if (!originalImageWidth || !originalImageHeight) return;
+        
+        const scaleX = containerWidth / originalImageWidth;
+        const scaleY = containerHeight / originalImageHeight;
+        
+        let foundId = null;
+        for (const [id, box] of Object.entries(mappedHighlights)) {
+          if (!box) continue;
+          const x = box.minX * scaleX;
+          const y = box.minY * scaleY;
+          const w = (box.maxX - box.minX) * scaleX;
+          const h = (box.maxY - box.minY) * scaleY;
+          
+          if (mouseX >= x - 2 && mouseX <= x + w + 2 && mouseY >= y - 2 && mouseY <= y + h + 2) {
+            foundId = id;
+            break;
+          }
+        }
+        
+        if (foundId) {
+          highlightCanvas.style.cursor = 'pointer';
+          if (activeHighlightId !== foundId) {
+            setActiveHighlight(foundId);
+          }
+          
+          let label = "";
+          if (foundId === 'total') label = "Total Factura";
+          else if (foundId === 'neto') label = "Subtotal Neto";
+          else if (foundId === 'iva') label = "IVA Total";
+          else if (foundId === 'pos') label = "Punto de Venta";
+          else if (foundId === 'number') label = "Número de Factura";
+          else if (foundId === 'date') label = "Fecha de Emisión";
+          else if (foundId === 'cuit') label = "CUIT Proveedor";
+          else if (foundId.startsWith('item-')) {
+            const idx = parseInt(foundId.split('-')[1], 10);
+            label = `Ítem de Detalle #${idx + 1}`;
+          }
+          
+          viewerTooltip.style.display = 'block';
+          viewerTooltip.innerHTML = `<span style="color: var(--primary); font-weight: 700;">${label}</span>`;
+          
+          const containerRect = document.getElementById('viewer-container').getBoundingClientRect();
+          const tooltipX = e.clientX - containerRect.left + 15;
+          const tooltipY = e.clientY - containerRect.top + 15;
+          viewerTooltip.style.left = `${tooltipX}px`;
+          viewerTooltip.style.top = `${tooltipY}px`;
+        } else {
+          highlightCanvas.style.cursor = 'default';
+          if (activeHighlightId !== null) {
+            clearActiveHighlight();
+          }
+          viewerTooltip.style.display = 'none';
+        }
+      });
+
+      highlightCanvas.addEventListener('mouseleave', () => {
+        clearActiveHighlight();
+        viewerTooltip.style.display = 'none';
+      });
+
+      highlightCanvas.addEventListener('click', (e) => {
+        const rect = highlightCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const containerWidth = highlightCanvas.width;
+        const containerHeight = highlightCanvas.height;
+        if (!originalImageWidth || !originalImageHeight) return;
+        
+        const scaleX = containerWidth / originalImageWidth;
+        const scaleY = containerHeight / originalImageHeight;
+        
+        let clickedId = null;
+        for (const [id, box] of Object.entries(mappedHighlights)) {
+          if (!box) continue;
+          const x = box.minX * scaleX;
+          const y = box.minY * scaleY;
+          const w = (box.maxX - box.minX) * scaleX;
+          const h = (box.maxY - box.minY) * scaleY;
+          
+          if (mouseX >= x - 2 && mouseX <= x + w + 2 && mouseY >= y - 2 && mouseY <= y + h + 2) {
+            clickedId = id;
+            break;
+          }
+        }
+        
+        if (clickedId) {
+          if (clickedId === 'pos') document.getElementById('invoice-pos').focus();
+          else if (clickedId === 'number') document.getElementById('invoice-number').focus();
+          else if (clickedId === 'date') document.getElementById('date-emission').focus();
+          else if (clickedId === 'total') document.getElementById('lbl-total').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          else if (clickedId === 'neto') document.getElementById('lbl-neto').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          else if (clickedId === 'iva') document.getElementById('lbl-iva').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          else if (clickedId.startsWith('item-')) {
+            const idx = parseInt(clickedId.split('-')[1], 10);
+            const rows = itemsTbody.querySelectorAll('tr');
+            const matchedRow = Array.from(rows).find(r => parseInt(r.dataset.ocrIndex, 10) === idx);
+            if (matchedRow) {
+              matchedRow.querySelector('.item-concept').focus();
+              matchedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }
+        }
+      });
+    }
+    
+    // Wire hover event listeners to inputs/labels
+    wireHighlightHoverEvents();
+    
+    // Listen to resize and scroll
+    window.addEventListener('resize', updateHighlightCanvasSize);
+    document.getElementById('viewer-container').addEventListener('scroll', () => {
+      viewerTooltip.style.display = 'none';
     });
 
     // Populate initial empty row and load catalogs/history on startup
