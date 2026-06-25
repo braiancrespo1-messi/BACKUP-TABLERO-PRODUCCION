@@ -704,7 +704,7 @@
       box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
     }
 
-    #viewer-highlights-container.isolate-active.has-active .ocr-highlight-box:not(.active) {
+    #viewer-highlights-container.isolate-active .ocr-highlight-box:not(.active) {
       display: none !important;
     }
 
@@ -1866,6 +1866,17 @@
       inputConcepto.value = concepto;
       inputConcepto.className = 'item-concept';
       inputConcepto.placeholder = "Ingrese descripción del concepto...";
+      
+      inputConcepto.addEventListener('focus', () => {
+        const idx = tr.dataset.ocrIndex;
+        if (idx !== undefined && idx !== null) {
+          setActiveHighlight(`item-${idx}`);
+        }
+      });
+      inputConcepto.addEventListener('blur', () => {
+        clearActiveHighlight();
+      });
+
       tdConcepto.appendChild(inputConcepto);
       tr.appendChild(tdConcepto);
 
@@ -2742,22 +2753,36 @@
     }
 
     function wireHighlightHoverEvents() {
+      const inputCuit = document.getElementById('supplier-input');
+      if (inputCuit) {
+        inputCuit.addEventListener('mouseenter', () => setActiveHighlight('cuit'));
+        inputCuit.addEventListener('mouseleave', () => clearActiveHighlight());
+        inputCuit.addEventListener('focus', () => setActiveHighlight('cuit'));
+        inputCuit.addEventListener('blur', () => clearActiveHighlight());
+      }
+
       const inputPos = document.getElementById('invoice-pos');
       if (inputPos) {
         inputPos.addEventListener('mouseenter', () => setActiveHighlight('pos'));
         inputPos.addEventListener('mouseleave', () => clearActiveHighlight());
+        inputPos.addEventListener('focus', () => setActiveHighlight('pos'));
+        inputPos.addEventListener('blur', () => clearActiveHighlight());
       }
       
       const inputNum = document.getElementById('invoice-number');
       if (inputNum) {
         inputNum.addEventListener('mouseenter', () => setActiveHighlight('number'));
         inputNum.addEventListener('mouseleave', () => clearActiveHighlight());
+        inputNum.addEventListener('focus', () => setActiveHighlight('number'));
+        inputNum.addEventListener('blur', () => clearActiveHighlight());
       }
       
       const inputDate = document.getElementById('date-emission');
       if (inputDate) {
         inputDate.addEventListener('mouseenter', () => setActiveHighlight('date'));
         inputDate.addEventListener('mouseleave', () => clearActiveHighlight());
+        inputDate.addEventListener('focus', () => setActiveHighlight('date'));
+        inputDate.addEventListener('blur', () => clearActiveHighlight());
       }
       
       const lblNeto = document.getElementById('lbl-neto');
@@ -4711,9 +4736,19 @@
         </td>
       `;
 
+      // Wire hover and focus events for perceptions highlighter
+      tr.addEventListener('mouseenter', () => setActiveHighlight('perceptions'));
+      tr.addEventListener('mouseleave', () => clearActiveHighlight());
+
+      const selectConcept = tr.querySelector('.perception-concept');
+      selectConcept.addEventListener('focus', () => setActiveHighlight('perceptions'));
+      selectConcept.addEventListener('blur', () => clearActiveHighlight());
+
       const inputImp = tr.querySelector('.perception-importe');
       inputImp.addEventListener('focus', handleInputFocus);
+      inputImp.addEventListener('focus', () => setActiveHighlight('perceptions'));
       inputImp.addEventListener('blur', handleInputBlur);
+      inputImp.addEventListener('blur', () => clearActiveHighlight());
       inputImp.addEventListener('input', handleInputFormatting);
 
       tr.querySelector('.perception-concept').addEventListener('change', calculateTotals);
