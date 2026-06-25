@@ -695,6 +695,19 @@
       box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
     }
 
+    .ocr-highlight-box[data-field="perceptions"] {
+      border-color: rgba(244, 63, 94, 0.7);
+      background: rgba(244, 63, 94, 0.08);
+    }
+    .ocr-highlight-box[data-field="perceptions"]:hover, .ocr-highlight-box[data-field="perceptions"].active {
+      background: rgba(244, 63, 94, 0.2);
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+    }
+
+    #viewer-highlights-container.isolate-active.has-active .ocr-highlight-box:not(.active) {
+      display: none !important;
+    }
+
     /* Floater Label */
     .ocr-highlight-label {
       position: absolute;
@@ -988,10 +1001,16 @@
               <span>Total Factura:</span>
               <span id="lbl-total" class="highlight">$ 0.00</span>
             </div>
-            <button id="btn-save-invoice" class="btn btn-success" style="margin-top: 12px; width: 100%; justify-content: center; padding: 12px;">
-              <i data-lucide="save" style="width: 18px; height: 18px;"></i>
-              Guardar Factura en YiQi
-            </button>
+            <div style="display: flex; gap: 8px; margin-top: 12px; width: 100%;">
+              <button id="btn-save-template-only" type="button" class="btn btn-secondary" style="flex: 1; justify-content: center; padding: 12px;" title="Guardar cuadrantes de lectura en Firestore sin subir factura a YiQi">
+                <i data-lucide="sliders" style="width: 18px; height: 18px; color: var(--primary);"></i>
+                Guardar Patrón
+              </button>
+              <button id="btn-save-invoice" type="button" class="btn btn-success" style="flex: 2; justify-content: center; padding: 12px;">
+                <i data-lucide="save" style="width: 18px; height: 18px;"></i>
+                Guardar Factura en YiQi
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1033,6 +1052,12 @@
             Vista del Comprobante
           </span>
           <div style="display: flex; align-items: center; gap: 8px;">
+            <!-- Isolate active zone -->
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); cursor: pointer; margin-right: 4px; user-select: none;" title="Mostrar solo la zona activa">
+              <input type="checkbox" id="chk-isolate-zone" style="cursor: pointer; width: 14px; height: 14px; accent-color: var(--primary); margin: 0; vertical-align: middle;">
+              <span>Solo activa</span>
+            </label>
+            <span style="border-left: 1px solid rgba(255,255,255,0.15); height: 16px; margin: 0 4px;"></span>
             <!-- Zoom controls -->
             <button type="button" id="btn-zoom-out" class="btn btn-secondary btn-icon-only" style="padding: 4px; background: none; border: none; cursor: pointer;" title="Alejar (Zoom Out)">
               <i data-lucide="zoom-out" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
@@ -1428,6 +1453,7 @@
     const itemsTbody = document.getElementById('items-tbody');
     const btnAddItem = document.getElementById('btn-add-item');
     const btnSaveInvoice = document.getElementById('btn-save-invoice');
+    const btnSaveTemplateOnly = document.getElementById('btn-save-template-only');
     
     const settingsModal = document.getElementById('settings-modal');
     const btnSettings = document.getElementById('btn-settings');
@@ -2439,6 +2465,7 @@
         date: { x: 0.6, y: 0.12, w: 0.35, h: 0.05 },
         neto: { x: 0.55, y: 0.8, w: 0.4, h: 0.04 },
         iva: { x: 0.55, y: 0.85, w: 0.4, h: 0.04 },
+        perceptions: { x: 0.1, y: 0.8, w: 0.45, h: 0.12 },
         total: { x: 0.55, y: 0.9, w: 0.4, h: 0.05 }
       };
 
@@ -2464,6 +2491,11 @@
       activeHighlightId = id;
       const container = document.getElementById('viewer-highlights-container');
       if (!container) return;
+      if (id) {
+        container.classList.add('has-active');
+      } else {
+        container.classList.remove('has-active');
+      }
       const boxes = container.querySelectorAll('.ocr-highlight-box');
       boxes.forEach(box => {
         if (box.dataset.field === id) {
@@ -2477,6 +2509,9 @@
     function clearActiveHighlight() {
       activeHighlightId = null;
       const container = document.getElementById('viewer-highlights-container');
+      if (container) {
+        container.classList.remove('has-active');
+      }
       if (!container) return;
       const boxes = container.querySelectorAll('.ocr-highlight-box');
       boxes.forEach(box => {
@@ -2496,6 +2531,7 @@
       else if (key === 'number') label = "Número de Factura";
       else if (key === 'date') label = "Fecha de Emisión";
       else if (key === 'cuit') label = "CUIT Proveedor";
+      else if (key === 'perceptions') label = "Percepciones (Zona)";
       else if (key.startsWith('item-')) {
         const idx = parseInt(key.split('-')[1], 10);
         label = `Ítem de Detalle #${idx + 1}`;
@@ -2677,6 +2713,8 @@
           labelText = 'Número';
         } else if (labelText === 'DATE') {
           labelText = 'Fecha';
+        } else if (labelText === 'PERCEPTIONS') {
+          labelText = 'Percepciones';
         }
         
         const label = document.createElement('span');
@@ -2684,12 +2722,10 @@
         label.textContent = labelText;
         el.appendChild(label);
         
-        // Add handle only if it is not a dynamic item
-        if (!key.startsWith('item-')) {
-          const handle = document.createElement('div');
-          handle.className = 'resize-handle';
-          el.appendChild(handle);
-        }
+        // Add handle for resizing (enabled for all highlights)
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle';
+        el.appendChild(handle);
         
         makeElementInteractive(el, key);
         
@@ -2760,7 +2796,7 @@
       const container = document.getElementById('viewer-container');
       const wrapper = document.getElementById('viewer-wrapper');
       
-      if (currentZoom === 100) {
+      if (currentZoom <= 100) {
         if (container) {
           container.style.display = 'flex';
           container.style.justifyContent = 'center';
@@ -2768,7 +2804,7 @@
           container.style.cursor = 'default';
         }
         if (wrapper) {
-          wrapper.style.width = '100%';
+          wrapper.style.width = `${currentZoom}%`;
           wrapper.style.maxWidth = '100%';
         }
         if (canvas) {
@@ -2896,7 +2932,7 @@
       if (e.deltaY < 0) {
         newZoom = Math.min(400, currentZoom + 15);
       } else {
-        newZoom = Math.max(100, currentZoom - 15);
+        newZoom = Math.max(25, currentZoom - 15);
       }
       
       if (newZoom !== currentZoom) {
@@ -2923,7 +2959,7 @@
     });
 
     document.getElementById('btn-zoom-out').addEventListener('click', () => {
-      currentZoom = Math.max(100, currentZoom - 25);
+      currentZoom = Math.max(25, currentZoom - 25);
       applyZoom();
     });
 
@@ -3178,7 +3214,7 @@
             
             // Capture updated zones (relative percentages)
             const zonesToSave = {};
-            const standardKeys = ['cuit', 'pos', 'number', 'date', 'neto', 'iva', 'total'];
+            const standardKeys = ['cuit', 'pos', 'number', 'date', 'neto', 'iva', 'total', 'perceptions'];
             standardKeys.forEach(k => {
               if (mappedHighlights[k]) {
                 zonesToSave[k] = {
@@ -3294,6 +3330,79 @@
         statusTitle.textContent = "Error al Guardar";
         statusMessage.textContent = e.message;
       } finally {
+        lucide.createIcons();
+        statusActions.style.display = 'flex';
+      }
+    });
+
+    btnSaveTemplateOnly.addEventListener('click', async () => {
+      const supplierInputVal = supplierInput.value;
+      const supplierCuitMatch = supplierInputVal.match(/\((\d{11})\)/);
+      const supplierCuit = supplierCuitMatch ? supplierCuitMatch[1] : "";
+      const supplierName = selectedSupplierObj ? selectedSupplierObj.nombre : (supplierInputVal.split('(')[0].trim());
+
+      if (!supplierCuit) {
+        showAlert("Por favor seleccione un proveedor con CUIT válido antes de guardar el patrón.", "error");
+        return;
+      }
+
+      // Show loading spinner
+      statusIcon.className = "status-icon-container";
+      statusIcon.innerHTML = `
+        <svg class="spinner" viewBox="0 0 50 50" style="width: 32px; height: 32px; color: var(--primary);">
+          <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+        </svg>
+      `;
+      statusTitle.textContent = "Guardando...";
+      statusMessage.textContent = "Guardando patrón de lectura (plantilla) en Firestore...";
+      statusActions.style.display = 'none';
+      statusModal.style.display = 'flex';
+      lucide.createIcons();
+
+      try {
+        let rules = lastOcrResult && lastOcrResult.rulesApplied ? { ...lastOcrResult.rulesApplied } : { ignoreKeywords: [], isServiceInvoice: false, preferDigits: null };
+        if (!rules.ignoreKeywords) rules.ignoreKeywords = [];
+
+        // Capture updated zones (relative percentages)
+        const zonesToSave = {};
+        const standardKeys = ['cuit', 'pos', 'number', 'date', 'neto', 'iva', 'total', 'perceptions'];
+        standardKeys.forEach(k => {
+          if (mappedHighlights[k]) {
+            zonesToSave[k] = {
+              x: Number(mappedHighlights[k].x.toFixed(5)),
+              y: Number(mappedHighlights[k].y.toFixed(5)),
+              w: Number(mappedHighlights[k].w.toFixed(5)),
+              h: Number(mappedHighlights[k].h.toFixed(5))
+            };
+          }
+        });
+        rules.zones = zonesToSave;
+
+        const response = await fetch(config.guardarReglaOcrUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cuitProveedor: supplierCuit,
+            nombreProveedor: supplierName,
+            reglas: rules
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          if (lastOcrResult) {
+            lastOcrResult.rulesApplied = rules;
+          }
+          showAlert(`El patrón de lectura (plantilla) para <strong>${supplierName}</strong> fue guardado con éxito en Firestore.<br>Se aplicará automáticamente al cargar próximos comprobantes de este proveedor.`, "success");
+        } else {
+          throw new Error(result.error || "Ocurrió un error inesperado al guardar la plantilla.");
+        }
+      } catch (e) {
+        statusIcon.className = "status-icon-container status-icon-error";
+        statusIcon.innerHTML = '<i data-lucide="alert-triangle" style="width: 32px; height: 32px;"></i>';
+        statusTitle.textContent = "Error al Guardar";
+        statusMessage.textContent = e.message;
         lucide.createIcons();
         statusActions.style.display = 'flex';
       }
@@ -3933,6 +4042,7 @@
       let totalText = text;
       let netoText = text;
       let ivaText = text;
+      let perceptionsText = "";
 
       if (rules && rules.zones && annotations && annotations.length > 0) {
         if (rules.zones.cuit) cuitText = getTextFromZone(rules.zones.cuit, annotations) || text;
@@ -3942,6 +4052,7 @@
         if (rules.zones.total) totalText = getTextFromZone(rules.zones.total, annotations) || text;
         if (rules.zones.neto) netoText = getTextFromZone(rules.zones.neto, annotations) || text;
         if (rules.zones.iva) ivaText = getTextFromZone(rules.zones.iva, annotations) || text;
+        if (rules.zones.perceptions) perceptionsText = getTextFromZone(rules.zones.perceptions, annotations) || "";
         
         console.log("Textos extraídos por zonas:");
         console.log("- CUIT Proveedor:", cuitText);
@@ -3951,6 +4062,7 @@
         console.log("- Total:", totalText);
         console.log("- Neto:", netoText);
         console.log("- IVA:", ivaText);
+        if (perceptionsText) console.log("- Percepciones:", perceptionsText);
       }
 
       const parseAmount = (regex, txt) => {
@@ -4139,17 +4251,45 @@
           if (lbl.includes("total")) {
             if (data.total === 0) data.total = val;
           }
-          if (lbl.includes("percep") || lbl.includes("perc.")) {
-            let detectedTaxType = "iibb";
-            if (lbl.includes("iva")) detectedTaxType = "iva";
-            else if (lbl.includes("gan") || lbl.includes("ganancia")) detectedTaxType = "ganancias";
-            else if (lbl.includes("int") || lbl.includes("interno")) detectedTaxType = "internos";
-            
-            const exists = data.perceptions.some(p => Math.abs(p.importe - val) < 0.05);
-            if (!exists) {
-              data.perceptions.push({ taxType: detectedTaxType, rawLabel: labelLines[i].text, importe: val });
+          if (!rules || !rules.zones || !rules.zones.perceptions) {
+            if (lbl.includes("percep") || lbl.includes("perc.")) {
+              let detectedTaxType = "iibb";
+              if (lbl.includes("iva")) detectedTaxType = "iva";
+              else if (lbl.includes("gan") || lbl.includes("ganancia")) detectedTaxType = "ganancias";
+              else if (lbl.includes("int") || lbl.includes("interno")) detectedTaxType = "internos";
+              
+              const exists = data.perceptions.some(p => Math.abs(p.importe - val) < 0.05);
+              if (!exists) {
+                data.perceptions.push({ taxType: detectedTaxType, rawLabel: labelLines[i].text, importe: val });
+              }
             }
           }
+        }
+      }
+
+      // Parse perceptions from perceptionsText zone if defined
+      if (perceptionsText) {
+        const lines = perceptionsText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const zonePerceptions = [];
+        lines.forEach(line => {
+          const amtMatch = line.match(/[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/) || line.match(/(\d+(?:[\.,]\d+)*)\b/);
+          if (amtMatch) {
+            const val = cleanOcrAmount(amtMatch[1]);
+            if (val > 0) {
+              let detectedTaxType = "iibb";
+              const lineLower = line.toLowerCase();
+              if (lineLower.includes("iva") || lineLower.includes("i.v.a.")) detectedTaxType = "iva";
+              else if (lineLower.includes("gan") || lineLower.includes("ganancia")) detectedTaxType = "ganancias";
+              else if (lineLower.includes("int") || lineLower.includes("interno")) detectedTaxType = "internos";
+              
+              if (!zonePerceptions.some(p => Math.abs(p.importe - val) < 0.05)) {
+                zonePerceptions.push({ taxType: detectedTaxType, rawLabel: line, importe: val });
+              }
+            }
+          }
+        });
+        if (zonePerceptions.length > 0) {
+          data.perceptions = zonePerceptions;
         }
       }
 
@@ -4422,6 +4562,9 @@
      }
 
     async function autoFillForm(data) {
+      if (perceptionsLoadedPromise) {
+        await perceptionsLoadedPromise;
+      }
       if (data.invoiceType) {
         document.getElementById('invoice-type').value = data.invoiceType;
       }
@@ -4528,6 +4671,7 @@
     const perceptionsTbody = document.getElementById('perceptions-tbody');
     const btnAddPerception = document.getElementById('btn-add-perception');
     let perceptionConcepts = [];
+    let perceptionsLoadedPromise = null;
 
     async function fetchPerceptions() {
       try {
@@ -4749,6 +4893,21 @@
     // Wire hover event listeners to inputs/labels
     wireHighlightHoverEvents();
     
+    // Isolate zone checkbox listener
+    const chkIsolateZone = document.getElementById('chk-isolate-zone');
+    if (chkIsolateZone) {
+      chkIsolateZone.addEventListener('change', (e) => {
+        const container = document.getElementById('viewer-highlights-container');
+        if (container) {
+          if (e.target.checked) {
+            container.classList.add('isolate-active');
+          } else {
+            container.classList.remove('isolate-active');
+          }
+        }
+      });
+    }
+    
     // Listen to resize and scroll
     window.addEventListener('resize', updateHighlightCanvasSize);
     document.getElementById('viewer-container').addEventListener('scroll', () => {
@@ -4757,7 +4916,7 @@
 
     // Populate initial empty row and load catalogs/history on startup
     createRow();
-    fetchPerceptions();
+    perceptionsLoadedPromise = fetchPerceptions();
     loadHistory();
   </script>
 </body>
