@@ -1856,7 +1856,9 @@
         }
       });
       tr.addEventListener('mouseleave', () => {
-        clearActiveHighlight();
+        if (document.activeElement !== inputConcepto) {
+          clearActiveHighlight();
+        }
       });
       
       // Concepto
@@ -2756,7 +2758,11 @@
       const inputCuit = document.getElementById('supplier-input');
       if (inputCuit) {
         inputCuit.addEventListener('mouseenter', () => setActiveHighlight('cuit'));
-        inputCuit.addEventListener('mouseleave', () => clearActiveHighlight());
+        inputCuit.addEventListener('mouseleave', () => {
+          if (document.activeElement !== inputCuit) {
+            clearActiveHighlight();
+          }
+        });
         inputCuit.addEventListener('focus', () => setActiveHighlight('cuit'));
         inputCuit.addEventListener('blur', () => clearActiveHighlight());
       }
@@ -2764,7 +2770,11 @@
       const inputPos = document.getElementById('invoice-pos');
       if (inputPos) {
         inputPos.addEventListener('mouseenter', () => setActiveHighlight('pos'));
-        inputPos.addEventListener('mouseleave', () => clearActiveHighlight());
+        inputPos.addEventListener('mouseleave', () => {
+          if (document.activeElement !== inputPos) {
+            clearActiveHighlight();
+          }
+        });
         inputPos.addEventListener('focus', () => setActiveHighlight('pos'));
         inputPos.addEventListener('blur', () => clearActiveHighlight());
       }
@@ -2772,7 +2782,11 @@
       const inputNum = document.getElementById('invoice-number');
       if (inputNum) {
         inputNum.addEventListener('mouseenter', () => setActiveHighlight('number'));
-        inputNum.addEventListener('mouseleave', () => clearActiveHighlight());
+        inputNum.addEventListener('mouseleave', () => {
+          if (document.activeElement !== inputNum) {
+            clearActiveHighlight();
+          }
+        });
         inputNum.addEventListener('focus', () => setActiveHighlight('number'));
         inputNum.addEventListener('blur', () => clearActiveHighlight());
       }
@@ -2780,7 +2794,11 @@
       const inputDate = document.getElementById('date-emission');
       if (inputDate) {
         inputDate.addEventListener('mouseenter', () => setActiveHighlight('date'));
-        inputDate.addEventListener('mouseleave', () => clearActiveHighlight());
+        inputDate.addEventListener('mouseleave', () => {
+          if (document.activeElement !== inputDate) {
+            clearActiveHighlight();
+          }
+        });
         inputDate.addEventListener('focus', () => setActiveHighlight('date'));
         inputDate.addEventListener('blur', () => clearActiveHighlight());
       }
@@ -4738,7 +4756,11 @@
 
       // Wire hover and focus events for perceptions highlighter
       tr.addEventListener('mouseenter', () => setActiveHighlight('perceptions'));
-      tr.addEventListener('mouseleave', () => clearActiveHighlight());
+      tr.addEventListener('mouseleave', () => {
+        if (document.activeElement !== selectConcept && document.activeElement !== inputImp) {
+          clearActiveHighlight();
+        }
+      });
 
       const selectConcept = tr.querySelector('.perception-concept');
       selectConcept.addEventListener('focus', () => setActiveHighlight('perceptions'));
