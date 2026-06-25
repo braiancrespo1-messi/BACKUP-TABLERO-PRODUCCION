@@ -602,6 +602,136 @@
         stroke-dashoffset: -124;
       }
     }
+
+    /* OCR Highlight Boxes container and elements */
+    #viewer-highlights-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none; /* Let container drag pass through */
+    }
+
+    .ocr-highlight-box {
+      position: absolute;
+      border: 2px solid rgba(59, 130, 246, 0.5);
+      background: rgba(59, 130, 246, 0.08);
+      border-radius: 4px;
+      pointer-events: auto; /* Allow drag & resize interaction */
+      cursor: move;
+      box-sizing: border-box;
+      transition: box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+
+    .ocr-highlight-box:hover, .ocr-highlight-box.active {
+      background: rgba(59, 130, 246, 0.2);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+    }
+
+    /* Colors by field type */
+    .ocr-highlight-box[data-field="total"] {
+      border-color: rgba(34, 197, 94, 0.7);
+      background: rgba(34, 197, 94, 0.08);
+    }
+    .ocr-highlight-box[data-field="total"]:hover, .ocr-highlight-box[data-field="total"].active {
+      background: rgba(34, 197, 94, 0.2);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+
+    .ocr-highlight-box[data-field="neto"] {
+      border-color: rgba(59, 130, 246, 0.7);
+      background: rgba(59, 130, 246, 0.08);
+    }
+    .ocr-highlight-box[data-field="neto"]:hover, .ocr-highlight-box[data-field="neto"].active {
+      background: rgba(59, 130, 246, 0.2);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+    }
+
+    .ocr-highlight-box[data-field="iva"] {
+      border-color: rgba(168, 85, 247, 0.7);
+      background: rgba(168, 85, 247, 0.08);
+    }
+    .ocr-highlight-box[data-field="iva"]:hover, .ocr-highlight-box[data-field="iva"].active {
+      background: rgba(168, 85, 247, 0.2);
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+    }
+
+    .ocr-highlight-box[data-field="pos"], .ocr-highlight-box[data-field="number"] {
+      border-color: rgba(234, 179, 8, 0.7);
+      background: rgba(234, 179, 8, 0.08);
+    }
+    .ocr-highlight-box[data-field="pos"]:hover, .ocr-highlight-box[data-field="pos"].active,
+    .ocr-highlight-box[data-field="number"]:hover, .ocr-highlight-box[data-field="number"].active {
+      background: rgba(234, 179, 8, 0.2);
+      box-shadow: 0 0 8px rgba(234, 179, 8, 0.5);
+    }
+
+    .ocr-highlight-box[data-field="date"] {
+      border-color: rgba(6, 182, 212, 0.7);
+      background: rgba(6, 182, 212, 0.08);
+    }
+    .ocr-highlight-box[data-field="date"]:hover, .ocr-highlight-box[data-field="date"].active {
+      background: rgba(6, 182, 212, 0.2);
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+    }
+
+    .ocr-highlight-box[data-field="cuit"] {
+      border-color: rgba(239, 68, 68, 0.7);
+      background: rgba(239, 68, 68, 0.08);
+    }
+    .ocr-highlight-box[data-field="cuit"]:hover, .ocr-highlight-box[data-field="cuit"].active {
+      background: rgba(239, 68, 68, 0.2);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+
+    .ocr-highlight-box[data-field^="item-"] {
+      border-color: rgba(249, 115, 22, 0.6);
+      background: rgba(249, 115, 22, 0.05);
+    }
+    .ocr-highlight-box[data-field^="item-"]:hover, .ocr-highlight-box[data-field^="item-"].active {
+      background: rgba(249, 115, 22, 0.2);
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
+    }
+
+    /* Floater Label */
+    .ocr-highlight-label {
+      position: absolute;
+      top: -18px;
+      left: 0;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 12;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* Resize Handle */
+    .ocr-highlight-box .resize-handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.4);
+      border: 1px solid rgba(0, 0, 0, 0.5);
+      border-radius: 2px;
+      right: -2px;
+      bottom: -2px;
+      cursor: se-resize;
+      z-index: 15;
+      pointer-events: auto;
+    }
+    
+    .ocr-highlight-box:hover .resize-handle {
+      background: #fff;
+    }
   </style>
 </head>
 <body>
@@ -925,7 +1055,7 @@
           <div id="viewer-wrapper" style="position: relative; display: inline-block; max-width: 100%; margin: 0 auto;">
             <img id="viewer-img" style="max-width: 100%; display: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); vertical-align: top;">
             <canvas id="viewer-canvas" style="max-width: 100%; display: none; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); vertical-align: top;"></canvas>
-            <canvas id="viewer-highlight-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 5; cursor: default;"></canvas>
+            <div id="viewer-highlights-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 10;"></div>
           </div>
           <div id="viewer-placeholder" style="color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
             <i data-lucide="image" style="width: 32px; height: 32px; stroke-width: 1.5;"></i>
@@ -2086,7 +2216,7 @@
         
         updateOriginalImageDimensions();
         if (ocrAnnotations && ocrAnnotations.length > 0) {
-          document.getElementById('viewer-highlight-canvas').style.display = 'block';
+          document.getElementById('viewer-highlights-container').style.display = 'block';
           updateHighlightCanvasSize();
         }
         
@@ -2103,7 +2233,7 @@
         img.onload = () => {
           updateOriginalImageDimensions();
           if (ocrAnnotations && ocrAnnotations.length > 0) {
-            document.getElementById('viewer-highlight-canvas').style.display = 'block';
+            document.getElementById('viewer-highlights-container').style.display = 'block';
             updateHighlightCanvasSize();
           }
         };
@@ -2139,6 +2269,75 @@
     let mappedHighlights = {};
     let activeHighlightId = null;
 
+    function getTextFromZone(zone, annotations) {
+      if (!zone || !annotations || annotations.length === 0 || !originalImageWidth || !originalImageHeight) return "";
+      
+      const matchedWords = [];
+      
+      for (const ann of annotations) {
+        if (!ann.boundingPoly || !ann.boundingPoly.vertices || ann.boundingPoly.vertices.length === 0) continue;
+        
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        ann.boundingPoly.vertices.forEach(v => {
+          const vx = v.x || 0;
+          const vy = v.y || 0;
+          if (vx < minX) minX = vx;
+          if (vy < minY) minY = vy;
+          if (vx > maxX) maxX = vx;
+          if (vy > maxY) maxY = vy;
+        });
+        
+        const wx = minX / originalImageWidth;
+        const wy = minY / originalImageHeight;
+        const ww = (maxX - minX) / originalImageWidth;
+        const wh = (maxY - minY) / originalImageHeight;
+        
+        // Overlapping check using center of the word
+        const cx = wx + ww / 2;
+        const cy = wy + wh / 2;
+        
+        if (cx >= zone.x && cx <= (zone.x + zone.w) && cy >= zone.y && cy <= (zone.y + zone.h)) {
+          matchedWords.push({
+            text: ann.description,
+            x: wx,
+            y: wy,
+            h: wh,
+            cy: cy
+          });
+        }
+      }
+      
+      if (matchedWords.length === 0) return "";
+      
+      // Sort words to form horizontal text lines. Tolerance of 1.5% of total height.
+      const tolerance = 0.015;
+      const lines = [];
+      
+      matchedWords.sort((a, b) => a.y - b.y);
+      
+      matchedWords.forEach(word => {
+        let added = false;
+        for (const line of lines) {
+          const avgCy = line.reduce((sum, w) => sum + w.cy, 0) / line.length;
+          if (Math.abs(word.cy - avgCy) < tolerance) {
+            line.push(word);
+            added = true;
+            break;
+          }
+        }
+        if (!added) {
+          lines.push([word]);
+        }
+      });
+      
+      const sortedLines = lines.map(line => {
+        line.sort((a, b) => a.x - b.x);
+        return line.map(w => w.text).join(" ");
+      });
+      
+      return sortedLines.join("\n");
+    }
+
     function updateOriginalImageDimensions() {
       const img = document.getElementById('viewer-img');
       const canvas = document.getElementById('viewer-canvas');
@@ -2162,8 +2361,9 @@
       const matchedAnnotations = [];
       
       for (const ann of ocrAnnotations) {
-        const text = ann.description.toLowerCase().replace(/[\.,\-~]/g, '');
-        if (wordsToFind.some(w => text.includes(w) || w.includes(text))) {
+        const text = ann.description.toLowerCase().replace(/[\.,\-~]/g, '').trim();
+        // Exact match or substring matching of >= 4 chars to prevent short matches covering the invoice
+        if (wordsToFind.some(w => text === w || (w.length >= 4 && (text.includes(w) || w.includes(text))))) {
           matchedAnnotations.push(ann);
         }
       }
@@ -2183,115 +2383,324 @@
         });
       });
       
-      return { minX, minY, maxX, maxY };
+      // Return normalized coordinates (0.0 to 1.0)
+      if (originalImageWidth && originalImageHeight) {
+        const x = Math.max(0, minX / originalImageWidth);
+        const y = Math.max(0, minY / originalImageHeight);
+        const w = Math.min(1 - x, (maxX - minX) / originalImageWidth);
+        const h = Math.min(1 - y, (maxY - minY) / originalImageHeight);
+        return { x, y, w, h };
+      }
+      return null;
     }
 
-    function mapHighlightsFromOcr(data) {
+    function mapHighlightsFromOcr(data, rules = null) {
       mappedHighlights = {};
-      if (!ocrAnnotations || ocrAnnotations.length === 0) return;
       
-      mappedHighlights['cuit'] = findPhraseBoundingBox(data.cuit);
-      mappedHighlights['pos'] = findPhraseBoundingBox(data.pos);
-      mappedHighlights['number'] = findPhraseBoundingBox(data.number);
-      mappedHighlights['date'] = findPhraseBoundingBox(data.date ? data.date.split('-').reverse().join('/') : '');
-      mappedHighlights['total'] = findPhraseBoundingBox(data.total);
-      mappedHighlights['neto'] = findPhraseBoundingBox(data.neto);
-      mappedHighlights['iva'] = findPhraseBoundingBox(data.iva);
+      // 1. If rules has saved zones, load them directly
+      if (rules && rules.zones) {
+        for (const [key, zone] of Object.entries(rules.zones)) {
+          if (zone) {
+            mappedHighlights[key] = {
+              x: parseFloat(zone.x),
+              y: parseFloat(zone.y),
+              w: parseFloat(zone.w),
+              h: parseFloat(zone.h)
+            };
+          }
+        }
+      }
+      
+      // 2. OCR phrase-matching fallbacks for standard fields if not already loaded from rules
+      const fields = [
+        { key: 'cuit', val: data.cuit },
+        { key: 'pos', val: data.pos },
+        { key: 'number', val: data.number },
+        { key: 'date', val: data.date ? data.date.split('-').reverse().join('/') : '' },
+        { key: 'total', val: data.total },
+        { key: 'neto', val: data.neto },
+        { key: 'iva', val: data.iva }
+      ];
+      
+      fields.forEach(f => {
+        if (!mappedHighlights[f.key] && f.val) {
+          const box = findPhraseBoundingBox(f.val);
+          if (box) {
+            mappedHighlights[f.key] = box;
+          }
+        }
+      });
 
+      // 3. Fallback default positions for missing zones so the user can easily drag them
+      const defaultPositions = {
+        cuit: { x: 0.1, y: 0.1, w: 0.35, h: 0.05 },
+        pos: { x: 0.6, y: 0.05, w: 0.15, h: 0.05 },
+        number: { x: 0.77, y: 0.05, w: 0.18, h: 0.05 },
+        date: { x: 0.6, y: 0.12, w: 0.35, h: 0.05 },
+        neto: { x: 0.55, y: 0.8, w: 0.4, h: 0.04 },
+        iva: { x: 0.55, y: 0.85, w: 0.4, h: 0.04 },
+        total: { x: 0.55, y: 0.9, w: 0.4, h: 0.05 }
+      };
+
+      for (const [key, defZone] of Object.entries(defaultPositions)) {
+        if (!mappedHighlights[key]) {
+          mappedHighlights[key] = { ...defZone };
+        }
+      }
+
+      // 4. Dynamic detail items highlights
       if (data.items) {
         data.items.forEach((item, idx) => {
-          mappedHighlights[`item-${idx}`] = findPhraseBoundingBox(item.concepto);
+          const box = findPhraseBoundingBox(item.concepto);
+          if (box) {
+            mappedHighlights[`item-${idx}`] = box;
+          }
         });
       }
-      console.log("Coordenadas mapeadas para resaltado:", mappedHighlights);
+      console.log("Coordenadas mapeadas para resaltado (normalizadas):", mappedHighlights);
     }
 
     function setActiveHighlight(id) {
       activeHighlightId = id;
-      drawHighlights();
+      const container = document.getElementById('viewer-highlights-container');
+      if (!container) return;
+      const boxes = container.querySelectorAll('.ocr-highlight-box');
+      boxes.forEach(box => {
+        if (box.dataset.field === id) {
+          box.classList.add('active');
+        } else {
+          box.classList.remove('active');
+        }
+      });
     }
 
     function clearActiveHighlight() {
       activeHighlightId = null;
-      drawHighlights();
+      const container = document.getElementById('viewer-highlights-container');
+      if (!container) return;
+      const boxes = container.querySelectorAll('.ocr-highlight-box');
+      boxes.forEach(box => {
+        box.classList.remove('active');
+      });
+    }
+
+    function showOcrTooltip(key, e) {
+      const viewerTooltip = document.getElementById('viewer-tooltip');
+      if (!viewerTooltip) return;
+      
+      let label = "";
+      if (key === 'total') label = "Total Factura";
+      else if (key === 'neto') label = "Subtotal Neto";
+      else if (key === 'iva') label = "IVA Total";
+      else if (key === 'pos') label = "Punto de Venta";
+      else if (key === 'number') label = "Número de Factura";
+      else if (key === 'date') label = "Fecha de Emisión";
+      else if (key === 'cuit') label = "CUIT Proveedor";
+      else if (key.startsWith('item-')) {
+        const idx = parseInt(key.split('-')[1], 10);
+        label = `Ítem de Detalle #${idx + 1}`;
+      }
+      
+      viewerTooltip.style.display = 'block';
+      viewerTooltip.innerHTML = `<span style="color: var(--primary); font-weight: 700;">${label}</span><br><span style="font-size: 10px; color: var(--text-muted);">Arrastra para mover. Esquina para redimensionar.</span>`;
+      
+      const containerRect = document.getElementById('viewer-container').getBoundingClientRect();
+      const tooltipX = e.clientX - containerRect.left + 15;
+      const tooltipY = e.clientY - containerRect.top + 15;
+      viewerTooltip.style.left = `${tooltipX}px`;
+      viewerTooltip.style.top = `${tooltipY}px`;
+    }
+
+    function hideOcrTooltip() {
+      const viewerTooltip = document.getElementById('viewer-tooltip');
+      if (viewerTooltip) {
+        viewerTooltip.style.display = 'none';
+      }
+    }
+
+    function focusFormElement(key) {
+      if (key === 'pos') document.getElementById('invoice-pos').focus();
+      else if (key === 'number') document.getElementById('invoice-number').focus();
+      else if (key === 'date') document.getElementById('date-emission').focus();
+      else if (key === 'total') document.getElementById('lbl-total').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      else if (key === 'neto') document.getElementById('lbl-neto').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      else if (key === 'iva') document.getElementById('lbl-iva').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      else if (key.startsWith('item-')) {
+        const idx = parseInt(key.split('-')[1], 10);
+        const rows = document.getElementById('items-tbody').querySelectorAll('tr');
+        const matchedRow = Array.from(rows).find(r => parseInt(r.dataset.ocrIndex, 10) === idx);
+        if (matchedRow) {
+          matchedRow.querySelector('.item-concept').focus();
+          matchedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+
+    function makeElementInteractive(el, key) {
+      // 1. Drag to move
+      el.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('resize-handle')) return; // handled by resize
+        e.preventDefault();
+        e.stopPropagation();
+        
+        setActiveHighlight(key);
+        focusFormElement(key);
+        
+        const container = document.getElementById('viewer-highlights-container');
+        const containerRect = container.getBoundingClientRect();
+        
+        const startX = e.clientX;
+        const startY = e.clientY;
+        
+        const box = mappedHighlights[key];
+        const startLeft = box.x * containerRect.width;
+        const startTop = box.y * containerRect.height;
+        
+        const onMouseMove = (moveEvent) => {
+          const deltaX = moveEvent.clientX - startX;
+          const deltaY = moveEvent.clientY - startY;
+          
+          let newLeft = startLeft + deltaX;
+          let newTop = startTop + deltaY;
+          
+          // Constrain within container bounds
+          newLeft = Math.max(0, Math.min(containerRect.width - (box.w * containerRect.width), newLeft));
+          newTop = Math.max(0, Math.min(containerRect.height - (box.h * containerRect.height), newTop));
+          
+          box.x = newLeft / containerRect.width;
+          box.y = newTop / containerRect.height;
+          
+          el.style.left = `${box.x * 100}%`;
+          el.style.top = `${box.y * 100}%`;
+        };
+        
+        const onMouseUp = () => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+      
+      // 2. Drag to resize (only for standard boxes, not dynamic items)
+      const handle = el.querySelector('.resize-handle');
+      if (handle) {
+        handle.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          setActiveHighlight(key);
+          
+          const container = document.getElementById('viewer-highlights-container');
+          const containerRect = container.getBoundingClientRect();
+          
+          const startX = e.clientX;
+          const startY = e.clientY;
+          
+          const box = mappedHighlights[key];
+          const startWidth = box.w * containerRect.width;
+          const startHeight = box.h * containerRect.height;
+          const startLeft = box.x * containerRect.width;
+          const startTop = box.y * containerRect.height;
+          
+          const onMouseMove = (moveEvent) => {
+            const deltaX = moveEvent.clientX - startX;
+            const deltaY = moveEvent.clientY - startY;
+            
+            let newWidth = startWidth + deltaX;
+            let newHeight = startHeight + deltaY;
+            
+            // Constrain size
+            newWidth = Math.max(20, Math.min(containerRect.width - startLeft, newWidth));
+            newHeight = Math.max(15, Math.min(containerRect.height - startTop, newHeight));
+            
+            box.w = newWidth / containerRect.width;
+            box.h = newHeight / containerRect.height;
+            
+            el.style.width = `${box.w * 100}%`;
+            el.style.height = `${box.h * 100}%`;
+          };
+          
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+      }
+      
+      // 3. Hover tooltip bindings
+      el.addEventListener('mouseenter', (e) => {
+        setActiveHighlight(key);
+        showOcrTooltip(key, e);
+      });
+      
+      el.addEventListener('mouseleave', () => {
+        clearActiveHighlight();
+        hideOcrTooltip();
+      });
     }
 
     function drawHighlights() {
-      const canvas = document.getElementById('viewer-highlight-canvas');
-      if (!canvas || canvas.style.display === 'none') return;
-      
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      const containerWidth = canvas.width;
-      const containerHeight = canvas.height;
+      const container = document.getElementById('viewer-highlights-container');
+      if (!container) return;
+      container.innerHTML = '';
       
       if (!originalImageWidth || !originalImageHeight) return;
       
-      const scaleX = containerWidth / originalImageWidth;
-      const scaleY = containerHeight / originalImageHeight;
-      const hasActive = activeHighlightId !== null;
-      
-      for (const [id, box] of Object.entries(mappedHighlights)) {
+      for (const [key, box] of Object.entries(mappedHighlights)) {
         if (!box) continue;
         
-        const isCurrent = activeHighlightId === id;
-        let colorTheme = { fill: 'rgba(59, 130, 246, 0.08)', border: 'rgba(59, 130, 246, 0.3)', activeFill: 'rgba(59, 130, 246, 0.25)', activeBorder: 'rgba(59, 130, 246, 0.85)' }; // Blue
-        
-        if (id === 'total') {
-          colorTheme = { fill: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.3)', activeFill: 'rgba(34, 197, 94, 0.3)', activeBorder: 'rgba(34, 197, 94, 0.85)' }; // Green
-        } else if (id === 'iva') {
-          colorTheme = { fill: 'rgba(168, 85, 247, 0.08)', border: 'rgba(168, 85, 247, 0.3)', activeFill: 'rgba(168, 85, 247, 0.3)', activeBorder: 'rgba(168, 85, 247, 0.85)' }; // Purple
-        } else if (id === 'pos' || id === 'number') {
-          colorTheme = { fill: 'rgba(234, 179, 8, 0.08)', border: 'rgba(234, 179, 8, 0.3)', activeFill: 'rgba(234, 179, 8, 0.3)', activeBorder: 'rgba(234, 179, 8, 0.85)' }; // Yellow
-        } else if (id === 'date') {
-          colorTheme = { fill: 'rgba(6, 182, 212, 0.08)', border: 'rgba(6, 182, 212, 0.3)', activeFill: 'rgba(6, 182, 212, 0.3)', activeBorder: 'rgba(6, 182, 212, 0.85)' }; // Cyan
-        } else if (id.startsWith('item-')) {
-          colorTheme = { fill: 'rgba(249, 115, 22, 0.05)', border: 'rgba(249, 115, 22, 0.25)', activeFill: 'rgba(249, 115, 22, 0.25)', activeBorder: 'rgba(249, 115, 22, 0.9)' }; // Orange
-        } else if (id === 'cuit') {
-          colorTheme = { fill: 'rgba(239, 68, 68, 0.05)', border: 'rgba(239, 68, 68, 0.25)', activeFill: 'rgba(239, 68, 68, 0.25)', activeBorder: 'rgba(239, 68, 68, 0.9)' }; // Red
+        const el = document.createElement('div');
+        el.className = 'ocr-highlight-box';
+        el.dataset.field = key;
+        if (key === activeHighlightId) {
+          el.classList.add('active');
         }
         
-        const x = box.minX * scaleX;
-        const y = box.minY * scaleY;
-        const w = (box.maxX - box.minX) * scaleX;
-        const h = (box.maxY - box.minY) * scaleY;
+        el.style.left = `${box.x * 100}%`;
+        el.style.top = `${box.y * 100}%`;
+        el.style.width = `${box.w * 100}%`;
+        el.style.height = `${box.h * 100}%`;
         
-        ctx.beginPath();
-        ctx.rect(x - 2, y - 2, w + 4, h + 4);
-        
-        if (hasActive) {
-          if (isCurrent) {
-            ctx.fillStyle = colorTheme.activeFill;
-            ctx.strokeStyle = colorTheme.activeBorder;
-            ctx.lineWidth = 2.5;
-            ctx.shadowColor = colorTheme.activeBorder;
-            ctx.shadowBlur = 8;
-          } else {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-            ctx.lineWidth = 1;
-            ctx.shadowBlur = 0;
-          }
-        } else {
-          ctx.fillStyle = colorTheme.fill;
-          ctx.strokeStyle = colorTheme.border;
-          ctx.lineWidth = 1.5;
-          ctx.shadowBlur = 0;
+        // Label Text
+        let labelText = key.toUpperCase();
+        if (labelText.startsWith('ITEM-')) {
+          const idx = parseInt(labelText.split('-')[1], 10);
+          labelText = `Ítem ${idx + 1}`;
+        } else if (labelText === 'POS') {
+          labelText = 'P. Venta';
+        } else if (labelText === 'NUMBER') {
+          labelText = 'Número';
+        } else if (labelText === 'DATE') {
+          labelText = 'Fecha';
         }
         
-        ctx.fill();
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+        const label = document.createElement('span');
+        label.className = 'ocr-highlight-label';
+        label.textContent = labelText;
+        el.appendChild(label);
+        
+        // Add handle only if it is not a dynamic item
+        if (!key.startsWith('item-')) {
+          const handle = document.createElement('div');
+          handle.className = 'resize-handle';
+          el.appendChild(handle);
+        }
+        
+        makeElementInteractive(el, key);
+        
+        container.appendChild(el);
       }
     }
 
     function updateHighlightCanvasSize() {
-      const canvas = document.getElementById('viewer-highlight-canvas');
+      const container = document.getElementById('viewer-highlights-container');
       const wrapper = document.getElementById('viewer-wrapper');
-      if (canvas && wrapper && canvas.style.display !== 'none') {
-        canvas.width = wrapper.clientWidth;
-        canvas.height = wrapper.clientHeight;
+      if (container && wrapper && container.style.display !== 'none') {
         drawHighlights();
       }
     }
@@ -2766,6 +3175,22 @@
             let rulesChanged = false;
             let rules = lastOcrResult.rulesApplied || { ignoreKeywords: [], isServiceInvoice: false, preferDigits: null };
             if (!rules.ignoreKeywords) rules.ignoreKeywords = [];
+            
+            // Capture updated zones (relative percentages)
+            const zonesToSave = {};
+            const standardKeys = ['cuit', 'pos', 'number', 'date', 'neto', 'iva', 'total'];
+            standardKeys.forEach(k => {
+              if (mappedHighlights[k]) {
+                zonesToSave[k] = {
+                  x: Number(mappedHighlights[k].x.toFixed(5)),
+                  y: Number(mappedHighlights[k].y.toFixed(5)),
+                  w: Number(mappedHighlights[k].w.toFixed(5)),
+                  h: Number(mappedHighlights[k].h.toFixed(5))
+                };
+              }
+            });
+            rules.zones = zonesToSave;
+            rulesChanged = true; // Always save rules so that custom zones persist
             
             const currentPos = parseInt(pos, 10);
             const currentNum = parseInt(number, 10);
@@ -3334,7 +3759,11 @@
             }
           }
 
-          const parsedData = parseOcrText(text, ocrRules);
+          // Guardar anotaciones y dimensiones impositivas antes para poder filtrar por zonas
+          ocrAnnotations = visionResult.responses[0].textAnnotations ? visionResult.responses[0].textAnnotations.slice(1) : [];
+          updateOriginalImageDimensions();
+
+          const parsedData = parseOcrText(text, ocrRules, ocrAnnotations);
           
           // Guardar resultado original para el feedback loop (auto-aprendizaje)
           lastOcrResult = {
@@ -3352,13 +3781,10 @@
             rulesApplied: ocrRules
           };
 
-          // Guardar anotaciones para el resaltado visual
-          ocrAnnotations = visionResult.responses[0].textAnnotations ? visionResult.responses[0].textAnnotations.slice(1) : [];
-          updateOriginalImageDimensions();
-          mapHighlightsFromOcr(parsedData);
+          mapHighlightsFromOcr(parsedData, ocrRules);
 
-          // Mostrar lienzo de resaltado
-          const highlightCanvas = document.getElementById('viewer-highlight-canvas');
+          // Mostrar contenedor de resaltado
+          const highlightCanvas = document.getElementById('viewer-highlights-container');
           if (highlightCanvas) {
             highlightCanvas.style.display = 'block';
             updateHighlightCanvasSize();
@@ -3396,7 +3822,7 @@
         }
         
         // Re-parse and auto-fill
-        const parsedData = parseOcrText(lastOcrResult.rawText, ocrRules);
+        const parsedData = parseOcrText(lastOcrResult.rawText, ocrRules, ocrAnnotations);
         
         // Update lastOcrResult rules applied
         lastOcrResult.cuit = cuit;
@@ -3405,7 +3831,7 @@
         lastOcrResult.itemsCount = parsedData.items.length;
         
         // Update highlights map for the new parsed data
-        mapHighlightsFromOcr(parsedData);
+        mapHighlightsFromOcr(parsedData, ocrRules);
         updateHighlightCanvasSize();
         
         // Auto fill form
@@ -3483,7 +3909,7 @@
       }
     }
 
-    function parseOcrText(text, rules = null) {
+    function parseOcrText(text, rules = null, annotations = null) {
       const data = {
         cuit: "",
         invoiceType: "",
@@ -3499,6 +3925,34 @@
 
       console.log("Raw OCR Text:\n", text);
 
+      // If rules has zones, let's extract field-specific texts from the zones
+      let cuitText = text;
+      let posText = text;
+      let numberText = text;
+      let dateText = text;
+      let totalText = text;
+      let netoText = text;
+      let ivaText = text;
+
+      if (rules && rules.zones && annotations && annotations.length > 0) {
+        if (rules.zones.cuit) cuitText = getTextFromZone(rules.zones.cuit, annotations) || text;
+        if (rules.zones.pos) posText = getTextFromZone(rules.zones.pos, annotations) || text;
+        if (rules.zones.number) numberText = getTextFromZone(rules.zones.number, annotations) || text;
+        if (rules.zones.date) dateText = getTextFromZone(rules.zones.date, annotations) || text;
+        if (rules.zones.total) totalText = getTextFromZone(rules.zones.total, annotations) || text;
+        if (rules.zones.neto) netoText = getTextFromZone(rules.zones.neto, annotations) || text;
+        if (rules.zones.iva) ivaText = getTextFromZone(rules.zones.iva, annotations) || text;
+        
+        console.log("Textos extraídos por zonas:");
+        console.log("- CUIT Proveedor:", cuitText);
+        console.log("- Punto Venta:", posText);
+        console.log("- Número:", numberText);
+        console.log("- Fecha Emisión:", dateText);
+        console.log("- Total:", totalText);
+        console.log("- Neto:", netoText);
+        console.log("- IVA:", ivaText);
+      }
+
       const parseAmount = (regex, txt) => {
         const matches = txt.match(regex);
         if (matches && matches.length > 0) {
@@ -3508,8 +3962,20 @@
         return 0;
       };
 
+      const parseAmountWithFallback = (regex, txt) => {
+        let amt = parseAmount(regex, txt);
+        if (amt > 0) return amt;
+        
+        // Fallback: match any number sequence (prefer last one in text block)
+        const numbers = txt.match(/\b\d+(?:[\.,]\d+)*\b/g) || [];
+        if (numbers.length > 0) {
+          return cleanOcrAmount(numbers[numbers.length - 1]);
+        }
+        return 0;
+      };
+
       // 1. CUIT
-      const cuitMatches = text.match(/\b(20|23|24|27|30|33|34)-?\d{8}-?\d\b/g) || [];
+      const cuitMatches = cuitText.match(/\b(20|23|24|27|30|33|34)-?\d{8}-?\d\b/g) || [];
       const tmcCuits = ["20347511766", "30717981312"];
       for (const rawCuit of cuitMatches) {
         const cleaned = rawCuit.replace(/\D/g, "");
@@ -3519,6 +3985,14 @@
         }
       }
       if (!data.cuit && cuitMatches.length > 0) data.cuit = cuitMatches[0].replace(/\D/g, "");
+
+      // Fallback CUIT: if CUIT zone text contains exactly 11 digits
+      if (!data.cuit) {
+        const digits = cuitText.replace(/\D/g, "");
+        if (digits.length === 11) {
+          data.cuit = digits;
+        }
+      }
 
       if (data.cuit) {
         lastParsedCuit = data.cuit;
@@ -3540,53 +4014,79 @@
       }
 
       // 3. Pos and Number extraction with scores (to prevent matching phone/cuit/dates)
-      let posCandidates = [];
-      const posRegex = /\b(\d{1,5})\s*[-/]\s*(\d{1,8})\b/g;
-      let posMatch;
-      while ((posMatch = posRegex.exec(text)) !== null) {
-        const posStr = posMatch[1];
-        const numStr = posMatch[2];
-        if (posStr === numStr) continue;
-        if (posStr.length <= 2 && numStr.length === 4 && (numStr.startsWith("20") || numStr.startsWith("19"))) continue;
-        const nextCharIdx = posMatch.index + posMatch[0].length;
-        const nextText = text.substring(nextCharIdx, nextCharIdx + 5);
-        if (/^-\d\b/.test(nextText)) continue;
-        let score = 0;
-        if (numStr.length === 8) score += 10;
-        if (posStr.length === 4 || posStr.length === 5) score += 5;
-        if (rules && rules.preferDigits && numStr.length === rules.preferDigits) {
-          score += 15;
-        }
-        const contextStart = Math.max(0, posMatch.index - 55);
-        const contextEnd = Math.min(text.length, posMatch.index + posMatch[0].length + 55);
-        const context = text.substring(contextStart, contextEnd).toLowerCase();
-        if (context.includes("factura") || context.includes("nro") || context.includes("nº") || context.includes("comp") || context.includes("num")) {
-          score += 15;
-        }
-        const customIgnore = (rules && rules.ignoreKeywords) || [];
-        const finalIgnoreList = ["tel", "tf", "phone", ...customIgnore];
-        if (finalIgnoreList.some(word => context.includes(word.toLowerCase()))) {
-          score -= 30;
-        }
-        posCandidates.push({ pos: posStr, number: numStr, score: score });
+      let posVal = "";
+      let numVal = "";
+      
+      if (rules && rules.zones && rules.zones.pos) {
+        const digits = posText.replace(/\D/g, "");
+        if (digits.length > 0 && digits.length <= 5) posVal = digits;
       }
-      posCandidates.sort((a, b) => b.score - a.score);
-      if (posCandidates.length > 0) {
-        data.pos = posCandidates[0].pos;
-        data.number = posCandidates[0].number;
+      if (rules && rules.zones && rules.zones.number) {
+        const digits = numberText.replace(/\D/g, "");
+        if (digits.length > 0 && digits.length <= 8) numVal = digits;
+      }
+      
+      if (posVal && numVal) {
+        data.pos = posVal;
+        data.number = numVal;
+      } else {
+        // Fallback candidate score search on posText & numberText
+        let posCandidates = [];
+        const posRegex = /\b(\d{1,5})\s*[-/]\s*(\d{1,8})\b/g;
+        let posMatch;
+        const textForPos = (posText !== text) ? posText : text;
+        while ((posMatch = posRegex.exec(textForPos)) !== null) {
+          const posStr = posMatch[1];
+          const numStr = posMatch[2];
+          if (posStr === numStr) continue;
+          if (posStr.length <= 2 && numStr.length === 4 && (numStr.startsWith("20") || numStr.startsWith("19"))) continue;
+          const nextCharIdx = posMatch.index + posMatch[0].length;
+          const nextText = textForPos.substring(nextCharIdx, nextCharIdx + 5);
+          if (/^-\d\b/.test(nextText)) continue;
+          let score = 0;
+          if (numStr.length === 8) score += 10;
+          if (posStr.length === 4 || posStr.length === 5) score += 5;
+          if (rules && rules.preferDigits && numStr.length === rules.preferDigits) {
+            score += 15;
+          }
+          const contextStart = Math.max(0, posMatch.index - 55);
+          const contextEnd = Math.min(textForPos.length, posMatch.index + posMatch[0].length + 55);
+          const context = textForPos.substring(contextStart, contextEnd).toLowerCase();
+          if (context.includes("factura") || context.includes("nro") || context.includes("nº") || context.includes("comp") || context.includes("num")) {
+            score += 15;
+          }
+          const customIgnore = (rules && rules.ignoreKeywords) || [];
+          const finalIgnoreList = ["tel", "tf", "phone", ...customIgnore];
+          if (finalIgnoreList.some(word => context.includes(word.toLowerCase()))) {
+            score -= 30;
+          }
+          posCandidates.push({ pos: posStr, number: numStr, score: score });
+        }
+        posCandidates.sort((a, b) => b.score - a.score);
+        if (posCandidates.length > 0) {
+          data.pos = posCandidates[0].pos;
+          data.number = posCandidates[0].number;
+        }
       }
 
       // 4. Date
-      const dateMatch = text.match(/\b(\d{2})[/\.-](\d{2})[/\.-](\d{4})\b/);
+      const dateMatch = dateText.match(/\b(\d{2})[/\.-](\d{2})[/\.-](\d{4})\b/);
       if (dateMatch) {
         const [_, day, month, year] = dateMatch;
         data.date = `${year}-${month}-${day}`;
+      } else {
+        // Fallback: search for any date in global text if not found in dateText zone
+        const globalDateMatch = text.match(/\b(\d{2})[/\.-](\d{2})[/\.-](\d{4})\b/);
+        if (globalDateMatch) {
+          const [_, day, month, year] = globalDateMatch;
+          data.date = `${year}-${month}-${day}`;
+        }
       }
 
-      // 5. Total, Neto, IVA
-      data.total = parseAmount(/(?:\btotal\b|importe total|\btotal\s*\$)\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, text);
-      data.neto = parseAmount(/(?:neto|subtotal|neto gravado|gravado)\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, text);
-      data.iva = parseAmount(/(?<!condición\s|condicion\s)\b(?:iva|i\.v\.a\.)\b\s*(?:21%|10\.5%|contenido|total|liquidado)?\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, text);
+      // 5. Total, Neto, IVA with Fallbacks
+      data.total = parseAmountWithFallback(/(?:\btotal\b|importe total|\btotal\s*\$)\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, totalText);
+      data.neto = parseAmountWithFallback(/(?:neto|subtotal|neto gravado|gravado)\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, netoText);
+      data.iva = parseAmountWithFallback(/(?<!condición\s|condicion\s)\b(?:iva|i\.v\.a\.)\b\s*(?:21%|10\.5%|contenido|total|liquidado)?\s*[:\-]?\s*[$sS]?\s*(\d+(?:[\.,]\d+)*)/i, ivaText);
 
       const ocrLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
@@ -4232,11 +4732,10 @@
         ocrAnnotations = [];
         mappedHighlights = {};
         activeHighlightId = null;
-        const highlightCanvas = document.getElementById('viewer-highlight-canvas');
-        if (highlightCanvas) {
-          highlightCanvas.style.display = 'none';
-          const ctx = highlightCanvas.getContext('2d');
-          ctx.clearRect(0, 0, highlightCanvas.width, highlightCanvas.height);
+        const highlightContainer = document.getElementById('viewer-highlights-container');
+        if (highlightContainer) {
+          highlightContainer.style.display = 'none';
+          highlightContainer.innerHTML = '';
         }
         
         currentZoom = 100;
@@ -4244,123 +4743,8 @@
       }
     });
 
-    // Bind hover/click event listeners to the highlights canvas
-    const highlightCanvas = document.getElementById('viewer-highlight-canvas');
+    // Highlight container references are wired dynamically on element creation
     const viewerTooltip = document.getElementById('viewer-tooltip');
-    
-    if (highlightCanvas) {
-      highlightCanvas.addEventListener('mousemove', (e) => {
-        const rect = highlightCanvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        const containerWidth = highlightCanvas.width;
-        const containerHeight = highlightCanvas.height;
-        if (!originalImageWidth || !originalImageHeight) return;
-        
-        const scaleX = containerWidth / originalImageWidth;
-        const scaleY = containerHeight / originalImageHeight;
-        
-        let foundId = null;
-        for (const [id, box] of Object.entries(mappedHighlights)) {
-          if (!box) continue;
-          const x = box.minX * scaleX;
-          const y = box.minY * scaleY;
-          const w = (box.maxX - box.minX) * scaleX;
-          const h = (box.maxY - box.minY) * scaleY;
-          
-          if (mouseX >= x - 2 && mouseX <= x + w + 2 && mouseY >= y - 2 && mouseY <= y + h + 2) {
-            foundId = id;
-            break;
-          }
-        }
-        
-        if (foundId) {
-          highlightCanvas.style.cursor = 'pointer';
-          if (activeHighlightId !== foundId) {
-            setActiveHighlight(foundId);
-          }
-          
-          let label = "";
-          if (foundId === 'total') label = "Total Factura";
-          else if (foundId === 'neto') label = "Subtotal Neto";
-          else if (foundId === 'iva') label = "IVA Total";
-          else if (foundId === 'pos') label = "Punto de Venta";
-          else if (foundId === 'number') label = "Número de Factura";
-          else if (foundId === 'date') label = "Fecha de Emisión";
-          else if (foundId === 'cuit') label = "CUIT Proveedor";
-          else if (foundId.startsWith('item-')) {
-            const idx = parseInt(foundId.split('-')[1], 10);
-            label = `Ítem de Detalle #${idx + 1}`;
-          }
-          
-          viewerTooltip.style.display = 'block';
-          viewerTooltip.innerHTML = `<span style="color: var(--primary); font-weight: 700;">${label}</span>`;
-          
-          const containerRect = document.getElementById('viewer-container').getBoundingClientRect();
-          const tooltipX = e.clientX - containerRect.left + 15;
-          const tooltipY = e.clientY - containerRect.top + 15;
-          viewerTooltip.style.left = `${tooltipX}px`;
-          viewerTooltip.style.top = `${tooltipY}px`;
-        } else {
-          highlightCanvas.style.cursor = 'default';
-          if (activeHighlightId !== null) {
-            clearActiveHighlight();
-          }
-          viewerTooltip.style.display = 'none';
-        }
-      });
-
-      highlightCanvas.addEventListener('mouseleave', () => {
-        clearActiveHighlight();
-        viewerTooltip.style.display = 'none';
-      });
-
-      highlightCanvas.addEventListener('click', (e) => {
-        const rect = highlightCanvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        const containerWidth = highlightCanvas.width;
-        const containerHeight = highlightCanvas.height;
-        if (!originalImageWidth || !originalImageHeight) return;
-        
-        const scaleX = containerWidth / originalImageWidth;
-        const scaleY = containerHeight / originalImageHeight;
-        
-        let clickedId = null;
-        for (const [id, box] of Object.entries(mappedHighlights)) {
-          if (!box) continue;
-          const x = box.minX * scaleX;
-          const y = box.minY * scaleY;
-          const w = (box.maxX - box.minX) * scaleX;
-          const h = (box.maxY - box.minY) * scaleY;
-          
-          if (mouseX >= x - 2 && mouseX <= x + w + 2 && mouseY >= y - 2 && mouseY <= y + h + 2) {
-            clickedId = id;
-            break;
-          }
-        }
-        
-        if (clickedId) {
-          if (clickedId === 'pos') document.getElementById('invoice-pos').focus();
-          else if (clickedId === 'number') document.getElementById('invoice-number').focus();
-          else if (clickedId === 'date') document.getElementById('date-emission').focus();
-          else if (clickedId === 'total') document.getElementById('lbl-total').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          else if (clickedId === 'neto') document.getElementById('lbl-neto').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          else if (clickedId === 'iva') document.getElementById('lbl-iva').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          else if (clickedId.startsWith('item-')) {
-            const idx = parseInt(clickedId.split('-')[1], 10);
-            const rows = itemsTbody.querySelectorAll('tr');
-            const matchedRow = Array.from(rows).find(r => parseInt(r.dataset.ocrIndex, 10) === idx);
-            if (matchedRow) {
-              matchedRow.querySelector('.item-concept').focus();
-              matchedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-          }
-        }
-      });
-    }
     
     // Wire hover event listeners to inputs/labels
     wireHighlightHoverEvents();
