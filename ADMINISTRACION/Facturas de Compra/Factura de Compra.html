@@ -3329,17 +3329,28 @@
       }
     }
 
+    let showTooltipTimeout = null;
+
+    function showTooltipDelayed() {
+      if (showTooltipTimeout) clearTimeout(showTooltipTimeout);
+      showTooltipTimeout = setTimeout(() => {
+        showTooltip();
+      }, 1200);
+    }
+
     function hideTooltip() {
+      if (showTooltipTimeout) clearTimeout(showTooltipTimeout);
       if (tooltipTimeout) clearTimeout(tooltipTimeout);
       tooltipTimeout = setTimeout(() => {
         supplierTooltip.style.display = 'none';
       }, 200);
     }
 
-    supplierInput.addEventListener('mouseenter', showTooltip);
+    supplierInput.addEventListener('mouseenter', showTooltipDelayed);
     supplierInput.addEventListener('mouseleave', hideTooltip);
 
     supplierTooltip.addEventListener('mouseenter', () => {
+      if (showTooltipTimeout) clearTimeout(showTooltipTimeout);
       if (tooltipTimeout) clearTimeout(tooltipTimeout);
     });
     supplierTooltip.addEventListener('mouseleave', hideTooltip);
