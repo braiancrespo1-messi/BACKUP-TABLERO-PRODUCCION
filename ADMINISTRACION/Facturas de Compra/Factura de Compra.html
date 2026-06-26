@@ -1493,6 +1493,7 @@
     let lastOcrResult = null;
     let selectedSupplierObj = null;
     let currentZoom = 100;
+    let clickedHighlightId = null;
 
     const PROVINCES_MAP = {
       1: "CABA",
@@ -1532,6 +1533,44 @@
       if (str === undefined || str === null) return 0;
       const clean = String(str).replace(/\./g, '').replace(',', '.');
       return parseFloat(clean) || 0;
+    }
+
+    function selectJurisdiccionBySupplier(supplier) {
+      const select = document.getElementById('jurisdiccion');
+      if (!select || !supplier) return;
+      
+      if (supplier.provinciaId && select.querySelector(`option[value="${supplier.provinciaId}"]`)) {
+        select.value = String(supplier.provinciaId);
+        return;
+      }
+      
+      let provName = "";
+      if (supplier.provinciaId) {
+        provName = PROVINCES_MAP[supplier.provinciaId];
+      } else if (supplier.provincia) {
+        provName = supplier.provincia;
+      }
+      
+      if (provName) {
+        let lowerName = provName.toLowerCase().trim();
+        // Normalizations for CABA and Buenos Aires
+        if (lowerName === "capital federal" || lowerName === "ciudad autónoma de buenos aires" || lowerName === "ciudad autonoma de buenos aires" || lowerName === "caba") {
+          select.value = "1"; // CABA
+          return;
+        }
+        if (lowerName === "buenos aires" || lowerName === "provincia de buenos aires" || lowerName === "bs as" || lowerName === "pba" || lowerName === "bs.as.") {
+          select.value = "2"; // Buenos Aires
+          return;
+        }
+        const options = select.options;
+        for (let i = 0; i < options.length; i++) {
+          const optText = options[i].text.toLowerCase().trim();
+          if (optText === lowerName || optText.includes(lowerName) || lowerName.includes(optText)) {
+            select.value = options[i].value;
+            return;
+          }
+        }
+      }
     }
 
     function handleInputFocus(e) {
@@ -1787,6 +1826,9 @@
                   selectInvoiceTypeByIva(supplier.ivaCondition);
                 }
 
+                // Pre-select jurisdiction based on supplier's province
+                selectJurisdiccionBySupplier(supplier);
+
                 // Auto-run rules learning reprocessing if CUIT is available
                 if (supplier.cuit) {
                   reprocessOcrWithSupplierRules(supplier.cuit);
@@ -1842,23 +1884,48 @@
       if (supplierIva.includes("no oficial")) {
         alicuotaId = "1";
       }
-      const tr = document.createElement('tr');
       
-      if (ocrIndex !== null) {
-        tr.dataset.ocrIndex = ocrIndex;
+      if (ocrIndex === null) {
+        const currentRows = itemsTbody.querySelectorAll('tr');
+        ocrIndex = currentRows.length;
       }
+      
+      if (ocrIndex !== null && !mappedHighlights[`item-${ocrIndex}`]) {
+        mappedHighlights[`item-${ocrIndex}`] = {
+          x: 0.08,
+          y: Math.min(0.85, 0.35 + (ocrIndex * 0.07)),
+          w: 0.84,
+          h: 0.06
+        };
+        drawHighlights();
+      }
+      
+      const tr = document.createElement('tr');
+      tr.dataset.ocrIndex = ocrIndex;
+      
+      const highlightItem = () => {
+        const idx = tr.dataset.ocrIndex;
+        if (idx !== undefined && idx !== null) {
+          setActiveHighlight(`item-${idx}`);
+        }
+      };
+      
+      const clearHighlightItem = () => {
+        clearActiveHighlight();
+      };
       
       // Wire hover events for OCR highlighter
       tr.addEventListener('mouseenter', () => {
         if (getFocusedFieldKey()) return;
-        const idx = tr.dataset.ocrIndex;
-        if (idx !== undefined) {
-          setActiveHighlight(`item-${idx}`);
-        }
+        highlightItem();
       });
       tr.addEventListener('mouseleave', () => {
         if (getFocusedFieldKey()) return;
-        if (document.activeElement !== inputConcepto) {
+        if (document.activeElement !== inputConcepto &&
+            document.activeElement !== inputCant &&
+            document.activeElement !== inputPrice &&
+            document.activeElement !== inputDiscount &&
+            document.activeElement !== selectAlic) {
           clearActiveHighlight();
         }
       });
@@ -1871,19 +1938,12 @@
       inputConcepto.className = 'item-concept';
       inputConcepto.placeholder = "Ingrese descripción del concepto...";
       
-      inputConcepto.addEventListener('focus', () => {
-        const idx = tr.dataset.ocrIndex;
-        if (idx !== undefined && idx !== null) {
-          setActiveHighlight(`item-${idx}`);
-        }
-      });
-      inputConcepto.addEventListener('blur', () => {
-        clearActiveHighlight();
-      });
-
+      inputConcepto.addEventListener('focus', highlightItem);
+      inputConcepto.addEventListener('blur', clearHighlightItem);
+ 
       tdConcepto.appendChild(inputConcepto);
       tr.appendChild(tdConcepto);
-
+ 
       // Cantidad
       const tdCant = document.createElement('td');
       const inputCant = document.createElement('input');
@@ -1892,9 +1952,13 @@
       inputCant.className = 'item-qty';
       inputCant.min = '1';
       inputCant.style.textAlign = 'center';
+      
+      inputCant.addEventListener('focus', highlightItem);
+      inputCant.addEventListener('blur', clearHighlightItem);
+      
       tdCant.appendChild(inputCant);
       tr.appendChild(tdCant);
-
+ 
       // Precio Unitario (Formatted input)
       const tdPrice = document.createElement('td');
       const inputPrice = document.createElement('input');
@@ -1903,12 +1967,16 @@
       inputPrice.className = 'item-price';
       inputPrice.placeholder = "0,00";
       inputPrice.style.textAlign = 'right';
+      
+      inputPrice.addEventListener('focus', highlightItem);
       inputPrice.addEventListener('focus', handleInputFocus);
+      inputPrice.addEventListener('blur', clearHighlightItem);
       inputPrice.addEventListener('blur', handleInputBlur);
       inputPrice.addEventListener('input', handleInputFormatting);
+      
       tdPrice.appendChild(inputPrice);
       tr.appendChild(tdPrice);
-
+ 
       // Descuento (%)
       const tdDiscount = document.createElement('td');
       const discountWrapper = document.createElement('div');
@@ -1916,7 +1984,7 @@
       discountWrapper.style.alignItems = 'center';
       discountWrapper.style.justifyContent = 'center';
       discountWrapper.style.gap = '4px';
-
+ 
       const inputDiscount = document.createElement('input');
       inputDiscount.type = 'number';
       inputDiscount.value = descuento;
@@ -1931,17 +1999,20 @@
       inputDiscount.style.background = 'rgba(15,23,42,0.3)';
       inputDiscount.style.color = 'var(--text-main)';
       inputDiscount.style.padding = '4px 2px';
-
+      
+      inputDiscount.addEventListener('focus', highlightItem);
+      inputDiscount.addEventListener('blur', clearHighlightItem);
+ 
       const percentSpan = document.createElement('span');
       percentSpan.style.fontSize = '12px';
       percentSpan.style.color = 'var(--text-muted)';
       percentSpan.textContent = '%';
-
+ 
       discountWrapper.appendChild(inputDiscount);
       discountWrapper.appendChild(percentSpan);
       tdDiscount.appendChild(discountWrapper);
       tr.appendChild(tdDiscount);
-
+ 
       // Alicuota IVA
       const tdAlic = document.createElement('td');
       const selectAlic = document.createElement('select');
@@ -1953,12 +2024,15 @@
         if (rate.id === alicuotaId) opt.selected = true;
         selectAlic.appendChild(opt);
       });
-
+      
+      selectAlic.addEventListener('focus', highlightItem);
+      selectAlic.addEventListener('blur', clearHighlightItem);
+ 
       // If selected supplier is No Oficial, disable the select
       if (supplierIva.includes("no oficial")) {
         selectAlic.disabled = true;
       }
-
+ 
       tdAlic.appendChild(selectAlic);
       tr.appendChild(tdAlic);
 
@@ -2493,9 +2567,18 @@
       // 4. Dynamic detail items highlights
       if (data.items) {
         data.items.forEach((item, idx) => {
-          const box = findPhraseBoundingBox(item.concepto);
-          if (box) {
-            mappedHighlights[`item-${idx}`] = box;
+          if (!mappedHighlights[`item-${idx}`]) {
+            const box = findPhraseBoundingBox(item.concepto);
+            if (box) {
+              mappedHighlights[`item-${idx}`] = box;
+            } else {
+              mappedHighlights[`item-${idx}`] = {
+                x: 0.08,
+                y: Math.min(0.85, 0.35 + (idx * 0.07)),
+                w: 0.84,
+                h: 0.06
+              };
+            }
           }
         });
       }
@@ -2504,25 +2587,31 @@
 
     function getFocusedFieldKey() {
       const activeEl = document.activeElement;
-      if (!activeEl) return null;
-      
-      if (activeEl.id === 'supplier-input') return 'cuit';
-      if (activeEl.id === 'invoice-pos') return 'pos';
-      if (activeEl.id === 'invoice-number') return 'number';
-      if (activeEl.id === 'date-emission') return 'date';
-      
-      const tr = activeEl.closest('tr');
-      if (tr) {
-        if (tr.dataset.ocrIndex !== undefined && tr.dataset.ocrIndex !== null && tr.dataset.ocrIndex !== '') {
-          return `item-${tr.dataset.ocrIndex}`;
-        }
-        if (activeEl.closest('#perceptions-tbody')) {
-          return 'perceptions';
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA') && activeEl !== document.body) {
+        if (activeEl.id === 'supplier-input') return 'cuit';
+        if (activeEl.id === 'invoice-pos') return 'pos';
+        if (activeEl.id === 'invoice-number') return 'number';
+        if (activeEl.id === 'date-emission') return 'date';
+        
+        const tr = activeEl.closest('tr');
+        if (tr) {
+          if (tr.dataset.ocrIndex !== undefined && tr.dataset.ocrIndex !== null && tr.dataset.ocrIndex !== '') {
+            return `item-${tr.dataset.ocrIndex}`;
+          }
+          if (activeEl.closest('#perceptions-tbody')) {
+            return 'perceptions';
+          }
         }
       }
-      
-      return null;
+      return clickedHighlightId;
     }
+
+    // Clear clickedHighlightId when any focusable input is focused
+    document.addEventListener('focusin', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) {
+        clickedHighlightId = null;
+      }
+    });
 
     function setActiveHighlight(id) {
       const focusedKey = getFocusedFieldKey();
@@ -2747,6 +2836,18 @@
       });
     }
 
+    function selectFieldHighlight(key, focusEl = null) {
+      clickedHighlightId = key;
+      if (focusEl) {
+        focusEl.focus();
+      } else {
+        if (document.activeElement && document.activeElement !== document.body) {
+          document.activeElement.blur();
+        }
+      }
+      setActiveHighlight(key);
+    }
+
     function drawHighlights() {
       const container = document.getElementById('viewer-highlights-container');
       if (!container) return;
@@ -2756,6 +2857,19 @@
       
       for (const [key, box] of Object.entries(mappedHighlights)) {
         if (!box) continue;
+
+        if (key.startsWith('item-')) {
+          const idxStr = key.substring(5);
+          const rows = document.querySelectorAll('#items-tbody tr');
+          let found = false;
+          for (let i = 0; i < rows.length; i++) {
+            if (rows[i].dataset.ocrIndex === idxStr) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) continue; // Skip drawing phantom items
+        }
         
         const el = document.createElement('div');
         el.className = 'ocr-highlight-box';
@@ -2876,7 +2990,7 @@
       const lblNeto = document.getElementById('lbl-neto');
       if (lblNeto) {
         const row = lblNeto.parentElement;
-        row.style.cursor = 'help';
+        row.style.cursor = 'pointer';
         row.addEventListener('mouseenter', () => {
           if (getFocusedFieldKey()) return;
           setActiveHighlight('neto');
@@ -2885,12 +2999,13 @@
           if (getFocusedFieldKey()) return;
           clearActiveHighlight();
         });
+        row.addEventListener('click', () => selectFieldHighlight('neto'));
       }
       
       const lblIva = document.getElementById('lbl-iva');
       if (lblIva) {
         const row = lblIva.parentElement;
-        row.style.cursor = 'help';
+        row.style.cursor = 'pointer';
         row.addEventListener('mouseenter', () => {
           if (getFocusedFieldKey()) return;
           setActiveHighlight('iva');
@@ -2899,12 +3014,13 @@
           if (getFocusedFieldKey()) return;
           clearActiveHighlight();
         });
+        row.addEventListener('click', () => selectFieldHighlight('iva'));
       }
       
       const lblTotal = document.getElementById('lbl-total');
       if (lblTotal) {
         const row = lblTotal.parentElement;
-        row.style.cursor = 'help';
+        row.style.cursor = 'pointer';
         row.addEventListener('mouseenter', () => {
           if (getFocusedFieldKey()) return;
           setActiveHighlight('total');
@@ -2913,7 +3029,51 @@
           if (getFocusedFieldKey()) return;
           clearActiveHighlight();
         });
+        row.addEventListener('click', () => selectFieldHighlight('total'));
       }
+
+      const lblPercepciones = document.getElementById('lbl-percepciones');
+      if (lblPercepciones) {
+        const row = lblPercepciones.parentElement;
+        row.style.cursor = 'pointer';
+        row.addEventListener('mouseenter', () => {
+          if (getFocusedFieldKey()) return;
+          setActiveHighlight('perceptions');
+        });
+        row.addEventListener('mouseleave', () => {
+          if (getFocusedFieldKey()) return;
+          clearActiveHighlight();
+        });
+        row.addEventListener('click', () => selectFieldHighlight('perceptions'));
+      }
+
+      const perceptionsTitle = document.querySelector('span.card-title i[data-lucide="percent"]')?.parentElement;
+      if (perceptionsTitle) {
+        perceptionsTitle.style.cursor = 'pointer';
+        perceptionsTitle.addEventListener('click', () => selectFieldHighlight('perceptions'));
+      }
+
+      // Add click listeners to form labels to lock field highlights
+      const labels = document.querySelectorAll('label[for]');
+      labels.forEach(lbl => {
+        const targetId = lbl.getAttribute('for');
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          lbl.style.cursor = 'pointer';
+          lbl.addEventListener('click', (e) => {
+            e.preventDefault();
+            let key = null;
+            if (targetId === 'supplier-input') key = 'cuit';
+            else if (targetId === 'invoice-pos') key = 'pos';
+            else if (targetId === 'invoice-number') key = 'number';
+            else if (targetId === 'date-emission') key = 'date';
+            
+            if (key) {
+              selectFieldHighlight(key, targetEl);
+            }
+          });
+        }
+      });
     }
 
     // Zoom and Lupa Functions
@@ -3345,17 +3505,16 @@
             
             // Capture updated zones (relative percentages)
             const zonesToSave = {};
-            const standardKeys = ['cuit', 'pos', 'number', 'date', 'neto', 'iva', 'total', 'perceptions'];
-            standardKeys.forEach(k => {
-              if (mappedHighlights[k]) {
+            for (const [k, box] of Object.entries(mappedHighlights)) {
+              if (box) {
                 zonesToSave[k] = {
-                  x: Number(mappedHighlights[k].x.toFixed(5)),
-                  y: Number(mappedHighlights[k].y.toFixed(5)),
-                  w: Number(mappedHighlights[k].w.toFixed(5)),
-                  h: Number(mappedHighlights[k].h.toFixed(5))
+                  x: Number(box.x.toFixed(5)),
+                  y: Number(box.y.toFixed(5)),
+                  w: Number(box.w.toFixed(5)),
+                  h: Number(box.h.toFixed(5))
                 };
               }
-            });
+            }
             rules.zones = zonesToSave;
             rulesChanged = true; // Always save rules so that custom zones persist
             
@@ -3496,17 +3655,16 @@
 
         // Capture updated zones (relative percentages)
         const zonesToSave = {};
-        const standardKeys = ['cuit', 'pos', 'number', 'date', 'neto', 'iva', 'total', 'perceptions'];
-        standardKeys.forEach(k => {
-          if (mappedHighlights[k]) {
+        for (const [k, box] of Object.entries(mappedHighlights)) {
+          if (box) {
             zonesToSave[k] = {
-              x: Number(mappedHighlights[k].x.toFixed(5)),
-              y: Number(mappedHighlights[k].y.toFixed(5)),
-              w: Number(mappedHighlights[k].w.toFixed(5)),
-              h: Number(mappedHighlights[k].h.toFixed(5))
+              x: Number(box.x.toFixed(5)),
+              y: Number(box.y.toFixed(5)),
+              w: Number(box.w.toFixed(5)),
+              h: Number(box.h.toFixed(5))
             };
           }
-        });
+        }
         rules.zones = zonesToSave;
 
         const response = await fetch(config.guardarReglaOcrUrl, {
@@ -3675,6 +3833,14 @@
               showAlert("Proveedor seleccionado con éxito.", "success");
               if (match.ivaCondition) {
                 selectInvoiceTypeByIva(match.ivaCondition);
+              }
+
+              // Pre-select jurisdiction based on supplier's province
+              selectJurisdiccionBySupplier(match);
+              
+              // Reprocess OCR rules
+              if (cuitRaw) {
+                reprocessOcrWithSupplierRules(cuitRaw);
               }
             });
 
@@ -3863,13 +4029,17 @@
           ivaCondition: selectedIvaText,
           direccion: address,
           address: address,
-          direccionCompleta: `${address}, ${city}`
+          direccionCompleta: `${address}, ${city}`,
+          provinciaId: parseInt(provinceId, 10)
         };
         
         // Auto-select invoice type based on the saved IVA condition in the modal
         if (selectedIvaText) {
           selectInvoiceTypeByIva(selectedIvaText);
         }
+
+        // Pre-select jurisdiction based on new supplier's province
+        selectJurisdiccionBySupplier(selectedSupplierObj);
         
         // Update lastOcrResult cuit to trigger learning and fetch rules
         if (lastOcrResult) {
@@ -4147,6 +4317,136 @@
           return parseFloat(clean) || 0;
         }
       }
+    }
+
+    function parseLineItemsMath(line) {
+      const cleanedLine = line.trim();
+      const numRegex = /[$sS]?\s*(-?\d+(?:[\.,]\d+)*%?)\b/g;
+      let match;
+      const numbers = [];
+      while ((match = numRegex.exec(cleanedLine)) !== null) {
+        const raw = match[1];
+        const val = cleanOcrAmount(raw);
+        const isPercent = raw.includes('%');
+        numbers.push({
+          raw: raw,
+          val: val,
+          isPercent: isPercent,
+          index: match.index,
+          length: match[0].length
+        });
+      }
+
+      if (numbers.length === 0) return null;
+
+      let subtotalCandidateIdx = numbers.length - 1;
+      while (subtotalCandidateIdx >= 0 && numbers[subtotalCandidateIdx].isPercent) {
+        subtotalCandidateIdx--;
+      }
+      if (subtotalCandidateIdx < 0) return null;
+
+      const subtotal = numbers[subtotalCandidateIdx].val;
+      let price = subtotal;
+      let qty = 1;
+      let discount = 0;
+      let usedIndices = [subtotalCandidateIdx];
+
+      const candidates = numbers.map((n, idx) => ({ ...n, idx })).filter(n => n.idx !== subtotalCandidateIdx);
+      let foundMath = false;
+
+      // 1. Check Q * P = subtotal
+      for (let i = 0; i < candidates.length; i++) {
+        for (let j = 0; j < candidates.length; j++) {
+          if (i === j) continue;
+          const c1 = candidates[i];
+          const c2 = candidates[j];
+          if (Math.abs(c1.val * c2.val - subtotal) < Math.max(2.0, subtotal * 0.02)) {
+            if (Number.isInteger(c1.val) || c1.val < c2.val) {
+              qty = c1.val;
+              price = c2.val;
+            } else {
+              qty = c2.val;
+              price = c1.val;
+            }
+            usedIndices.push(c1.idx, c2.idx);
+            foundMath = true;
+            break;
+          }
+        }
+        if (foundMath) break;
+      }
+
+      // 2. Check Q * P * (1 - D/100) = subtotal
+      if (!foundMath && candidates.length >= 3) {
+        for (let i = 0; i < candidates.length; i++) {
+          for (let j = 0; j < candidates.length; j++) {
+            for (let k = 0; k < candidates.length; k++) {
+              if (i === j || j === k || i === k) continue;
+              const c1 = candidates[i];
+              const c2 = candidates[j];
+              const c3 = candidates[k];
+              if (c3.val > 0 && c3.val <= 100) {
+                const expected = c1.val * c2.val * (1 - c3.val / 100);
+                if (Math.abs(expected - subtotal) < Math.max(2.0, subtotal * 0.02)) {
+                  qty = c1.val;
+                  price = c2.val;
+                  discount = c3.val;
+                  usedIndices.push(c1.idx, c2.idx, c3.idx);
+                  foundMath = true;
+                  break;
+                }
+              }
+            }
+            if (foundMath) break;
+          }
+          if (foundMath) break;
+        }
+      }
+
+      // 3. Fallback: rightmost candidate before subtotal is Price
+      if (!foundMath && candidates.length >= 1) {
+        const rightToLeft = [...candidates].sort((a, b) => b.idx - a.idx);
+        const c = rightToLeft[0];
+        
+        if (rightToLeft.length >= 2) {
+          const qCand = rightToLeft[1];
+          qty = qCand.val;
+          price = c.val;
+          usedIndices.push(c.idx, qCand.idx);
+          foundMath = true;
+        } else {
+          price = c.val;
+          qty = subtotal / price;
+          if (qty >= 0.1 && qty <= 1000 && (Math.abs(qty - Math.round(qty)) < 0.01 || Math.abs(qty * 2 - Math.round(qty * 2)) < 0.01)) {
+            qty = Math.round(qty * 2) / 2;
+          } else {
+            qty = 1;
+          }
+          usedIndices.push(c.idx);
+          foundMath = true;
+        }
+      }
+
+      let conceptText = cleanedLine;
+      const sortedUsed = [...usedIndices].sort((a, b) => numbers[b].index - numbers[a].index);
+      sortedUsed.forEach(idx => {
+        const num = numbers[idx];
+        conceptText = conceptText.substring(0, num.index) + " " + conceptText.substring(num.index + num.length);
+      });
+
+      conceptText = conceptText.replace(/\s+/g, ' ').trim();
+      conceptText = conceptText.replace(/^[-/xX\*#\s]+|[-/xX\*#\s]+$/g, '').trim();
+
+      if (!conceptText || !/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(conceptText)) {
+        return null;
+      }
+
+      return {
+        concepto: conceptText,
+        cantidad: qty,
+        precioUnitario: price,
+        descuento: discount > 0 ? discount : ""
+      };
     }
 
     function parseOcrText(text, rules = null, annotations = null) {
@@ -4441,84 +4741,33 @@
       const finalItemIgnore = [...lineIgnoreKeywords, ...customIgnore];
 
       ocrLines.forEach(line => {
-        const lineTrimmed = line.trim();
-        const lineLower = lineTrimmed.toLowerCase();
-        
-        // Skip header/footer lines using ignore keywords
+        const lineLower = line.toLowerCase();
         const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
         if (shouldIgnore) return;
 
-        // Extract one or two trailing amounts from the end of the line
-        const twoAmountsRegex = /\s+[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s+[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/;
-        const oneAmountRegex = /\s+[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/;
-
-        let restOfLine = lineTrimmed;
-        let val1 = 0;
-        let val2 = 0;
-
-        const twoMatch = lineTrimmed.match(twoAmountsRegex);
-        if (twoMatch) {
-          val1 = cleanOcrAmount(twoMatch[1]);
-          val2 = cleanOcrAmount(twoMatch[2]);
-          restOfLine = lineTrimmed.substring(0, twoMatch.index).trim();
-        } else {
-          const oneMatch = lineTrimmed.match(oneAmountRegex);
-          if (oneMatch) {
-            val1 = cleanOcrAmount(oneMatch[1]);
-            restOfLine = lineTrimmed.substring(0, oneMatch.index).trim();
-          }
-        }
-
-        if (val1 === 0 && val2 === 0) {
-          return; // Not a valid item line
-        }
-
-        // Parse quantity and concept from restOfLine
-        const qtyRegex = /^(\d+(?:[\.,]\d+)?)\s*(?:[xX\*]|\s)\s*(.*)$/;
-        const qtyMatch = restOfLine.match(qtyRegex);
-
-        let qty = 1;
-        let concepto = restOfLine;
-
-        if (qtyMatch) {
-          qty = parseFloat(qtyMatch[1].replace(',', '.'));
-          concepto = qtyMatch[2].trim();
-        }
-
-        // Verify that the concept is not empty and contains letters
-        if (!concepto || !/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(concepto)) {
-          return;
-        }
-
-        let unitPrice = val1;
-        if (val2 > 0) {
-          if (Math.abs(qty * val1 - val2) < 2.0) {
-            unitPrice = val1;
-          } else if (Math.abs(qty * val2 - val1) < 2.0) {
-            unitPrice = val2;
+        const mathItem = parseLineItemsMath(line);
+        if (mathItem) {
+          const concepto = mathItem.concepto;
+          const val = mathItem.precioUnitario * mathItem.cantidad;
+          if (concepto.toLowerCase().includes("percepcion") || concepto.toLowerCase().includes("percepción") || concepto.toLowerCase().includes("perc.")) {
+            let detectedTaxType = "iibb";
+            if (concepto.toLowerCase().includes("iva")) detectedTaxType = "iva";
+            else if (concepto.toLowerCase().includes("gan") || concepto.toLowerCase().includes("ganancia")) detectedTaxType = "ganancias";
+            else if (concepto.toLowerCase().includes("int") || concepto.toLowerCase().includes("interno")) detectedTaxType = "internos";
+            
+            parsedPerceptions.push({
+              taxType: detectedTaxType,
+              rawLabel: concepto,
+              importe: val
+            });
           } else {
-            unitPrice = val2 / qty;
+            parsedItems.push({
+              concepto: concepto,
+              cantidad: mathItem.cantidad,
+              precioUnitario: mathItem.precioUnitario,
+              descuento: mathItem.descuento
+            });
           }
-        }
-
-        // Exclude perceptions masquerading as items
-        if (concepto.toLowerCase().includes("percepcion") || concepto.toLowerCase().includes("percepción") || concepto.toLowerCase().includes("perc.")) {
-          let detectedTaxType = "iibb";
-          if (concepto.toLowerCase().includes("iva")) detectedTaxType = "iva";
-          else if (concepto.toLowerCase().includes("gan") || concepto.toLowerCase().includes("ganancia")) detectedTaxType = "ganancias";
-          else if (concepto.toLowerCase().includes("int") || concepto.toLowerCase().includes("interno")) detectedTaxType = "internos";
-          
-          parsedPerceptions.push({
-            taxType: detectedTaxType,
-            rawLabel: concepto,
-            importe: val2 || val1
-          });
-        } else {
-          parsedItems.push({
-            concepto: concepto,
-            cantidad: qty,
-            precioUnitario: unitPrice
-          });
         }
       });
 
@@ -4723,7 +4972,7 @@
         data.items.forEach((item, idx) => {
           const supplierIva = String(supplierInput.dataset.iva || "").trim().toLowerCase();
           const defaultAlic = supplierIva.includes("no oficial") ? "1" : "3";
-          createRow(item.concepto, item.cantidad, item.precioUnitario, defaultAlic, "", idx);
+          createRow(item.concepto, item.cantidad, item.precioUnitario, defaultAlic, item.descuento || "", idx);
         });
       }
 
@@ -4787,6 +5036,9 @@
           if (supplier.ivaCondition) {
             selectInvoiceTypeByIva(supplier.ivaCondition);
           }
+          
+          // Pre-select jurisdiction based on supplier's province
+          selectJurisdiccionBySupplier(supplier);
         } else {
           showAlert(`El CUIT ${cuit} no está registrado en YiQi ERP. Abre "+ Nuevo" para buscar e ingresar el proveedor.`, "info");
         }
