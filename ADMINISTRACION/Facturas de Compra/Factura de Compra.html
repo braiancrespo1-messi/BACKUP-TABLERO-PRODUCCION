@@ -1890,24 +1890,11 @@
         ocrIndex = currentRows.length;
       }
       
-      if (ocrIndex !== null && !mappedHighlights[`item-${ocrIndex}`]) {
-        mappedHighlights[`item-${ocrIndex}`] = {
-          x: 0.08,
-          y: Math.min(0.85, 0.35 + (ocrIndex * 0.07)),
-          w: 0.84,
-          h: 0.06
-        };
-        drawHighlights();
-      }
-      
       const tr = document.createElement('tr');
       tr.dataset.ocrIndex = ocrIndex;
       
       const highlightItem = () => {
-        const idx = tr.dataset.ocrIndex;
-        if (idx !== undefined && idx !== null) {
-          setActiveHighlight(`item-${idx}`);
-        }
+        setActiveHighlight('items');
       };
       
       const clearHighlightItem = () => {
@@ -2516,12 +2503,27 @@
       if (rules && rules.zones) {
         for (const [key, zone] of Object.entries(rules.zones)) {
           if (zone) {
-            mappedHighlights[key] = {
-              x: parseFloat(zone.x),
-              y: parseFloat(zone.y),
-              w: parseFloat(zone.w),
-              h: parseFloat(zone.h)
-            };
+            const targetKey = key.startsWith('item-') ? 'items' : key;
+            if (targetKey === 'items' && mappedHighlights['items']) {
+              // Union bounding box for backward compatibility
+              const x1 = Math.min(mappedHighlights['items'].x, parseFloat(zone.x));
+              const y1 = Math.min(mappedHighlights['items'].y, parseFloat(zone.y));
+              const x2 = Math.max(mappedHighlights['items'].x + mappedHighlights['items'].w, parseFloat(zone.x) + parseFloat(zone.w));
+              const y2 = Math.max(mappedHighlights['items'].y + mappedHighlights['items'].h, parseFloat(zone.y) + parseFloat(zone.h));
+              mappedHighlights['items'] = {
+                x: x1,
+                y: y1,
+                w: x2 - x1,
+                h: y2 - y1
+              };
+            } else {
+              mappedHighlights[targetKey] = {
+                x: parseFloat(zone.x),
+                y: parseFloat(zone.y),
+                w: parseFloat(zone.w),
+                h: parseFloat(zone.h)
+              };
+            }
           }
         }
       }
@@ -2552,6 +2554,7 @@
         pos: { x: 0.6, y: 0.05, w: 0.15, h: 0.05 },
         number: { x: 0.77, y: 0.05, w: 0.18, h: 0.05 },
         date: { x: 0.6, y: 0.12, w: 0.35, h: 0.05 },
+        items: { x: 0.08, y: 0.35, w: 0.84, h: 0.40 }, // Unified items block
         neto: { x: 0.55, y: 0.8, w: 0.4, h: 0.04 },
         iva: { x: 0.55, y: 0.85, w: 0.4, h: 0.04 },
         perceptions: { x: 0.1, y: 0.8, w: 0.45, h: 0.12 },
@@ -2564,23 +2567,15 @@
         }
       }
 
-      // 4. Dynamic detail items highlights
-      if (data.items) {
-        data.items.forEach((item, idx) => {
-          if (!mappedHighlights[`item-${idx}`]) {
-            const box = findPhraseBoundingBox(item.concepto);
-            if (box) {
-              mappedHighlights[`item-${idx}`] = box;
-            } else {
-              mappedHighlights[`item-${idx}`] = {
-                x: 0.08,
-                y: Math.min(0.85, 0.35 + (idx * 0.07)),
-                w: 0.84,
-                h: 0.06
-              };
-            }
+      // 4. Try to adjust items quadrant if first item's concept is found in OCR (heuristics)
+      if (data.items && data.items.length > 0 && mappedHighlights['items']) {
+        if (!rules || !rules.zones || !rules.zones.items) {
+          const firstBox = findPhraseBoundingBox(data.items[0].concepto);
+          if (firstBox) {
+            mappedHighlights['items'].y = firstBox.y;
+            mappedHighlights['items'].h = Math.min(0.55, Math.max(0.15, data.items.length * 0.06));
           }
-        });
+        }
       }
       console.log("Coordenadas mapeadas para resaltado (normalizadas):", mappedHighlights);
     }
@@ -2592,6 +2587,10 @@
         if (activeEl.id === 'invoice-pos') return 'pos';
         if (activeEl.id === 'invoice-number') return 'number';
         if (activeEl.id === 'date-emission') return 'date';
+        
+        if (activeEl.closest('#items-tbody')) {
+          return 'items';
+        }
         
         const tr = activeEl.closest('tr');
         if (tr) {
@@ -2711,6 +2710,16 @@
             if (btnAddPerception) {
               btnAddPerception.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+          }
+        }
+      }
+      else if (key === 'items') {
+        const rows = document.getElementById('items-tbody').querySelectorAll('tr');
+        if (rows.length > 0) {
+          const firstConceptInput = rows[0].querySelector('.item-concept');
+          if (firstConceptInput) {
+            firstConceptInput.focus();
+            firstConceptInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }
       }
@@ -2885,7 +2894,9 @@
         
         // Label Text
         let labelText = key.toUpperCase();
-        if (labelText.startsWith('ITEM-')) {
+        if (labelText === 'ITEMS') {
+          labelText = 'Detalle / Ítems';
+        } else if (labelText.startsWith('ITEM-')) {
           const idx = parseInt(labelText.split('-')[1], 10);
           labelText = `Ítem ${idx + 1}`;
         } else if (labelText === 'POS') {
@@ -3051,6 +3062,20 @@
       if (perceptionsTitle) {
         perceptionsTitle.style.cursor = 'pointer';
         perceptionsTitle.addEventListener('click', () => selectFieldHighlight('perceptions'));
+      }
+
+      const itemsTitle = document.querySelector('span.card-title i[data-lucide="shopping-cart"]')?.parentElement;
+      if (itemsTitle) {
+        itemsTitle.style.cursor = 'pointer';
+        itemsTitle.addEventListener('mouseenter', () => {
+          if (getFocusedFieldKey()) return;
+          setActiveHighlight('items');
+        });
+        itemsTitle.addEventListener('mouseleave', () => {
+          if (getFocusedFieldKey()) return;
+          clearActiveHighlight();
+        });
+        itemsTitle.addEventListener('click', () => selectFieldHighlight('items'));
       }
 
       // Add click listeners to form labels to lock field highlights
@@ -4703,12 +4728,20 @@
         const lines = perceptionsText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const zonePerceptions = [];
         lines.forEach(line => {
+          const lineLower = line.toLowerCase();
+          // Filter out lines that do not contain perception or withholding keywords
+          const isPerceptionLine = lineLower.includes("percep") || 
+                                   lineLower.includes("perc") || 
+                                   lineLower.includes("retenc") || 
+                                   lineLower.includes("ret.") || 
+                                   lineLower.includes("ret ");
+          if (!isPerceptionLine) return;
+
           const amtMatch = line.match(/[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/) || line.match(/(\d+(?:[\.,]\d+)*)\b/);
           if (amtMatch) {
             const val = cleanOcrAmount(amtMatch[1]);
             if (val > 0) {
               let detectedTaxType = "iibb";
-              const lineLower = line.toLowerCase();
               if (lineLower.includes("iva") || lineLower.includes("i.v.a.")) detectedTaxType = "iva";
               else if (lineLower.includes("gan") || lineLower.includes("ganancia")) detectedTaxType = "ganancias";
               else if (lineLower.includes("int") || lineLower.includes("interno")) detectedTaxType = "internos";
@@ -4741,30 +4774,44 @@
       const finalItemIgnore = [...lineIgnoreKeywords, ...customIgnore];
 
       let itemLines = [];
-      const itemZoneKeys = rules && rules.zones 
-        ? Object.keys(rules.zones).filter(k => k.startsWith('item-')).sort((a, b) => {
-            const idxA = parseInt(a.split('-')[1], 10);
-            const idxB = parseInt(b.split('-')[1], 10);
-            return idxA - idxB;
-          })
-        : [];
-
-      if (itemZoneKeys.length > 0 && annotations && annotations.length > 0) {
-        console.log("Restringiendo extracción de ítems a las zonas de plantilla:", itemZoneKeys);
-        itemZoneKeys.forEach(key => {
-          const zone = rules.zones[key];
-          const zoneText = getTextFromZone(zone, annotations);
-          if (zoneText) {
-            zoneText.split('\n').forEach(line => {
-              const trimmed = line.trim();
-              if (trimmed && !itemLines.includes(trimmed)) {
-                itemLines.push(trimmed);
-              }
-            });
-          }
-        });
+      if (rules && rules.zones && rules.zones.items && annotations && annotations.length > 0) {
+        console.log("Restringiendo extracción de ítems a la zona unificada 'items'");
+        const zoneText = getTextFromZone(rules.zones.items, annotations);
+        if (zoneText) {
+          zoneText.split('\n').forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed && !itemLines.includes(trimmed)) {
+              itemLines.push(trimmed);
+            }
+          });
+        }
       } else {
-        itemLines = ocrLines;
+        // Fallback for old templates containing item-X
+        const itemZoneKeys = rules && rules.zones 
+          ? Object.keys(rules.zones).filter(k => k.startsWith('item-')).sort((a, b) => {
+              const idxA = parseInt(a.split('-')[1], 10);
+              const idxB = parseInt(b.split('-')[1], 10);
+              return idxA - idxB;
+            })
+          : [];
+
+        if (itemZoneKeys.length > 0 && annotations && annotations.length > 0) {
+          console.log("Restringiendo extracción de ítems a las zonas de plantilla antiguas:", itemZoneKeys);
+          itemZoneKeys.forEach(key => {
+            const zone = rules.zones[key];
+            const zoneText = getTextFromZone(zone, annotations);
+            if (zoneText) {
+              zoneText.split('\n').forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed && !itemLines.includes(trimmed)) {
+                  itemLines.push(trimmed);
+                }
+              });
+            }
+          });
+        } else {
+          itemLines = ocrLines;
+        }
       }
 
       itemLines.forEach(line => {
