@@ -4740,7 +4740,34 @@
       const customIgnore = (rules && rules.ignoreKeywords) || [];
       const finalItemIgnore = [...lineIgnoreKeywords, ...customIgnore];
 
-      ocrLines.forEach(line => {
+      let itemLines = [];
+      const itemZoneKeys = rules && rules.zones 
+        ? Object.keys(rules.zones).filter(k => k.startsWith('item-')).sort((a, b) => {
+            const idxA = parseInt(a.split('-')[1], 10);
+            const idxB = parseInt(b.split('-')[1], 10);
+            return idxA - idxB;
+          })
+        : [];
+
+      if (itemZoneKeys.length > 0 && annotations && annotations.length > 0) {
+        console.log("Restringiendo extracción de ítems a las zonas de plantilla:", itemZoneKeys);
+        itemZoneKeys.forEach(key => {
+          const zone = rules.zones[key];
+          const zoneText = getTextFromZone(zone, annotations);
+          if (zoneText) {
+            zoneText.split('\n').forEach(line => {
+              const trimmed = line.trim();
+              if (trimmed && !itemLines.includes(trimmed)) {
+                itemLines.push(trimmed);
+              }
+            });
+          }
+        });
+      } else {
+        itemLines = ocrLines;
+      }
+
+      itemLines.forEach(line => {
         const lineLower = line.toLowerCase();
         const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
         if (shouldIgnore) return;
@@ -4779,154 +4806,154 @@
       } else {
         // --- TRIPLE-TIERED ITEMS PARSING STRATEGY ---
         const ignoreKeywords = ["total", "subtotal", "neto", "iva", "i.v.a.", "percep", "perc.", "cae", "cuit", "ing. brutos", "inicio de actividad", "tel:", "cliente:", "dirección:", "localidad:", "c.u.i.t.", "precio", "descripción", "descripcion", "cantidad", "concepto", "pago", "vencimiento", "fecha", "nro", "nº", "número", "factura", "original", "duplicado", "remito", "domicilio", "dto", "dto.", "descuento", "bonif", "bonificacion", "bonificación"];
-      const customIgnore = (rules && rules.ignoreKeywords) || [];
-      const finalItemIgnore = [...ignoreKeywords, ...customIgnore];
+        const customIgnore = (rules && rules.ignoreKeywords) || [];
+        const finalItemIgnore = [...ignoreKeywords, ...customIgnore];
 
-      // Collect all single amount lines with original line index
-      const amounts = [];
-      ocrLines.forEach((line, idx) => {
-        // Only collect item amounts before the first footer label
-        if (labelLines.length === 0 || idx < labelLines[0].lineIdx) {
-          const amtMatch = line.match(/^\s*[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/);
-          if (amtMatch) {
-            const amtVal = cleanOcrAmount(amtMatch[1]);
-            if (amtVal > 0) {
-              amounts.push({ val: amtVal, lineIdx: idx });
-            }
-          }
-        }
-      });
-
-      const amountValues = amounts.map(a => a.val);
-
-      // Tier 1: Quantity Multiplication Check (for standard tabular layout)
-      const qtyItemLines = [];
-      ocrLines.forEach(line => {
-        const lineTrimmed = line.trim();
-        const qtyMatch = lineTrimmed.match(/^\s*(\d+(?:[\.,]\d+)?)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ].*)$/);
-        if (qtyMatch) {
-          const lineLower = lineTrimmed.toLowerCase();
-          const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
-          if (!shouldIgnore) {
-            qtyItemLines.push({
-              concepto: qtyMatch[2].trim(),
-              cantidad: parseFloat(qtyMatch[1].replace(",", ".")),
-              rawLine: lineTrimmed
-            });
-          }
-        }
-      });
-
-      let tier1Success = false;
-      if (qtyItemLines.length > 0 && amountValues.length >= qtyItemLines.length * 2) {
-        const tempItems = [];
-        let amtIdx = 0;
-        let paired = true;
-        for (let i = 0; i < qtyItemLines.length; i++) {
-          const item = qtyItemLines[i];
-          const p1 = amountValues[amtIdx];
-          const p2 = amountValues[amtIdx + 1];
-          if (p1 && p2 && Math.abs(p2 - (item.cantidad * p1)) < 1.5) {
-            tempItems.push({
-              concepto: item.concepto,
-              cantidad: item.cantidad,
-              precioUnitario: p1
-            });
-            amtIdx += 2;
-          } else {
-            paired = false;
-            break;
-          }
-        }
-        if (paired && tempItems.length === qtyItemLines.length) {
-          data.items = tempItems;
-          tier1Success = true;
-        }
-      }
-
-      // Tier 2: Net Sum Matching
-      let tier2Success = false;
-      if (!tier1Success) {
-        const targetNet = data.neto || (data.total - data.iva) || 0;
-        if (targetNet > 0 && amounts.length > 0) {
-          let matchedSubsegment = null;
-          for (let len = 1; len <= amounts.length; len++) {
-            for (let start = 0; start <= amounts.length - len; start++) {
-              const sub = amounts.slice(start, start + len);
-              const sum = sub.reduce((a, b) => a + b.val, 0);
-              if (Math.abs(sum - targetNet) < 2.0) {
-                matchedSubsegment = { start, len, sum };
-                break;
+        // Collect all single amount lines with original line index
+        const amounts = [];
+        itemLines.forEach((line, idx) => {
+          // Only collect item amounts before the first footer label
+          if (labelLines.length === 0 || idx < labelLines[0].lineIdx) {
+            const amtMatch = line.match(/^\s*[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/);
+            if (amtMatch) {
+              const amtVal = cleanOcrAmount(amtMatch[1]);
+              if (amtVal > 0) {
+                amounts.push({ val: amtVal, lineIdx: idx });
               }
             }
-            if (matchedSubsegment) break;
           }
+        });
 
-          if (matchedSubsegment) {
-            const itemAmounts = amounts.slice(matchedSubsegment.start, matchedSubsegment.start + matchedSubsegment.len);
-            const firstAmountLineIdx = itemAmounts[0].lineIdx;
+        const amountValues = amounts.map(a => a.val);
 
-            const descCandidates = [];
-            ocrLines.forEach((line, idx) => {
-              if (idx < firstAmountLineIdx) {
-                const lineTrimmed = line.trim();
-                if (/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(lineTrimmed)) {
-                  const lineLower = lineTrimmed.toLowerCase();
-                  const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
-                  if (!shouldIgnore) {
-                    descCandidates.push(lineTrimmed);
-                  }
+        // Tier 1: Quantity Multiplication Check (for standard tabular layout)
+        const qtyItemLines = [];
+        itemLines.forEach(line => {
+          const lineTrimmed = line.trim();
+          const qtyMatch = lineTrimmed.match(/^\s*(\d+(?:[\.,]\d+)?)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ].*)$/);
+          if (qtyMatch) {
+            const lineLower = lineTrimmed.toLowerCase();
+            const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
+            if (!shouldIgnore) {
+              qtyItemLines.push({
+                concepto: qtyMatch[2].trim(),
+                cantidad: parseFloat(qtyMatch[1].replace(",", ".")),
+                rawLine: lineTrimmed
+              });
+            }
+          }
+        });
+
+        let tier1Success = false;
+        if (qtyItemLines.length > 0 && amountValues.length >= qtyItemLines.length * 2) {
+          const tempItems = [];
+          let amtIdx = 0;
+          let paired = true;
+          for (let i = 0; i < qtyItemLines.length; i++) {
+            const item = qtyItemLines[i];
+            const p1 = amountValues[amtIdx];
+            const p2 = amountValues[amtIdx + 1];
+            if (p1 && p2 && Math.abs(p2 - (item.cantidad * p1)) < 1.5) {
+              tempItems.push({
+                concepto: item.concepto,
+                cantidad: item.cantidad,
+                precioUnitario: p1
+              });
+              amtIdx += 2;
+            } else {
+              paired = false;
+              break;
+            }
+          }
+          if (paired && tempItems.length === qtyItemLines.length) {
+            data.items = tempItems;
+            tier1Success = true;
+          }
+        }
+
+        // Tier 2: Net Sum Matching
+        let tier2Success = false;
+        if (!tier1Success) {
+          const targetNet = data.neto || (data.total - data.iva) || 0;
+          if (targetNet > 0 && amounts.length > 0) {
+            let matchedSubsegment = null;
+            for (let len = 1; len <= amounts.length; len++) {
+              for (let start = 0; start <= amounts.length - len; start++) {
+                const sub = amounts.slice(start, start + len);
+                const sum = sub.reduce((a, b) => a + b.val, 0);
+                if (Math.abs(sum - targetNet) < 2.0) {
+                  matchedSubsegment = { start, len, sum };
+                  break;
                 }
               }
-            });
+              if (matchedSubsegment) break;
+            }
 
-            const len = matchedSubsegment.len;
-            if (descCandidates.length >= len) {
-              const selectedDescs = descCandidates.slice(-len);
-              for (let i = 0; i < len; i++) {
-                data.items.push({
-                  concepto: selectedDescs[i],
-                  cantidad: 1,
-                  precioUnitario: itemAmounts[i].val
+            if (matchedSubsegment) {
+              const itemAmounts = amounts.slice(matchedSubsegment.start, matchedSubsegment.start + matchedSubsegment.len);
+              const firstAmountLineIdx = itemAmounts[0].lineIdx;
+
+              const descCandidates = [];
+              itemLines.forEach((line, idx) => {
+                if (idx < firstAmountLineIdx) {
+                  const lineTrimmed = line.trim();
+                  if (/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(lineTrimmed)) {
+                    const lineLower = lineTrimmed.toLowerCase();
+                    const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
+                    if (!shouldIgnore) {
+                      descCandidates.push(lineTrimmed);
+                    }
+                  }
+                }
+              });
+
+              const len = matchedSubsegment.len;
+              if (descCandidates.length >= len) {
+                const selectedDescs = descCandidates.slice(-len);
+                for (let i = 0; i < len; i++) {
+                  data.items.push({
+                    concepto: selectedDescs[i],
+                    cantidad: 1,
+                    precioUnitario: itemAmounts[i].val
+                  });
+                }
+                tier2Success = true;
+              }
+            }
+          }
+
+          // Fallback Tier 3: simple 1-to-1 fallback
+          if (!tier2Success) {
+            const descs = [];
+            itemLines.forEach(line => {
+              const lineTrimmed = line.trim();
+              const isAmt = lineTrimmed.match(/^\s*[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/);
+              if (isAmt) return;
+
+              if (/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(lineTrimmed)) {
+                const lineLower = lineTrimmed.toLowerCase();
+                const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
+                if (shouldIgnore) return;
+
+                descs.push({
+                  concepto: lineTrimmed,
+                  cantidad: 1
                 });
               }
-              tier2Success = true;
+            });
+
+            if (descs.length > 0 && amountValues.length > 0) {
+              const alignLength = Math.min(descs.length, amountValues.length);
+              for (let i = 0; i < alignLength; i++) {
+                data.items.push({
+                  concepto: descs[i].concepto,
+                  cantidad: descs[i].cantidad,
+                  precioUnitario: amountValues[i]
+                });
+              }
             }
           }
         }
-
-        // Fallback Tier 3: simple 1-to-1 fallback
-        if (!tier2Success) {
-          const descs = [];
-          ocrLines.forEach(line => {
-            const lineTrimmed = line.trim();
-            const isAmt = lineTrimmed.match(/^\s*[$sS]?\s*(\d+(?:[\.,]\d+)*(?:\s*[\.,\-~]+)?)\s*$/);
-            if (isAmt) return;
-
-            if (/[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(lineTrimmed)) {
-              const lineLower = lineTrimmed.toLowerCase();
-              const shouldIgnore = finalItemIgnore.some(kw => lineLower.includes(kw.toLowerCase()));
-              if (shouldIgnore) return;
-
-              descs.push({
-                concepto: lineTrimmed,
-                cantidad: 1
-              });
-            }
-          });
-
-          if (descs.length > 0 && amountValues.length > 0) {
-            const alignLength = Math.min(descs.length, amountValues.length);
-            for (let i = 0; i < alignLength; i++) {
-              data.items.push({
-                concepto: descs[i].concepto,
-                cantidad: descs[i].cantidad,
-                precioUnitario: amountValues[i]
-              });
-            }
-          }
-        }
-      }
       }
 
        // Fallback row
