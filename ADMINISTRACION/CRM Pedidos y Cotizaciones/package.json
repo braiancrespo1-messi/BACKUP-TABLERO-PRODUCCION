@@ -1,6 +1,6 @@
 {
   "name": "tmc-crm",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "TMC CRM - Cotizaciones y Pedidos",
   "main": "main.js",
   "scripts": {

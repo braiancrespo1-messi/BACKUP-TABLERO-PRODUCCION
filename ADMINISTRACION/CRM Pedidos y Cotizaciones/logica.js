@@ -7466,8 +7466,11 @@ function shareNewQuoteWhatsApp(client, docId, docDisplayNum, finalDocTotal) {
     const pdfUrl = `https://descargarreportepdf-vb5plcbgra-uc.a.run.app?reportId=137&instanceId=${docId}&schemaId=${CONFIG.SCHEMA_ID}`;
     message = message.replaceAll("{url_pdf}", pdfUrl);
     
-    const sellerObj = JSON.parse(localStorage.getItem("tmc_seller") || "null");
-    const sellerName = sellerObj ? (sellerObj.name || sellerObj.NOMBRE) : "vendedor";
+    let sellerName = client ? client.seller : null;
+    if (!sellerName) {
+        const sellerObj = JSON.parse(localStorage.getItem("tmc_seller") || "null");
+        sellerName = sellerObj ? (sellerObj.name || sellerObj.NOMBRE) : "vendedor";
+    }
     message = message.replaceAll("{vendedor}", sellerName);
     
     // Support {detalle_items} in the initial template if they want to use it
@@ -7501,6 +7504,9 @@ function compileSharedMessageText(activePlan, template, items = null) {
     result = result.replaceAll("{url_pdf}", pdfUrl);
     
     let sellerName = activePlan.vendedor || "";
+    if (!sellerName && selectedClient) {
+        sellerName = selectedClient.seller;
+    }
     if (!sellerName) {
         const sellerObj = JSON.parse(localStorage.getItem("tmc_seller") || "null");
         sellerName = sellerObj ? (sellerObj.name || sellerObj.NOMBRE) : "vendedor";
@@ -7555,7 +7561,13 @@ async function shareQuoteOrOrderWhatsApp(planId) {
     message = compileSharedMessageText(activePlan, message, cachedItems);
     
     const phone = selectedClient ? selectedClient.phone : "";
-    const sellerName = activePlan ? activePlan.vendedor : null;
+    let sellerName = activePlan ? activePlan.vendedor : null;
+    if (!sellerName && selectedClient) {
+        sellerName = selectedClient.seller;
+    }
+    if (!sellerName) {
+        sellerName = "Fábrica";
+    }
     sendWhatsAppMessage(phone, message, sellerName);
 }
 window.shareQuoteOrOrderWhatsApp = shareQuoteOrOrderWhatsApp;
