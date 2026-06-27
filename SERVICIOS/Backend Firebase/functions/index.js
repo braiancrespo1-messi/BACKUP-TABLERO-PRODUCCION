@@ -3050,14 +3050,19 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
 
     } else if (action === "getAltasPendientes") {
       // Remitos de compra pendientes de procesar (Paginación protegida)
-      const url = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=787&schemaId=1491&smartieId=2698";
+      const url = "https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=787&schemaId=1491&smartieId=2347";
       const headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token
       };
       try {
         const allRows = await fetchAllInstances(url, headers, {});
-        return res.json({ data: allRows, total: allRows.length });
+        // Excluir grupo bandejas enlozadas a nivel de proveedor (Lozametal/Enlozadas)
+        const filteredRows = allRows.filter(alt => {
+          const supplier = String(alt.CLI1_NOMBRE || alt.PROVEEDOR_NOMBRE || "").toLowerCase();
+          return !(supplier.includes("lozametal") || supplier.includes("enloza") || supplier.includes("loza") || supplier.includes("bandeja enlozada"));
+        });
+        return res.json({ data: filteredRows, total: filteredRows.length });
       } catch (err) {
         console.error("Error al obtener altas pendientes:", err);
         return res.status(500).json({ error: err.message });
@@ -3122,6 +3127,175 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
       if (!resp.ok) throw new Error(`YiQi GetChildList retornó HTTP ${resp.status}`);
       const data = await resp.json();
       return res.json(data);
+
+    } else if (action === "buscarPedidoPorNro") {
+      const { nroPedido } = req.body;
+      if (!nroPedido) {
+        return res.status(400).json({ error: "Falta el parametro nroPedido" });
+      }
+
+      const url = `https://api.yiqi.com.ar/api/instancesApi/GetList?entityId=1231&schemaId=1491&smartieId=2672&search=${encodeURIComponent(nroPedido)}&page=1&pageSize=5`;
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      };
+      try {
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ page: 1, pageSize: 5 })
+        });
+        if (!resp.ok) {
+          const errText = await resp.text();
+          throw new Error(`Error en YiQi GetList: ${errText}`);
+        }
+        const data = await resp.json();
+        return res.json(data);
+      } catch (err) {
+        console.error("Error al buscar pedido por nro:", err);
+        return res.status(500).json({ error: err.message });
+      }
+
+    } else if (action === "obtenerPedidoDetalle") {
+      const { pedidoId } = req.body;
+      if (!pedidoId) {
+        return res.status(400).json({ error: "Falta el parametro pedidoId" });
+      }
+
+      try {
+        const cookies = await getYiQiCookies();
+        const url = `https://me.yiqi.com.ar/api/public/PEDIDO/${pedidoId}?schemaId=1491`;
+        const resp = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Cookie": cookies
+          }
+        });
+        if (!resp.ok) {
+          const errText = await resp.text();
+          throw new Error(`YiQi PEDIDO detail retornó HTTP ${resp.status} - ${errText}`);
+        }
+        const data = await resp.json();
+        return res.json(data);
+      } catch (err) {
+        console.error("Error al obtener detalle de pedido:", err);
+        return res.status(500).json({ error: err.message });
+      }
+
+    } else if (action === "actualizarCalidadLoteTablero") {
+      const { sku, pedidoId, cant, cliente, revert, rejected } = req.body;
+      if (!sku) {
+        return res.status(400).json({ error: "Falta el parametro sku" });
+      }
+
+      try {
+        const db = admin.firestore();
+        
+        // 1. Buscar evento en calendar_events
+        const eventsSnap = await db.collection("calendar_events").get();
+        let matchedEvent = null;
+        let minId = Infinity;
+        
+        const cleanSku = String(sku).trim().toLowerCase();
+        const targetPedidoId = pedidoId ? String(pedidoId).trim().toLowerCase() : "stock";
+        
+        // Determinar estado de búsqueda para la transición
+        let targetStatus = "done";
+        if (revert && !rejected) {
+          targetStatus = "approved";
+        }
+        
+        eventsSnap.forEach(doc => {
+          const data = doc.data();
+          const evSku = String(data.sku || "").trim().toLowerCase();
+          const evPedidoId = String(data.pedidoId || "stock").trim().toLowerCase();
+          const evStatus = String(data.status || "").trim().toLowerCase();
+          
+          const isSkuMatch = evSku === cleanSku;
+          const isPedidoMatch = evPedidoId === targetPedidoId || 
+                                (targetPedidoId === "stock" && (evPedidoId === "stock" || evPedidoId === "calendario" || evPedidoId === ""));
+          
+          let isStatusMatch = false;
+          if (rejected) {
+            isStatusMatch = evStatus !== "rejected";
+          } else if (revert) {
+            isStatusMatch = evStatus === "approved";
+          } else {
+            isStatusMatch = evStatus === "done" || evStatus === "rejected";
+          }
+          
+          if (isSkuMatch && isPedidoMatch && isStatusMatch) {
+            const docIdNum = Number(doc.id);
+            if (!isNaN(docIdNum) && docIdNum < minId) {
+              minId = docIdNum;
+              matchedEvent = { id: doc.id, ...data };
+            }
+          }
+        });
+
+        if (!matchedEvent) {
+          return res.json({ 
+            success: false, 
+            warning: `No se encontró un lote coincidente en el tablero con SKU ${sku}, Pedido ${pedidoId || 'STOCK'}.`
+          });
+        }
+
+        const newStatus = rejected ? "rejected" : (revert ? "done" : "approved");
+        
+        // 2. Actualizar estado del evento
+        await db.collection("calendar_events").doc(matchedEvent.id).update({
+          status: newStatus
+        });
+
+        // 3. Registrar log de actividad
+        const now = new Date();
+        const localTimeStr = now.toLocaleTimeString("es-AR", {
+          timeZone: "America/Argentina/Buenos_Aires",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true
+        });
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        const localDateStr = `${day}/${month}/${year}`;
+
+        const logTimestamp = Date.now();
+        const logId = String(logTimestamp);
+        
+        const logAction = rejected ? "Rechazado Calidad" : (revert ? "Reversión Calidad" : "Aprobado Calidad");
+        const logType = rejected ? "danger" : (revert ? "warning" : "success");
+        const logDetails = rejected 
+          ? `${sku} (${cant || matchedEvent.qty || 0} u.) rechazado por Control de Calidad.`
+          : (revert 
+             ? `${sku} (${cant || matchedEvent.qty || 0} u.) revertido a Pendiente de Calidad.`
+             : `${sku} (${cant || matchedEvent.qty || 0} u.) aprobado por Control de Calidad.`);
+
+        const logDoc = {
+          app: "tablero",
+          date: localDateStr,
+          time: localTimeStr,
+          action: logAction,
+          type: logType,
+          details: logDetails,
+          pedidoId: pedidoId ? String(pedidoId) : null,
+          eventId: Number(matchedEvent.id),
+          cliente: cliente || null,
+          timestamp: rejected ? admin.firestore.FieldValue.serverTimestamp() : logTimestamp
+        };
+
+        await db.collection("tablero_activity_logs").doc(logId).set(logDoc);
+
+        return res.json({ 
+          success: true, 
+          eventId: Number(matchedEvent.id),
+          message: `Lote #${matchedEvent.id} actualizado a '${newStatus}' y log registrado.` 
+        });
+
+      } catch (err) {
+        console.error("Error en actualizarCalidadLoteTablero:", err);
+        return res.status(500).json({ error: err.message });
+      }
 
     } else if (action === "executeBulkTransition") {
       const { ids, transitionId, form, parentOrderId } = req.body;
@@ -5893,7 +6067,9 @@ exports.buscarProveedoresProxy = onRequest({ cors: true }, async (req, res) => {
         { field: "CLIE_MAIL" },
         { field: "CLIE_TE1" },
         { field: "COIV_NOMBRE" },
-        { field: "COIV_DESCRIPCION" }
+        { field: "COIV_DESCRIPCION" },
+        { field: "CLIE_LOCALIDAD" },
+        { field: "PROV_NOMBRE" }
       ],
       filters: [
         {
@@ -5934,7 +6110,9 @@ exports.buscarProveedoresProxy = onRequest({ cors: true }, async (req, res) => {
       domicilio: r.CLIE_DOMICILIO || "",
       mail: r.CLIE_MAIL || "",
       telefono: r.CLIE_TE1 || "",
-      ivaCondition: r.COIV_NOMBRE || r.COIV_DESCRIPCION || "S/D"
+      ivaCondition: r.COIV_NOMBRE || r.COIV_DESCRIPCION || "S/D",
+      provincia: r.PROV_NOMBRE || "",
+      localidad: r.CLIE_LOCALIDAD || ""
     }));
 
     return res.json({ success: true, data: suppliers });
@@ -5963,7 +6141,9 @@ exports.crearFacturaCompraProxy = onRequest({ cors: true }, async (req, res) => 
       jurisdiccionId,    // Jurisdicción (1: CABA, 2: BUENOS AIRES, 21: SANTA FE)
       items,             // Array de ítems
       perceptions,       // Array de percepciones [{ conceptId: 3, importe: 100.50 }]
-      autoTransition     // Boolean, si es true ejecuta las transiciones del workflow para ingresar/aprobar
+      autoTransition,    // Boolean, si es true ejecuta las transiciones del workflow para ingresar/aprobar
+      observaciones,     // Observaciones/comentarios (opcional)
+      file               // Archivo adjunto { base64: string, name: string, type: string } (opcional)
     } = req.body;
 
     if (!supplierId || !pos || !number || !items || !Array.isArray(items) || items.length === 0) {
@@ -5973,6 +6153,37 @@ exports.crearFacturaCompraProxy = onRequest({ cors: true }, async (req, res) => 
     console.log(`[Proxy] Iniciando creación de Factura de Compra: Proveedor=${supplierId}, Nro=${pos}-${number}`);
 
     const token = await getYiQiToken();
+
+    let uploadsValue = "";
+    if (file && file.base64 && file.name) {
+      console.log(`[Proxy] Subiendo archivo adjunto: ${file.name}...`);
+      try {
+        const formData = new FormData();
+        formData.append("schemaId", "1491");
+        
+        const fileBuffer = Buffer.from(file.base64, 'base64');
+        const blob = new Blob([fileBuffer], { type: file.type || "application/pdf" });
+        formData.append("2891", blob, file.name);
+
+        const uploadResp = await fetch("https://api.yiqi.com.ar/api/instancesApi/SaveFile", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        if (!uploadResp.ok) {
+          const errText = await uploadResp.text();
+          console.error(`[Proxy] Error de YiQi al subir archivo: HTTP ${uploadResp.status} - ${errText}`);
+        } else {
+          console.log(`[Proxy] Archivo adjunto subido correctamente.`);
+          uploadsValue = `2891=${encodeURIComponent(file.name)}`;
+        }
+      } catch (uploadErr) {
+        console.error("[Proxy] Error en el proceso de subida del archivo adjunto:", uploadErr);
+      }
+    }
 
     const formParams = [
       `2880=${supplierId}`,
@@ -5995,7 +6206,7 @@ exports.crearFacturaCompraProxy = onRequest({ cors: true }, async (req, res) => 
       `8393=`,
       `5996=`,
       `10973=`,
-      `11969=`
+      `11969=${encodeURIComponent(observaciones || "")}`
     ];
 
     const saveUrl = "https://api.yiqi.com.ar/api/instancesApi/Save";
@@ -6003,7 +6214,7 @@ exports.crearFacturaCompraProxy = onRequest({ cors: true }, async (req, res) => 
       schemaId: 1491,
       entityId: "660",
       form: formParams.join('&'),
-      uploads: "",
+      uploads: uploadsValue,
       parentId: null,
       childId: null
     };
@@ -6041,7 +6252,7 @@ exports.crearFacturaCompraProxy = onRequest({ cors: true }, async (req, res) => 
         CANTIDAD: Number(item.cantidad || 1),
         TIUN_ID_TIUN: null,
         PRECIO_UNITARIO: Number(item.precioUnitario || 0),
-        PORC_BONIFICACION: "",
+        PORC_BONIFICACION: item.porcBonificacion !== undefined && item.porcBonificacion !== null && item.porcBonificacion !== "" ? Number(item.porcBonificacion) : "",
         ALIV_ID_ALIV: String(item.alicuotaId || "1"),
         HOSO_ID_HOSO: null,
         CUOT_ID_CUOT: null,
@@ -6077,41 +6288,42 @@ exports.crearFacturaCompraProxy = onRequest({ cors: true }, async (req, res) => 
 
     console.log("[Proxy] Detalle de conceptos guardado correctamente.");
 
-    // Guardar percepciones si existen en childId 224
+    // Guardar percepciones si existen en childId 177 usando SaveChild secuencialmente
     if (perceptions && Array.isArray(perceptions) && perceptions.length > 0) {
-      console.log(`[Proxy] Guardando percepciones (${perceptions.length} filas)...`);
-      const perceptionsPayload = perceptions.map(p => {
-        return JSON.stringify({
-          id: "",
-          COPE_ID_COPE: String(p.conceptId),
-          IMPORTE: Number(p.importe)
-        });
-      });
-
-      const perpResp = await fetch(childUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          entityId: "660",
+      console.log(`[Proxy] Guardando percepciones (${perceptions.length} filas) en childId 177...`);
+      for (const p of perceptions) {
+        const perpUrl = `https://api.yiqi.com.ar/api/childrenApi/SaveChild?parentId=${invoiceId}&childId=`;
+        const formParamsPercep = [
+          `3144=${p.conceptId}`,
+          `3145=${p.importe}`
+        ];
+        const perpPayload = {
           schemaId: 1491,
-          childId: 224,
-          instanceId: String(invoiceId),
-          childInstances: perceptionsPayload,
-          append: false
-        })
-      });
+          entityId: "660",
+          form: formParamsPercep.join('&'),
+          uploads: "",
+          parentId: Number(invoiceId),
+          childId: 177
+        };
 
-      if (!perpResp.ok) {
-        const errText = await perpResp.text();
-        throw new Error(`Error de YiQi al guardar percepciones: HTTP ${perpResp.status} - ${errText}`);
-      }
+        const perpResp = await fetch(perpUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(perpPayload)
+        });
 
-      const perpData = await perpResp.json();
-      if (perpData && perpData.ok === false) {
-        throw new Error(`Error de validación al guardar percepciones: ${perpData.error || perpData.message}`);
+        if (!perpResp.ok) {
+          const errText = await perpResp.text();
+          throw new Error(`Error de YiQi al guardar percepción (Concepto ${p.conceptId}): HTTP ${perpResp.status} - ${errText}`);
+        }
+
+        const perpData = await perpResp.json();
+        if (perpData && perpData.ok === false) {
+          throw new Error(`Error de validación al guardar percepción (Concepto ${p.conceptId}): ${perpData.error || perpData.message}`);
+        }
       }
       console.log("[Proxy] Percepciones guardadas correctamente.");
     }
