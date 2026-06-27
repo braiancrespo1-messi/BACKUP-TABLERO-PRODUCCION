@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMC - Gestor de Órdenes de Producción</title>
+    <link rel="stylesheet" href="estilos.css?v=2.6.0">
+</head>
+<body>
+
+    <!-- PANTALLA DE CARGA (LOADING OVERLAY) -->
+    <div class="loading-overlay" id="app-loading-overlay">
+        <div class="loader-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div class="loader-spinner" id="loading-spinner"></div>
+            <h2 id="loading-title" style="margin: 0;">Cargando aplicación</h2>
+            <p id="loading-msg" style="margin: 0; max-width: 320px;">Estableciendo conexión con YiQi ERP...</p>
+            <button id="loading-settings-btn" class="btn btn-secondary" style="display: none; margin-top: 5px; gap: 8px; align-items: center; justify-content: center;" onclick="openSettingsModal(); hideLoadingOverlay();">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span>Configurar Ajustes</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo-container">
+            <img src="logo_tmc.png" alt="TMC Logo" onerror="this.src='../Tablero Operativo/logo_tmc.png'; this.onerror=function(){this.src='https://me.yiqi.com.ar/assets/images/logo-dark.png'}">
+            <div>
+                <div class="app-title">TMC S.A.</div>
+                <div style="font-size: 10px; color: var(--text-muted);">PRODUCCIÓN</div>
+            </div>
+            <div class="app-version" id="version-badge">v2.0.0</div>
+        </div>
+
+        <div class="sidebar-menu">
+            <div class="menu-title">Sectores de Fábrica</div>
+            <div id="sectors-list">
+                <!-- Dynamically loaded from sectors list -->
+            </div>
+
+            <div class="menu-title">Configuración</div>
+            <div class="menu-item" onclick="openSettingsModal()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span>Ajustes Locales</span>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="status-indicator">
+                <div class="status-dot" id="api-status-dot"></div>
+                <span id="api-status-text">Conectando...</span>
+            </div>
+            <div>Sesión: <span id="session-user" style="color:var(--text-primary)">-</span></div>
+            <div style="margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; display:flex; justify-content:space-between; align-items:center;">
+                <span>ERP Schema: 1491</span>
+                <button class="btn-icon" style="padding: 3px 6px; font-size: 10px;" onclick="forceAuthReset()">Reiniciar Token</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN APP AREA -->
+    <main class="main-content">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="header-title" id="active-sector-title">Sector Latas</div>
+                <div class="tab-nav">
+                    <button class="tab-btn active" id="tab-scheduler-btn" onclick="switchTab('scheduler')">Planificador Semanal</button>
+                    <button class="tab-btn" id="tab-list-btn" onclick="switchTab('list')">Tabla de Órdenes</button>
+                    <button class="tab-btn" id="tab-bom-btn" onclick="switchTab('bom')">Fórmulas de Producción</button>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" id="theme-toggle-btn" onclick="toggleTheme()" title="Cambiar Tema" style="padding: 8px; margin-right: 4px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                </button>
+                <button class="btn btn-secondary" onclick="loadOPs()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    <span>Actualizar</span>
+                </button>
+                <button class="btn btn-primary" onclick="openCreateModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nueva OP</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- WORKSPACE (Scheduler or List + Inspector) -->
+        <div class="workspace">
+            
+            <!-- SCHEDULER VIEW -->
+            <div class="view-container" id="view-scheduler">
+                <div class="scheduler-header">
+                    <div class="week-navigation">
+                        <button class="btn-icon" onclick="adjustWeek(-7)" title="Semana anterior">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <button class="btn btn-secondary" onclick="goToToday()" style="padding: 4px 12px; font-size: 11px;" title="Ir a la semana actual">Hoy</button>
+                        <span class="week-label" id="scheduler-week-label">Semana actual</span>
+                        <button class="btn-icon" onclick="adjustWeek(7)" title="Semana siguiente">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="scheduler-grid" id="scheduler-grid">
+                    <!-- 7 columns dynamically populated -->
+                </div>
+            </div>
+
+            <!-- DENSE LIST VIEW -->
+            <div class="view-container" id="view-list" style="display: none;">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <span class="search-icon">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </span>
+                            <input type="text" class="search-input" id="table-search" placeholder="Buscar por Nro OP, Producto, Estado..." oninput="filterTable()">
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            Haga clic en una cabecera para ordenar. Seleccione una fila para ver el detalle.
+                        </div>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="dense-table">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable('ORDP_NRO')">Nro OP</th>
+                                    <th onclick="sortTable('PRODUCTO')">Artículo a Producir</th>
+                                    <th onclick="sortTable('ORDP_FACTOR_DE_MULTIPLICA')">Cantidad</th>
+                                    <th onclick="sortTable('ORDP_FECHA_DE_INICIO')">Fecha Inicio</th>
+                                    <th onclick="sortTable('ORDP_FECHA_DE_ENTREGA_EST')">Fecha Entrega Est.</th>
+                                    <th onclick="sortTable('ESTA_NOMBRE')">Estado</th>
+                                    <th onclick="sortTable('STOCK')">Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="op-table-body">
+                                <!-- Dynamically loaded rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOM FORMULAS VIEW -->
+            <div class="view-container" id="view-bom" style="display: none;">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <span class="search-icon">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </span>
+                            <input type="text" class="search-input" id="bom-search" placeholder="Buscar por SKU o Nombre de Producto / Insumo..." oninput="filterBOMTable()">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span id="bom-counter-badge" style="font-size: 11px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.3); font-weight: 500;">0 Fórmulas</span>
+                            <button class="btn btn-secondary" onclick="reloadBOMs(true)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                <span>Actualizar Fórmulas</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="dense-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 140px;">SKU Producto</th>
+                                    <th style="width: 300px;">Producto Terminado / Producido</th>
+                                    <th>Fórmula de Producción / Insumos Requeridos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bom-table-body">
+                                <!-- Dynamically loaded rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- OP DETAIL/INSPECTOR MODAL -->
+    <div class="modal-overlay" id="op-inspector-modal">
+        <div class="modal-window" style="max-width: 700px;">
+            <div id="op-inspector">
+                <!-- Dynamic Content Loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE OP MODAL -->
+    <div class="modal-overlay" id="create-op-modal">
+        <div class="modal-window" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Crear Nueva Orden de Producción</h3>
+                <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="display: none;">
+                    <label class="form-label">Sector de Fábrica / Punto de Producción *</label>
+                    <select class="form-control" id="form-sector" onchange="onSectorChangeInModal()">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label">Artículo resultante (a producir) *</label>
+                    <div class="search-box" style="position: relative; max-width: 100%; width: 100%;">
+                        <span class="search-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </span>
+                        <input type="text" class="form-control search-input" id="form-art-search" placeholder="Escriba SKU o nombre para buscar..." autocomplete="off" oninput="searchArticlesAutocomplete()" style="padding-left: 36px; width: 100%; box-sizing: border-box;">
+                        <input type="hidden" id="form-art-id">
+                        <input type="hidden" id="form-art-name">
+                        <input type="hidden" id="form-art-sku-hidden">
+                        <div class="autocomplete-suggestions" id="art-suggestions" style="display: none; position: absolute; top: 100%; left: 0; width: 100%;"></div>
+                    </div>
+                </div>
+
+                <!-- Contenedor del Sector auto-detectado -->
+                <div class="form-group" id="detected-sector-container" style="display: none; margin-bottom: 16px;">
+                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">Sector de Producción Detectado</label>
+                    <div id="detected-sector-badge" style="font-size: 12px; font-weight: 600; color: #60a5fa; padding: 6px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; width: fit-content;">
+                        <span class="status-dot" style="width: 6px; height: 6px; background: #3b82f6; box-shadow: 0 0 6px #3b82f6; display: inline-block;"></span>
+                        <span id="detected-sector-text">-</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Cantidad a fabricar *</label>
+                    <input type="number" class="form-control" id="form-qty" value="10" min="1" oninput="calculateInsumosFactibilidad()">
+                </div>
+
+                <!-- SECCIÓN DE FACTIBILIDAD DE INSUMOS -->
+                <div class="form-group" id="factibilidad-seccion" style="display: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: rgba(255,255,255,0.01);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span class="form-label" style="font-weight: 700; color: var(--text-primary); margin-bottom: 0;">Factibilidad de Insumos</span>
+                        <span id="factibilidad-capacidad-badge" style="font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px;"></span>
+                    </div>
+                    <div id="insumos-factibilidad-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+                        <!-- Insumos will be listed here -->
+                    </div>
+                    <div id="factibilidad-alerta-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+
+                <!-- Opciones secundarias colapsables -->
+                <details class="advanced-options-collapse" style="margin-top: 8px;">
+                    <summary>Más opciones y fechas de entrega</summary>
+                    <div class="advanced-options-content">
+                        <div class="datetime-row">
+                            <div class="form-group">
+                                <label class="form-label">Fecha de Inicio *</label>
+                                <input type="datetime-local" class="form-control" id="form-start-date">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha Entrega Estimada *</label>
+                                <input type="datetime-local" class="form-control" id="form-end-date">
+                            </div>
+                        </div>
+
+                        <div class="datetime-row" style="margin-top: 12px;">
+                            <div class="form-group">
+                                <label class="form-label">Depósito Origen *</label>
+                                <select class="form-control" id="form-origin-dep" onchange="onOriginDepChange()">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Depósito Destino *</label>
+                                <select class="form-control" id="form-dest-dep">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="datetime-row" style="margin-top: 12px;">
+                            <div class="form-group">
+                                <label class="form-label">Responsable Local</label>
+                                <select class="form-control" id="form-responsable">
+                                    <option value="">-- Sin asignar --</option>
+                                    <!-- Populated dynamically from localOperators -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Lote / Identificador</label>
+                                <input type="text" class="form-control" id="form-lote" placeholder="Ej: Lote-2026">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 12px;">
+                            <label class="form-label">Instrucciones Especiales</label>
+                            <textarea class="form-control" id="form-instructions" rows="2" placeholder="Observaciones o instrucciones adicionales para producción..." style="resize: vertical;"></textarea>
+                        </div>
+
+                        <div class="switch-container" style="margin-top: 12px;">
+                            <label class="switch">
+                                <input type="checkbox" id="form-calc-articles" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="form-label" style="margin-bottom: 0;">Disparar Explosión de Receta (BOM)</span>
+                        </div>
+                    </div>
+                </details>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateModal()">Cancelar</button>
+                <button class="btn btn-primary" id="btn-submit-op" onclick="submitCreateOP()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Crear OP en YiQi</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-window" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Configuración del Aplicativo</h3>
+                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4>Conexión / Credenciales YiQi ERP</h4>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+                        Ingrese su usuario y contraseña de YiQi ERP para sincronizar las órdenes y factibilidad. Se guardan localmente.
+                    </p>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label class="form-label" style="font-size: 11px;">Usuario (Email)</label>
+                            <input type="text" class="form-control" id="settings-yiqi-user" placeholder="ejemplo@tmcrespo.com.ar" style="font-size: 12px; height: 32px;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label class="form-label" style="font-size: 11px;">Contraseña</label>
+                            <input type="password" class="form-control" id="settings-yiqi-pass" placeholder="••••••••" style="font-size: 12px; height: 32px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Mapeo de Sectores y Puntos de Producción (PUDP)</h4>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+                        Configure los Puntos de Producción (PUDP ID) de YiQi y los depósitos para cada Sector de TMC.
+                    </p>
+                    <div style="font-weight: 600; font-size: 11px; color: var(--text-muted); margin-bottom: 6px;" class="settings-row">
+                        <span>Sector TMC</span>
+                        <span>Punto Prod (PUDP)</span>
+                        <span>Dep. Origen</span>
+                        <span>Dep. Destino</span>
+                    </div>
+                    <div id="settings-sectors-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Operarios / Personal de Fábrica (Local)</h4>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+                        Ingrese los nombres de los operarios de fábrica para la asignación y cálculo de hora-hombre.
+                    </p>
+                    <div class="form-group">
+                        <textarea class="form-control" id="settings-operators" rows="4" placeholder="Un operario por línea..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettingsModal()">Cerrar</button>
+                <button class="btn btn-primary" onclick="saveSettings()">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGICAL SCRIPTS -->
+    <script src="logica.js?v=2.6.0"></script>
+</body>
+</html>
