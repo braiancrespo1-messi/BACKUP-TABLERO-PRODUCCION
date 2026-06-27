@@ -1246,13 +1246,14 @@ function updateSidebarActions() {
     if (!container) return;
 
     const today = new Date().toISOString().split('T')[0];
+    const rejections = calendarEvents.filter(ev => ev.status === 'rejected' && ev.pedidoId && ev.pedidoId !== 'STOCK' && ev.pedidoId !== 'CALENDARIO');
     const overdue = calendarEvents.filter(ev => ev.date < today && ev.status !== 'done' && ev.status !== 'approved' && ev.status !== 'rejected');
     const todayPlan = calendarEvents.filter(ev => ev.date === today && ev.status !== 'done' && ev.status !== 'approved' && ev.status !== 'rejected');
 
     // 1. Alert Notification (Pulse for bell)
     const bellBtn = document.getElementById('sb-tab-alerts');
     if (bellBtn) {
-        if (overdue.length > 0) bellBtn.classList.add('has-alerts');
+        if (overdue.length > 0 || rejections.length > 0) bellBtn.classList.add('has-alerts');
         else bellBtn.classList.remove('has-alerts');
     }
 
@@ -1273,7 +1274,8 @@ function updateSidebarActions() {
     if (sidebarMode === 'alerts') {
         container.innerHTML = `
             <div style="padding:10px; font-weight:700; color:var(--danger-color); border-bottom:1px solid #eee; margin-bottom:10px;">🔔 NOTIFICACIONES</div>
-            ${overdue.length === 0 ? '<div style="padding:10px; color:#666; font-style:italic; font-size:0.8em;">Sin temas pendientes</div>' : ''}
+            ${(rejections.length === 0 && overdue.length === 0) ? '<div style="padding:10px; color:#666; font-style:italic; font-size:0.8em;">Sin temas pendientes</div>' : ''}
+            ${rejections.map(ev => renderSidebarCard(ev, 'rejected')).join('')}
             ${overdue.map(ev => renderSidebarCard(ev, 'danger')).join('')}
         `;
         return;
@@ -1459,6 +1461,26 @@ async function confirmDeleteEvent(sku, date, id) {
 function renderSidebarCard(ev, type) {
     let client = ev.cliente || "Stock";
     let artName = ev.name || ev.text || "Artículo";
+
+    if (type === 'rejected') {
+        return `
+            <div class="sidebar-action-card" style="border: 2px solid #ef4444 !important; background: #fef2f2 !important; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15) !important;">
+                <div class="card-header" style="background: #fee2e2 !important; border-bottom: 1px solid #fca5a5 !important; display: flex; justify-content: space-between; align-items: center; padding: 6px 10px !important;">
+                    <strong style="color: #b91c1c !important;">🚨 URGENTE: RECHAZADO</strong>
+                    <span style="font-size:0.8em; color: #b91c1c; font-weight: bold;">${formatDate(ev.date)}</span>
+                </div>
+                <div class="card-body" style="padding: 10px !important;">
+                    <div style="font-weight:700; font-size:0.95em; color: #7f1d1d;">#${ev.pedidoId} - ${client}</div>
+                    <div style="font-size:0.88em; color: #991b1b; font-weight: 500; margin: 4px 0;">SKU: <strong style="color: #b91c1c;">${ev.sku}</strong> - ${artName}</div>
+                    <div style="font-weight:bold; color:#b91c1c;">Cant. a re-fabricar: ${ev.qty} u.</div>
+                </div>
+                <div class="card-footer" style="background: #fee2e2 !important; border-top: 1px solid #fca5a5 !important; display: flex; gap: 6px; justify-content: flex-end; padding: 6px 10px !important;">
+                    <button class="btn-action-resched" onclick="reprogramEvent('${ev.id}')" style="background: #2563eb; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">🗓️ Re-agendar</button>
+                    <button class="btn-action-delete" onclick="deleteEvent(${ev.id})" style="background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">🗑️ Eliminar</button>
+                </div>
+            </div>
+        `;
+    }
 
     return `
         <div class="sidebar-action-card">
