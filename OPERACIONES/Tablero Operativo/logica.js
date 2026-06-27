@@ -1246,8 +1246,8 @@ function updateSidebarActions() {
     if (!container) return;
 
     const today = new Date().toISOString().split('T')[0];
-    const overdue = calendarEvents.filter(ev => ev.date < today && ev.status !== 'done');
-    const todayPlan = calendarEvents.filter(ev => ev.date === today && ev.status !== 'done');
+    const overdue = calendarEvents.filter(ev => ev.date < today && ev.status !== 'done' && ev.status !== 'approved' && ev.status !== 'rejected');
+    const todayPlan = calendarEvents.filter(ev => ev.date === today && ev.status !== 'done' && ev.status !== 'approved' && ev.status !== 'rejected');
 
     // 1. Alert Notification (Pulse for bell)
     const bellBtn = document.getElementById('sb-tab-alerts');
@@ -1749,6 +1749,9 @@ function renderCalendar() {
             } else if (ev.status === 'approved') {
                 doneStyle = "opacity: 1.0; text-decoration: line-through; border: 2.5px solid #10b981 !important; background: #f0fdf4; color: #000000 !important; font-weight: 600 !important;";
                 doneIcon = "✅ ";
+            } else if (ev.status === 'rejected') {
+                doneStyle = "opacity: 1.0; border: 2.5px solid #ef4444 !important; background: #fef2f2; color: #b91c1c !important; font-weight: 600 !important;";
+                doneIcon = "❌ ";
             }
 
             // --- FINAL TOOLTIP LOGIC V5 (Consolidated) ---
@@ -1774,19 +1777,22 @@ function renderCalendar() {
             if (showAllEvents) {
                 const isDone = ev.status === 'done';
                 const isApproved = ev.status === 'approved';
-                const cardBg = isDone ? '#fffaf0' : (isApproved ? '#f0fdf4' : '#ffffff');
-                const cardBorder = isDone ? '1.5px solid #e67e22' : (isApproved ? '1.5px solid #10b981' : '1px solid #e2e8f0');
-                const cardLeftBorder = `4px solid ${isDone ? '#e67e22' : (isApproved ? '#10b981' : color)}`;
+                const isRejected = ev.status === 'rejected';
+                const cardBg = isDone ? '#fffaf0' : (isApproved ? '#f0fdf4' : (isRejected ? '#fef2f2' : '#ffffff'));
+                const cardBorder = isDone ? '1.5px solid #e67e22' : (isApproved ? '1.5px solid #10b981' : (isRejected ? '1.5px solid #ef4444' : '1px solid #e2e8f0'));
+                const cardLeftBorder = `4px solid ${isDone ? '#e67e22' : (isApproved ? '#10b981' : (isRejected ? '#ef4444' : color))}`;
                 const cardOpacity = isDone ? '0.65' : '1.0';
-                const titleColor = isDone ? '#64748b' : (isApproved ? '#000000' : '#0f172a');
+                const titleColor = isDone ? '#64748b' : (isApproved ? '#000000' : (isRejected ? '#b91c1c' : '#0f172a'));
                 const titleDecoration = (isDone || isApproved) ? 'line-through' : 'none';
-                const titleWeight = isApproved ? '700' : '600';
+                const titleWeight = (isApproved || isRejected) ? '700' : '600';
 
                 let statusBadge = "";
                 if (isDone) {
                     statusBadge = `<span style="font-family:'Inter', sans-serif !important; font-size:0.65rem !important; font-weight:700 !important; color:#d97706 !important; background:#fef3c7 !important; border: 1px solid #fde68a !important; padding:2px 6px !important; border-radius:4px !important; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap !important; display:inline-block; line-height: 1 !important;">⏳ Pendiente Calidad</span>`;
                 } else if (isApproved) {
                     statusBadge = `<span style="font-family:'Inter', sans-serif !important; font-size:0.65rem !important; font-weight:700 !important; color:#15803d !important; background:#dcfce7 !important; border: 1px solid #bbf7d0 !important; padding:2px 6px !important; border-radius:4px !important; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap !important; display:inline-block; line-height: 1 !important;">✅ Aprobado Calidad</span>`;
+                } else if (isRejected) {
+                    statusBadge = `<span style="font-family:'Inter', sans-serif !important; font-size:0.65rem !important; font-weight:700 !important; color:#b91c1c !important; background:#fee2e2 !important; border: 1px solid #fca5a5 !important; padding:2px 6px !important; border-radius:4px !important; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap !important; display:inline-block; line-height: 1 !important;">❌ Rechazado Calidad</span>`;
                 }
 
                 const parsed = parseProductName(artName);
@@ -2712,6 +2718,19 @@ function approveQualityControl(eventId) {
     const cleanPedidoId = (ev.pedidoId && ev.pedidoId !== 'STOCK' && ev.pedidoId !== 'CALENDARIO') ? ev.pedidoId : null;
     logActivity('Aprobado Calidad', `${ev.sku} (${ev.qty} u.) aprobado por Control de Calidad.`, 'success', cleanPedidoId, ev.id);
     renderCalendar();
+    if (typeof applyFilters === 'function') applyFilters();
+}
+
+function rejectQualityControl(eventId) {
+    const ev = calendarEvents.find(e => String(e.id) === String(eventId));
+    if (!ev) return;
+    ev.status = 'rejected';
+    saveCalendar();
+    cloudSaveEvent(ev);
+    const cleanPedidoId = (ev.pedidoId && ev.pedidoId !== 'STOCK' && ev.pedidoId !== 'CALENDARIO') ? ev.pedidoId : null;
+    logActivity('Rechazado Calidad', `${ev.sku} (${ev.qty} u.) rechazado por Control de Calidad.`, 'danger', cleanPedidoId, ev.id);
+    renderCalendar();
+    if (typeof applyFilters === 'function') applyFilters();
 }
 
 function revertQualityControl(eventId) {
@@ -2723,6 +2742,7 @@ function revertQualityControl(eventId) {
     const cleanPedidoId = (ev.pedidoId && ev.pedidoId !== 'STOCK' && ev.pedidoId !== 'CALENDARIO') ? ev.pedidoId : null;
     logActivity('Reversión Calidad', `${ev.sku} (${ev.qty} u.) revertido a Pendiente de Calidad.`, 'warning', cleanPedidoId, ev.id);
     renderCalendar();
+    if (typeof applyFilters === 'function') applyFilters();
 }
 
 // --- Event Action Menu Upgrade ---
@@ -2739,8 +2759,11 @@ function openEventActions(e, eventId) {
                 <div class="ctx-item" onclick="asociarPedidoALote(${eventId}); closeDayMenu();">🔗 Asociar Pedido</div>
                 ${ev.pedidoId && ev.pedidoId !== 'STOCK' ? `<div class="ctx-item" onclick="goToTableForEvent(${eventId}); closeDayMenu();">🔍 Ir a Tabla Pedidos</div>` : ''}
                 <div class="ctx-item" onclick="goToStockForEvent(${eventId}); closeDayMenu();">🔍 Ir a Tabla de Grupo</div>
-                ${ev.status === 'done' ? `<div class="ctx-item" style="color:#10b981; font-weight:600;" onclick="approveQualityControl(${eventId}); closeDayMenu();">✅ Aprobar Calidad</div>` : ''}
-                ${ev.status === 'approved' ? `<div class="ctx-item" style="color:#d97706; font-weight:600;" onclick="revertQualityControl(${eventId}); closeDayMenu();">⏳ Revertir a Pendiente</div>` : ''}
+                ${ev.status === 'done' ? `
+                    <div class="ctx-item" style="color:#10b981; font-weight:600;" onclick="approveQualityControl(${eventId}); closeDayMenu();">✅ Aprobar Calidad</div>
+                    <div class="ctx-item" style="color:#ef4444; font-weight:600;" onclick="rejectQualityControl(${eventId}); closeDayMenu();">❌ Rechazar Calidad</div>
+                ` : ''}
+                ${(ev.status === 'approved' || ev.status === 'rejected') ? `<div class="ctx-item" style="color:#d97706; font-weight:600;" onclick="revertQualityControl(${eventId}); closeDayMenu();">⏳ Revertir a Pendiente</div>` : ''}
                 <div class="ctx-item ctx-danger" onclick="deleteEvent(${eventId})">🗑️ Eliminar</div>
             `;
 
@@ -2927,6 +2950,7 @@ function renderPedidos(data) {
         const components = getBOMComponents(skuCarro);
         const scheduledEvent = calendarEvents.find(e => {
             if (String(e.pedidoId) !== String(pedidoId)) return false;
+            if (e.status === 'rejected') return false; // Ignore rejected attempts
             const eventSku = String(e.sku).trim().toLowerCase();
             const mainSku = String(skuCarro).trim().toLowerCase();
             if (eventSku === mainSku) return true;
@@ -4102,6 +4126,12 @@ async function openDayDetailModal(dateStr) {
                     titleColor = "#000000";
                     titleDecoration = "line-through";
                     titleWeight = "700";
+                } else if (ev.status === 'rejected') {
+                    doneStyle = "background: #fef2f2 !important; border: 1.5px solid #ef4444 !important; opacity: 1.0;";
+                    doneBadge = `<span style="font-family:'Inter', sans-serif !important; font-size:0.65rem !important; font-weight:700 !important; color:#b91c1c !important; background:#fee2e2 !important; border: 1px solid #fca5a5 !important; padding:2px 6px !important; border-radius:4px !important; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; display:inline-block; line-height: 1 !important; margin-left: auto;">❌ Rechazado Calidad</span>`;
+                    titleColor = "#b91c1c";
+                    titleDecoration = "none";
+                    titleWeight = "700";
                 } else {
                     doneStyle = "background: #fff; border: 1px solid #e0e0e0;";
                 }
@@ -4118,7 +4148,7 @@ async function openDayDetailModal(dateStr) {
                 }
 
                 htmlContent += `
-                    <div class="day-detail-card" style="${doneStyle} border-left: 4px solid ${ev.status === 'done' ? '#e67e22' : (ev.status === 'approved' ? '#10b981' : groupColor)} !important; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family:'Inter', sans-serif !important;">
+                    <div class="day-detail-card" style="${doneStyle} border-left: 4px solid ${ev.status === 'done' ? '#e67e22' : (ev.status === 'approved' ? '#10b981' : (ev.status === 'rejected' ? '#ef4444' : groupColor))} !important; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family:'Inter', sans-serif !important;">
                         <div style="display:flex; align-items:center; flex-wrap: wrap; gap: 8px; justify-content: space-between; width: 100%;">
                             <div style="display:flex; align-items:center; gap:4px 6px; flex-wrap: wrap;">
                                 <span style="font-weight: 600; color: #475569; font-size: 0.75rem; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${timeLabel}</span>
