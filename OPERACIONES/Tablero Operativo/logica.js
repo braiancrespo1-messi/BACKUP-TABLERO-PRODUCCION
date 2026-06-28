@@ -1187,9 +1187,14 @@ function switchCalendarView(view) {
     currentCalendarView = view;
     
     // Update active class on buttons
+    const btnDiaria = document.getElementById('btn-view-diaria');
     const btnSemanal = document.getElementById('btn-view-semanal');
     const btnMensual = document.getElementById('btn-view-mensual');
     
+    if (btnDiaria) {
+        if (view === 'diaria') btnDiaria.classList.add('active');
+        else btnDiaria.classList.remove('active');
+    }
     if (btnSemanal) {
         if (view === 'semanal') btnSemanal.classList.add('active');
         else btnSemanal.classList.remove('active');
@@ -1203,7 +1208,9 @@ function switchCalendarView(view) {
 }
 
 function changeMonth(delta) {
-    if (currentCalendarView === 'semanal') {
+    if (currentCalendarView === 'diaria') {
+        currentMonth.setDate(currentMonth.getDate() + delta);
+    } else if (currentCalendarView === 'semanal') {
         currentMonth.setDate(currentMonth.getDate() + (delta * 7));
     } else {
         currentMonth.setMonth(currentMonth.getMonth() + delta);
@@ -1618,7 +1625,17 @@ function renderCalendar() {
     let startDate;
     let totalDays;
     
-    if (currentCalendarView === 'semanal') {
+    if (currentCalendarView === 'diaria') {
+        startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), currentMonth.getDate());
+        totalDays = 1;
+        
+        const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const txt = document.getElementById('cal-month-year');
+        if (txt) {
+            txt.innerText = `${dayNames[startDate.getDay()]} ${startDate.getDate()} de ${monthNames[startDate.getMonth()]} ${startDate.getFullYear()}`;
+        }
+    } else if (currentCalendarView === 'semanal') {
         const dayOfWeek = currentMonth.getDay(); // 0 (Sun) to 6 (Sat)
         const daysToSubtract = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
         startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), currentMonth.getDate() - daysToSubtract);
@@ -1643,10 +1660,50 @@ function renderCalendar() {
     }
 
     // Start HTML
-    let html = `<div class="calendar-grid ${currentCalendarView === 'semanal' ? 'weekly-view' : ''}">`;
+    let html = `<div class="calendar-grid ${currentCalendarView === 'semanal' ? 'weekly-view' : (currentCalendarView === 'diaria' ? 'daily-view' : '')}">`;
     const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     
-    if (currentCalendarView === 'semanal') {
+    if (currentCalendarView === 'diaria') {
+        const dateNum = startDate.getDate();
+        const headerDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+        
+        // Calculate progress for this day header
+        const dayEvs = calendarEvents.filter(ev => ev.date === headerDateStr);
+        let progressWidget = "";
+        if (dayEvs.length > 0) {
+            const totalQty = dayEvs.reduce((acc, ev) => acc + Number(ev.qty || 1), 0);
+            const completedQty = dayEvs.filter(ev => ev.status === 'done' || ev.status === 'approved').reduce((acc, ev) => acc + Number(ev.qty || 1), 0);
+            const pct = totalQty > 0 ? Math.round((completedQty / totalQty) * 100) : 0;
+            
+            let barColor = "#ef4444";
+            if (pct >= 100) barColor = "#10b981";
+            else if (pct >= 50) barColor = "#f59e0b";
+            
+            progressWidget = `
+                <div style="width: 85%; max-width: 250px; margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 2px;" title="Progreso: ${pct}% (${completedQty}/${totalQty} u.)">
+                    <div style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${pct}%; background: ${barColor}; height: 100%; border-radius: 3px; transition: width 0.3s ease-in-out;"></div>
+                    </div>
+                    <span style="font-size: 0.7rem; font-weight: 600; color: #475569; font-family:'Inter', sans-serif !important;">${completedQty}/${totalQty} u. (${pct}%)</span>
+                </div>
+            `;
+        } else {
+            progressWidget = `
+                <div style="width: 85%; max-width: 250px; margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                    <div style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px;"></div>
+                    <span style="font-size: 0.7rem; font-weight: 500; color: #94a3b8; font-family:'Inter', sans-serif !important; font-style: italic;">Sin lotes</span>
+                </div>
+            `;
+        }
+
+        const dayNamesLong = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        html += `
+            <div class="cal-day-header" style="display:flex; flex-direction:column; align-items:center; padding: 8px 4px; min-height: 58px; justify-content: center; box-sizing: border-box; background-color: #f1f3f4; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd;">
+                <div style="font-weight: 800; font-size: 1rem; font-family:'Inter', sans-serif !important;">${dayNamesLong[startDate.getDay()]} ${dateNum}</div>
+                ${progressWidget}
+            </div>
+        `;
+    } else if (currentCalendarView === 'semanal') {
         days.forEach((d, idx) => {
             const dateOfHeader = new Date(startDate.getTime());
             dateOfHeader.setDate(startDate.getDate() + idx);
@@ -2309,34 +2366,25 @@ function clearBlinkingMode() {
 // HARDENED WHEEL FORCER (Strict 1-to-1 Navigation)
 window.addEventListener('wheel', function (e) {
     if (currentTab !== 'planificador') return;
+    if (!estaArrastrando) return; // Allow normal scrolling inside day cells/lists when not dragging!
 
     // Strict 500ms Brake to prevent skipping
     const ahora = Date.now();
     if (ahora - ultimoCambioMes < 500) {
-        if (estaArrastrando) e.preventDefault(); // Don't allow secondary scrolls during drag
+        e.preventDefault(); 
         return;
     }
 
     const calGrid = document.getElementById('calendarContent');
     const isHoveringCalendar = calGrid && calGrid.contains(e.target);
 
-    // PRIORITY 1: While Dragging
-    if (estaArrastrando) {
-        e.preventDefault();
-        e.stopImmediatePropagation(); // Kill any competing listeners
-
-        if (e.deltaY > 0) changeMonth(1);
-        else if (e.deltaY < 0) changeMonth(-1);
-
-        ultimoCambioMes = ahora;
-        return;
-    }
-
-    // PRIORITY 2: Normal Navigation (Hover)
     if (isHoveringCalendar) {
         e.preventDefault();
+        e.stopImmediatePropagation(); // Kill competing listeners
+
         if (e.deltaY > 0) changeMonth(1);
         else if (e.deltaY < 0) changeMonth(-1);
+
         ultimoCambioMes = ahora;
     }
 }, { passive: false, capture: true });
@@ -2646,7 +2694,8 @@ async function scheduleItem(sku, nombre, inputId, pedidoId = null, grupo = "", t
         const existing = calendarEvents.find(e =>
             String(e.pedidoId) === String(pedidoId) &&
             String(e.sku).trim().toLowerCase() === String(sku).trim().toLowerCase() &&
-            String(e.text || "").trim().toLowerCase() === String(textoAdicional || "").trim().toLowerCase()
+            String(e.text || "").trim().toLowerCase() === String(textoAdicional || "").trim().toLowerCase() &&
+            e.status !== 'rejected'
         );
         if (existing) {
             appAlert(`⚠️ Este ítem (especificación: "${textoAdicional || 'N/A'}") ya está agendado en el pedido <b>#${pedidoId}</b> para el ${formatDate(existing.date)}.`);

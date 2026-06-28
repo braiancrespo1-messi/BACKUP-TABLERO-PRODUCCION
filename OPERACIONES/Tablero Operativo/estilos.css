@@ -1794,7 +1794,7 @@
 
             #view-planificador .cal-events {
                 flex-grow: 1;
-                overflow-y: hidden !important;
+                overflow-y: auto !important;
             }
 
             #view-planificador .cal-event {
@@ -2376,4 +2376,27 @@
 }
 @keyframes apiSpinnerSpin {
     to { transform: rotate(360deg); }
+}
+
+/* DAILY VIEW STYLING */
+.calendar-grid.daily-view {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 72px 1fr !important;
+    height: 100% !important;
+}
+.calendar-grid.daily-view .cal-day {
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+}
+.calendar-grid.daily-view .cal-events {
+    flex-grow: 1;
+    overflow-y: auto !important;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px !important;
 }
