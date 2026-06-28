@@ -3188,7 +3188,8 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
       }
 
     } else if (action === "actualizarCalidadLoteTablero") {
-      const { sku, pedidoId, cant, cliente, revert, rejected, reason } = req.body;
+      const { sku, pedidoId, cant, cliente, revert, rejected, reason, rejectReason, motivo, comment, text } = req.body;
+      const finalReason = reason || rejectReason || motivo || comment || text || "";
       if (!sku) {
         return res.status(400).json({ error: "Falta el parametro sku" });
       }
@@ -3247,12 +3248,10 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
 
         const newStatus = rejected ? "rejected" : (revert ? "done" : "approved");
         
-        // 2. Actualizar estado y texto del evento
+        // 2. Actualizar estado y motivo del evento
         const updateData = { status: newStatus };
-        if (rejected && reason) {
-          updateData.text = matchedEvent.text 
-            ? `${matchedEvent.text} (Rechazo: ${reason})`
-            : `Rechazo: ${reason}`;
+        if (rejected && finalReason) {
+          updateData.rejectReason = finalReason;
         }
         await db.collection("calendar_events").doc(matchedEvent.id).update(updateData);
 
@@ -3262,7 +3261,7 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
           timeZone: "America/Argentina/Buenos_Aires",
           hour: "2-digit",
           minute: "2-digit",
-          hour12: true
+          hour12: false
         });
         const day = String(now.getDate()).padStart(2, '0');
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -3280,8 +3279,8 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
              ? `${sku} (${cant || matchedEvent.qty || 0} u.) revertido a Pendiente de Calidad.`
              : `${sku} (${cant || matchedEvent.qty || 0} u.) aprobado por Control de Calidad.`);
 
-        if (rejected && reason) {
-          logDetails += ` Motivo: ${reason}`;
+        if (rejected && finalReason) {
+          logDetails += ` Motivo: ${finalReason}`;
         }
 
         const logDoc = {
