@@ -3183,7 +3183,7 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
       }
 
     } else if (action === "actualizarCalidadLoteTablero") {
-      const { sku, pedidoId, cant, cliente, revert, rejected } = req.body;
+      const { sku, pedidoId, cant, cliente, revert, rejected, reason } = req.body;
       if (!sku) {
         return res.status(400).json({ error: "Falta el parametro sku" });
       }
@@ -3242,10 +3242,14 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
 
         const newStatus = rejected ? "rejected" : (revert ? "done" : "approved");
         
-        // 2. Actualizar estado del evento
-        await db.collection("calendar_events").doc(matchedEvent.id).update({
-          status: newStatus
-        });
+        // 2. Actualizar estado y texto del evento
+        const updateData = { status: newStatus };
+        if (rejected && reason) {
+          updateData.text = matchedEvent.text 
+            ? `${matchedEvent.text} (Rechazo: ${reason})`
+            : `Rechazo: ${reason}`;
+        }
+        await db.collection("calendar_events").doc(matchedEvent.id).update(updateData);
 
         // 3. Registrar log de actividad
         const now = new Date();
@@ -3265,11 +3269,15 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
         
         const logAction = rejected ? "Rechazado Calidad" : (revert ? "Reversión Calidad" : "Aprobado Calidad");
         const logType = rejected ? "danger" : (revert ? "warning" : "success");
-        const logDetails = rejected 
+        let logDetails = rejected 
           ? `${sku} (${cant || matchedEvent.qty || 0} u.) rechazado por Control de Calidad.`
           : (revert 
              ? `${sku} (${cant || matchedEvent.qty || 0} u.) revertido a Pendiente de Calidad.`
              : `${sku} (${cant || matchedEvent.qty || 0} u.) aprobado por Control de Calidad.`);
+
+        if (rejected && reason) {
+          logDetails += ` Motivo: ${reason}`;
+        }
 
         const logDoc = {
           app: "tablero",
