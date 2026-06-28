@@ -1,5 +1,6 @@
 // --- CONFIGURACIÓN ---
 let sidebarMode = 'today'; // Default to 'today'
+let pendingGroupFilter = "";
 const CONFIG = {
     API_BASE: "https://api.yiqi.com.ar",
     TOKEN_URLS: ["https://me.yiqi.com.ar/connect/token", "https://api.yiqi.com.ar/connect/token", "https://api.yiqi.com.ar/token"],
@@ -1317,20 +1318,38 @@ function updateSidebarActions() {
             }
         });
 
+        currentPendingOrders = grouped; // Full unfiltered list for index lookup
+
+        // Find available groups for the select filter
+        const availablePendingGroups = [...new Set(grouped.map(item => item.grupo).filter(g => g))].sort();
+
+        // Apply group filter
+        let filteredGrouped = grouped;
+        if (pendingGroupFilter) {
+            filteredGrouped = grouped.filter(item => (item.grupo || "").toUpperCase() === pendingGroupFilter.toUpperCase());
+        }
+
         let sidebarHtml = `
             <div style="padding:10px; font-weight:700; color:#8e44ad; border-bottom:1px solid #eee; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
                 <span>📦 PEDIDOS PENDIENTES</span>
-                <span style="font-size:0.75em; background:#8e44ad; color:white; padding:2px 6px; border-radius:10px;">${grouped.length}</span>
+                <span style="font-size:0.75em; background:#8e44ad; color:white; padding:2px 6px; border-radius:10px;">${filteredGrouped.length} de ${grouped.length}</span>
             </div>
+            
+            <div style="padding: 0 10px 10px 10px; border-bottom: 1px solid #eee; margin-bottom: 10px;">
+                <label style="font-size: 0.75rem; font-weight: 600; color: #666; display: block; margin-bottom: 4px;">Filtrar por Grupo:</label>
+                <select id="pending-group-select" onchange="pendingGroupFilter = this.value; updateSidebarActions();" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; font-family:'Inter', sans-serif;">
+                    <option value="">-- Todos los Grupos --</option>
+                    ${availablePendingGroups.map(g => `<option value="${g}" ${pendingGroupFilter === g ? 'selected' : ''}>${g}</option>`).join('')}
+                </select>
+            </div>
+
             <div style="font-size:0.8rem; color:#666; margin-bottom:10px; padding:0 5px; font-style:italic;">
                 Arrastra un pedido al calendario para agendarlo.
             </div>
-            ${grouped.length === 0 ? '<div style="padding:10px; color:#666; font-style:italic; font-size:0.8em;">No hay pedidos pendientes de agendar</div>' : ''}
+            ${filteredGrouped.length === 0 ? '<div style="padding:10px; color:#666; font-style:italic; font-size:0.8em;">No hay pedidos pendientes de agendar para el grupo seleccionado</div>' : ''}
         `;
 
-        currentPendingOrders = grouped;
-
-        grouped.forEach((item, idx) => {
+        filteredGrouped.forEach((item) => {
             const palette = ['#3498db', '#e67e22', '#27ae60', '#9b59b6', '#f1c40f', '#e74c3c', '#1abc9c', '#34495e'];
             let colorMap = {};
             const defaultColor = '#95a5a6';
@@ -1340,8 +1359,11 @@ function updateSidebarActions() {
             });
             const color = colorMap[item.grupo.toUpperCase()] || defaultColor;
 
+            // Retrieve index from the full currentPendingOrders list
+            const globalIdx = currentPendingOrders.indexOf(item);
+
             sidebarHtml += `
-                <div class="sidebar-pending-card" draggable="true" data-index="${idx}"
+                <div class="sidebar-pending-card" draggable="true" data-index="${globalIdx}"
                      style="background:white; border:1px solid #ddd; border-left: 4px solid ${color}; border-radius: 6px; padding: 10px; margin-bottom: 8px; cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
                         <strong style="font-size:0.85rem; color:#1a73e8;">Pedido #${item.pedidoId}</strong>
@@ -1368,7 +1390,12 @@ function renderSidebarAgenda() {
     if (!container) return;
 
     const today = new Date().toISOString().split('T')[0];
-    const agendaEvents = [...calendarEvents].sort((a, b) => a.date.localeCompare(b.date));
+    const hideFinished = document.getElementById('hide-finished')?.checked;
+    let agendaEvents = [...calendarEvents];
+    if (hideFinished) {
+        agendaEvents = agendaEvents.filter(ev => ev.status !== 'done' && ev.status !== 'approved' && ev.status !== 'rejected');
+    }
+    agendaEvents.sort((a, b) => a.date.localeCompare(b.date));
 
     // Group events by date
     const groups = {};
@@ -1397,13 +1424,20 @@ function renderSidebarAgenda() {
                 </div>
                 ${groups[date].map(ev => {
             const isDone = ev.status === 'done' || ev.status === 'approved';
+            const isRejected = ev.status === 'rejected';
+            let cardStyle = "";
+            if (isDone) {
+                cardStyle = "opacity:0.5; background:#f9fafc;";
+            } else if (isRejected) {
+                cardStyle = "border: 1px solid #fca5a5 !important; background:#fef2f2 !important; color:#b91c1c !important;";
+            }
             const { artName, clientName } = getEventEnrichedData(ev);
             const specText = ev.text ? `\n📝 ${ev.text}` : "";
             const tooltip = `📄 ${artName}${specText}\n👤 ${clientName}\n📦 Pedido #${ev.pedidoId || 'N/A'}\nEstado: ${ev.status || 'Agendado'}`;
 
             return `
                         <div class="agenda-card" 
-                             style="${isDone ? 'opacity:0.5; background:#f9fafc;' : ''}" 
+                             style="${cardStyle}" 
                              title="${tooltip}"
                              onclick="switchTabToCalendar('${ev.sku}', '${ev.date}')">
                             <div class="agenda-card-header">
@@ -1789,6 +1823,9 @@ function renderCalendar() {
                     tooltip += ` (${diasDespacho} días)`;
                 }
             }
+            if (ev.status === 'rejected') {
+                tooltip += `\n❌ Motivo de Rechazo: ${ev.rejectReason || ev.comment || 'No especificado'}`;
+            }
             if (ev.rescheduleHistory && ev.rescheduleHistory.length > 0) {
                 tooltip += `\n\n🔄 Historial de Cambios:`;
                 ev.rescheduleHistory.forEach(h => {
@@ -1851,6 +1888,11 @@ function renderCalendar() {
                         </div>
                         ` : ''}
                         ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#dc2626 !important; background:#fef2f2 !important; border-left: 3px solid #ef4444 !important; padding:4px 8px !important; border-radius:0 4px 4px 0 !important; font-style:normal !important; margin-top:2px;">⚠️ ${ev.text}</div>` : ''}
+                        ${ev.status === 'rejected' ? `
+                        <div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#dc2626 !important; background:#fee2e2 !important; border: 1px dashed #fca5a5 !important; padding:4px 8px !important; border-radius:4px !important; font-style:normal !important; margin-top:2px; font-weight:600;">
+                            ❌ Motivo: ${ev.rejectReason || ev.comment || 'No especificado'}
+                        </div>
+                        ` : ''}
                     </div>
                 `;
             } else {
@@ -2746,11 +2788,16 @@ function approveQualityControl(eventId) {
 function rejectQualityControl(eventId) {
     const ev = calendarEvents.find(e => String(e.id) === String(eventId));
     if (!ev) return;
+    
+    const reason = prompt("Ingrese el Motivo de Rechazo por Control de Calidad:", "Falla de material / deformación");
+    if (reason === null) return; // User cancelled
+    
     ev.status = 'rejected';
+    ev.rejectReason = reason.trim() || 'No especificado';
     saveCalendar();
     cloudSaveEvent(ev);
     const cleanPedidoId = (ev.pedidoId && ev.pedidoId !== 'STOCK' && ev.pedidoId !== 'CALENDARIO') ? ev.pedidoId : null;
-    logActivity('Rechazado Calidad', `${ev.sku} (${ev.qty} u.) rechazado por Control de Calidad.`, 'danger', cleanPedidoId, ev.id);
+    logActivity('Rechazado Calidad', `${ev.sku} (${ev.qty} u.) rechazado por Control de Calidad. Motivo: ${ev.rejectReason}`, 'danger', cleanPedidoId, ev.id);
     renderCalendar();
     if (typeof applyFilters === 'function') applyFilters();
 }
@@ -2987,9 +3034,24 @@ function renderPedidos(data) {
 
         visibleCount++;
 
+        const rejectedEvent = calendarEvents.find(e => {
+            if (String(e.pedidoId) !== String(pedidoId)) return false;
+            if (e.status !== 'rejected') return false;
+            const eventSku = String(e.sku).trim().toLowerCase();
+            const mainSku = String(skuCarro).trim().toLowerCase();
+            if (eventSku === mainSku) return true;
+            return components.some(c => String(c.sku).trim().toLowerCase() === eventSku);
+        });
+        const hasBeenRejected = !!rejectedEvent;
+
         const tr = document.createElement('tr');
         tr.id = `row-pedido-${pedidoId}`; // Add ID for goToTable
-        if (isScheduled) tr.style.background = "#e8f5e9"; // Light Green for scheduled
+        if (isScheduled) {
+            tr.style.background = "#e8f5e9"; // Light Green for scheduled
+        } else if (hasBeenRejected) {
+            tr.style.background = "#fff5f5"; // Light Red/Pink for rejected
+            tr.style.borderLeft = "4px solid #ef4444"; // Red left highlight
+        }
 
         let fecha = r["FECHA_PEDI"] ? new Date(r["FECHA_PEDI"]).toLocaleDateString() : "-";
 
@@ -3041,11 +3103,11 @@ function renderPedidos(data) {
         // Scheduled Icon
         let statusIcon = '<span title="No Agendado">⚠️</span>';
         if (isScheduled && scheduledEvent) {
-            if (isScheduled) {
-                statusIcon = `<span style="cursor:pointer;" onclick="openStatusMenu(event, '${scheduledEvent.date}', '${scheduledEvent.id}')">📅</span>`;
-                // ADDED: Date display next to icon
-                statusIcon += `<span style="font-size:0.8em; color:#666; margin-left:4px; font-weight:bold;">${formatDate(scheduledEvent.date)}</span>`;
-            }
+            statusIcon = `<span style="cursor:pointer;" onclick="openStatusMenu(event, '${scheduledEvent.date}', '${scheduledEvent.id}')">📅</span>`;
+            statusIcon += `<span style="font-size:0.8em; color:#666; margin-left:4px; font-weight:bold;">${formatDate(scheduledEvent.date)}</span>`;
+        } else if (hasBeenRejected && rejectedEvent) {
+            const reason = rejectedEvent.rejectReason || rejectedEvent.comment || 'No especificado';
+            statusIcon = `<span style="color:#ef4444; font-weight:bold; cursor:help; font-size: 0.85rem;" title="Rechazado en fecha ${formatDate(rejectedEvent.date)}. Motivo: ${reason}">❌ Rechazado (${formatDate(rejectedEvent.date)})</span>`;
         }
 
         let numDisplay = `<b>#${pedidoId}</b>`;
@@ -3062,7 +3124,12 @@ function renderPedidos(data) {
                     const detail = r._breakdown.map(b => `• ${b.qty} u. : ${b.text}`).join('\n');
                     alertIcon = `<span title="${detail}" style="cursor:help; margin-left:5px; font-size:0.8em;">🔴</span>`;
                 }
-                return `<div>${r["PRODUCTO"] || ""}${alertIcon}</div><div style="font-size:0.85em; color:#999;">${r["TEXTO_ADICIONAL"] || ""}</div>`;
+                let html = `<div>${r["PRODUCTO"] || ""}${alertIcon}</div><div style="font-size:0.85em; color:#999;">${r["TEXTO_ADICIONAL"] || ""}</div>`;
+                if (hasBeenRejected && rejectedEvent) {
+                    const reason = rejectedEvent.rejectReason || rejectedEvent.comment || 'No especificado';
+                    html += `<div style="font-size:0.75rem; color:#ef4444; font-weight:600; margin-top:4px;">❌ Rechazo Calidad: ${reason}</div>`;
+                }
+                return html;
             })(),
             'grupo': grupoName,
             'cantidad': `<b style="font-size:1.1em;">${r["CANT_A_ENTREGAR"] || 0}</b>`,
@@ -4190,6 +4257,11 @@ async function openDayDetailModal(dateStr) {
                             </div>
                         </div>
                         ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.8rem !important; background: #fffde7; border: 1px dashed #fdd835; padding: 6px 8px; border-radius: 4px; font-style: italic; color: #555;">📝 ${ev.text}</div>` : ''}
+                        ${ev.status === 'rejected' ? `
+                        <div style="font-family:'Inter', sans-serif !important; font-size:0.8rem !important; background: #fee2e2; border: 1px dashed #ef4444; padding: 6px 8px; border-radius: 4px; font-weight: 600; color: #b91c1c;">
+                            🚨 Motivo de Rechazo: ${ev.rejectReason || ev.comment || 'No especificado'}
+                        </div>
+                        ` : ''}
                         ${historyHtml}
                         
                         <div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; border-top: 1px solid #f0f0f0; padding-top: 8px; flex-wrap: wrap;">
