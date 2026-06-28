@@ -3186,6 +3186,7 @@ async function postAltaProduccion({ grupoId, mateId, qty, obsText }) {
         attempt++;
         try {
             showLoader(`Guardando en YiQi (Intento ${attempt})...`);
+            await new Promise(resolve => setTimeout(resolve, 50));
             const res = await apiPost(url, body);
             if (res?.ok || res?.newId) return res; // Accept if valid
             lastErr = new Error(res?.error || "Error al guardar");
@@ -3290,7 +3291,8 @@ async function fabricar(sku, nombre, inputId, pedidoId, eventId = null) {
     if (!confirmedQty || confirmedQty <= 0) return false;
 
     // 2. Perform Action
-    showLoader("Confirmando alta en YiQi..."); // NEW: Show Loader
+    showLoader("Confirmando alta en YiQi..."); 
+    await new Promise(resolve => setTimeout(resolve, 150)); // Allow browser repaint
 
     let btn = null;
     let originalText = "";
