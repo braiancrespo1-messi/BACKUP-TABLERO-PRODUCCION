@@ -1824,7 +1824,7 @@ function renderCalendar() {
                 }
             }
             if (ev.status === 'rejected') {
-                tooltip += `\n❌ Motivo de Rechazo: ${ev.rejectReason || ev.comment || 'No especificado'}`;
+                tooltip += `\n❌ Motivo de Rechazo: ${ev.reason || ev.rejectReason || ev.motivo || ev.motivoRechazo || ev.motivo_rechazo || ev.comment || ev.description || 'No especificado'}`;
             }
             if (ev.rescheduleHistory && ev.rescheduleHistory.length > 0) {
                 tooltip += `\n\n🔄 Historial de Cambios:`;
@@ -1890,7 +1890,7 @@ function renderCalendar() {
                         ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#dc2626 !important; background:#fef2f2 !important; border-left: 3px solid #ef4444 !important; padding:4px 8px !important; border-radius:0 4px 4px 0 !important; font-style:normal !important; margin-top:2px;">⚠️ ${ev.text}</div>` : ''}
                         ${ev.status === 'rejected' ? `
                         <div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#dc2626 !important; background:#fee2e2 !important; border: 1px dashed #fca5a5 !important; padding:4px 8px !important; border-radius:4px !important; font-style:normal !important; margin-top:2px; font-weight:600;">
-                            ❌ Motivo: ${ev.rejectReason || ev.comment || 'No especificado'}
+                            ❌ Motivo: ${ev.reason || ev.rejectReason || ev.motivo || ev.motivoRechazo || ev.motivo_rechazo || ev.comment || ev.description || 'No especificado'}
                         </div>
                         ` : ''}
                     </div>
@@ -2793,11 +2793,12 @@ function rejectQualityControl(eventId) {
     if (reason === null) return; // User cancelled
     
     ev.status = 'rejected';
-    ev.rejectReason = reason.trim() || 'No especificado';
+    ev.reason = reason.trim() || 'No especificado';
+    ev.rejectReason = ev.reason; // Backward compatibility
     saveCalendar();
     cloudSaveEvent(ev);
     const cleanPedidoId = (ev.pedidoId && ev.pedidoId !== 'STOCK' && ev.pedidoId !== 'CALENDARIO') ? ev.pedidoId : null;
-    logActivity('Rechazado Calidad', `${ev.sku} (${ev.qty} u.) rechazado por Control de Calidad. Motivo: ${ev.rejectReason}`, 'danger', cleanPedidoId, ev.id);
+    logActivity('Rechazado Calidad', `${ev.sku} (${ev.qty} u.) rechazado por Control de Calidad. Motivo: ${ev.reason}`, 'danger', cleanPedidoId, ev.id);
     renderCalendar();
     if (typeof applyFilters === 'function') applyFilters();
 }
@@ -3106,7 +3107,7 @@ function renderPedidos(data) {
             statusIcon = `<span style="cursor:pointer;" onclick="openStatusMenu(event, '${scheduledEvent.date}', '${scheduledEvent.id}')">📅</span>`;
             statusIcon += `<span style="font-size:0.8em; color:#666; margin-left:4px; font-weight:bold;">${formatDate(scheduledEvent.date)}</span>`;
         } else if (hasBeenRejected && rejectedEvent) {
-            const reason = rejectedEvent.rejectReason || rejectedEvent.comment || 'No especificado';
+            const reason = rejectedEvent.reason || rejectedEvent.rejectReason || rejectedEvent.motivo || rejectedEvent.motivoRechazo || rejectedEvent.motivo_rechazo || rejectedEvent.comment || rejectedEvent.description || 'No especificado';
             statusIcon = `<span style="color:#ef4444; font-weight:bold; cursor:help; font-size: 0.85rem;" title="Rechazado en fecha ${formatDate(rejectedEvent.date)}. Motivo: ${reason}">❌ Rechazado (${formatDate(rejectedEvent.date)})</span>`;
         }
 
@@ -3126,7 +3127,7 @@ function renderPedidos(data) {
                 }
                 let html = `<div>${r["PRODUCTO"] || ""}${alertIcon}</div><div style="font-size:0.85em; color:#999;">${r["TEXTO_ADICIONAL"] || ""}</div>`;
                 if (hasBeenRejected && rejectedEvent) {
-                    const reason = rejectedEvent.rejectReason || rejectedEvent.comment || 'No especificado';
+                    const reason = rejectedEvent.reason || rejectedEvent.rejectReason || rejectedEvent.motivo || rejectedEvent.motivoRechazo || rejectedEvent.motivo_rechazo || rejectedEvent.comment || rejectedEvent.description || 'No especificado';
                     html += `<div style="font-size:0.75rem; color:#ef4444; font-weight:600; margin-top:4px;">❌ Rechazo Calidad: ${reason}</div>`;
                 }
                 return html;
@@ -4261,7 +4262,7 @@ async function openDayDetailModal(dateStr) {
                         ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.8rem !important; background: #fffde7; border: 1px dashed #fdd835; padding: 6px 8px; border-radius: 4px; font-style: italic; color: #555;">📝 ${ev.text}</div>` : ''}
                         ${ev.status === 'rejected' ? `
                         <div style="font-family:'Inter', sans-serif !important; font-size:0.8rem !important; background: #fee2e2; border: 1px dashed #ef4444; padding: 6px 8px; border-radius: 4px; font-weight: 600; color: #b91c1c;">
-                            🚨 Motivo de Rechazo: ${ev.rejectReason || ev.comment || 'No especificado'}
+                            🚨 Motivo de Rechazo: ${ev.reason || ev.rejectReason || ev.motivo || ev.motivoRechazo || ev.motivo_rechazo || ev.comment || ev.description || 'No especificado'}
                         </div>
                         ` : ''}
                         ${historyHtml}
