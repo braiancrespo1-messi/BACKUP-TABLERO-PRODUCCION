@@ -1308,6 +1308,11 @@ exports.saveCalendarEvent = onRequest({ cors: true }, async (req, res) => {
       status: event.status || "",
       time: event.time || ""
     };
+
+    if (event.rejectReason !== undefined) docData.rejectReason = String(event.rejectReason);
+    if (event.reason !== undefined) docData.reason = String(event.reason);
+    if (event.motivo !== undefined) docData.motivo = String(event.motivo);
+    if (event.comment !== undefined) docData.comment = String(event.comment);
     
     await db.collection("calendar_events").doc(eventId).set(docData, { merge: true });
     return res.json({ success: true, message: `Evento #${eventId} guardado correctamente` });
