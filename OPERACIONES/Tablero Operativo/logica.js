@@ -1263,6 +1263,9 @@ function updateSidebarActions() {
     if (bellBtn) {
         if (overdue.length > 0 || rejections.length > 0) bellBtn.classList.add('has-alerts');
         else bellBtn.classList.remove('has-alerts');
+
+        if (rejections.length > 0) bellBtn.classList.add('has-urgent-alerts');
+        else bellBtn.classList.remove('has-urgent-alerts');
     }
 
     // 2. Render based on Mode
@@ -1440,7 +1443,16 @@ function renderSidebarAgenda() {
             }
             const { artName, clientName } = getEventEnrichedData(ev);
             const specText = ev.text ? `\n📝 ${ev.text}` : "";
-            const tooltip = `📄 ${artName}${specText}\n👤 ${clientName}\n📦 Pedido #${ev.pedidoId || 'N/A'}\nEstado: ${ev.status || 'Agendado'}`;
+            let tooltip = `📄 ${artName}${specText}\n👤 ${clientName}\n📦 Pedido #${ev.pedidoId || 'N/A'}\nEstado: ${ev.status || 'Agendado'}`;
+            if (ev.status === 'rejected') {
+                tooltip += `\n❌ Motivo de Rechazo: ${ev.reason || ev.rejectReason || 'No especificado'}`;
+            }
+            if (ev.rejectionTimestamp) {
+                const end = ev.approvedTimestamp ? Number(ev.approvedTimestamp) : (ev.status === 'approved' || ev.status === 'done' ? Date.now() : null);
+                const diffMs = (end ? end : Date.now()) - Number(ev.rejectionTimestamp);
+                const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(1);
+                tooltip += `\n⏱️ Tiempo de Reproceso: ${diffHrs} hs${end ? ' (Resuelto)' : ' (En Curso)'}`;
+            }
 
             return `
                         <div class="agenda-card" 
@@ -1514,6 +1526,14 @@ function renderSidebarCard(ev, type) {
                     <div style="font-weight:700; font-size:0.95em; color: #7f1d1d;">#${ev.pedidoId} - ${client}</div>
                     <div style="font-size:0.88em; color: #991b1b; font-weight: 500; margin: 4px 0;">SKU: <strong style="color: #b91c1c;">${ev.sku}</strong> - ${artName}</div>
                     <div style="font-weight:bold; color:#b91c1c;">Cant. a re-fabricar: ${ev.qty} u.</div>
+                    ${(() => {
+                        if (ev.rejectionTimestamp) {
+                            const diffMs = Date.now() - Number(ev.rejectionTimestamp);
+                            const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(1);
+                            return `<div style="font-size:0.8em; color:#ef4444; font-weight:bold; margin-top:4px;">⏱️ Tiempo acumulado: ${diffHrs} hs</div>`;
+                        }
+                        return "";
+                    })()}
                 </div>
                 <div class="card-footer" style="background: #fee2e2 !important; border-top: 1px solid #fca5a5 !important; display: flex; gap: 6px; justify-content: flex-end; padding: 6px 10px !important;">
                     <button class="btn-action-resched" onclick="reprogramEvent('${ev.id}')" style="background: #2563eb; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">🗓️ Re-agendar</button>
@@ -1882,6 +1902,12 @@ function renderCalendar() {
             }
             if (ev.status === 'rejected') {
                 tooltip += `\n❌ Motivo de Rechazo: ${ev.reason || ev.rejectReason || ev.motivo || ev.motivoRechazo || ev.motivo_rechazo || ev.comment || ev.description || 'No especificado'}`;
+            }
+            if (ev.rejectionTimestamp) {
+                const end = ev.approvedTimestamp ? Number(ev.approvedTimestamp) : (ev.status === 'approved' || ev.status === 'done' ? Date.now() : null);
+                const diffMs = (end ? end : Date.now()) - Number(ev.rejectionTimestamp);
+                const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(1);
+                tooltip += `\n⏱️ Tiempo de Reproceso: ${diffHrs} hs${end ? ' (Resuelto)' : ' (En Curso)'}`;
             }
             if (ev.rescheduleHistory && ev.rescheduleHistory.length > 0) {
                 tooltip += `\n\n🔄 Historial de Cambios:`;
@@ -2276,6 +2302,10 @@ async function drop(ev) {
                     if (reasonData) {
                         const oldDate = item.date;
                         item.date = date;
+                        if (item.status === 'rejected') {
+                            item.status = ''; // Reset status to pending so it can be manufactured again!
+                            item.rejectionTimestamp = item.rejectionTimestamp || Date.now();
+                        }
 
                         // Add to history list on the event
                         item.rescheduleHistory = item.rescheduleHistory || [];
@@ -3157,7 +3187,14 @@ function renderPedidos(data) {
             statusIcon += `<span style="font-size:0.8em; color:#666; margin-left:4px; font-weight:bold;">${formatDate(scheduledEvent.date)}</span>`;
         } else if (hasBeenRejected && rejectedEvent) {
             const reason = rejectedEvent.reason || rejectedEvent.rejectReason || rejectedEvent.motivo || rejectedEvent.motivoRechazo || rejectedEvent.motivo_rechazo || rejectedEvent.comment || rejectedEvent.description || 'No especificado';
-            statusIcon = `<span style="color:#ef4444; font-weight:bold; cursor:help; font-size: 0.85rem;" title="Rechazado en fecha ${formatDate(rejectedEvent.date)}. Motivo: ${reason}">❌ Rechazado (${formatDate(rejectedEvent.date)})</span>`;
+            let timeText = "";
+            if (rejectedEvent.rejectionTimestamp) {
+                const end = rejectedEvent.approvedTimestamp ? Number(rejectedEvent.approvedTimestamp) : (rejectedEvent.status === 'approved' || rejectedEvent.status === 'done' ? Date.now() : null);
+                const diffMs = (end ? end : Date.now()) - Number(rejectedEvent.rejectionTimestamp);
+                const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(1);
+                timeText = ` (Reproceso: ${diffHrs} hs${end ? ' - Resuelto' : ' - En Curso'})`;
+            }
+            statusIcon = `<span style="color:#ef4444; font-weight:bold; cursor:help; font-size: 0.85rem;" title="Rechazado en fecha ${formatDate(rejectedEvent.date)}. Motivo: ${reason}${timeText}">❌ Rechazado (${formatDate(rejectedEvent.date)})</span>`;
         }
 
         let numDisplay = `<b>#${pedidoId}</b>`;
@@ -3177,7 +3214,14 @@ function renderPedidos(data) {
                 let html = `<div>${r["PRODUCTO"] || ""}${alertIcon}</div><div style="font-size:0.85em; color:#999;">${r["TEXTO_ADICIONAL"] || ""}</div>`;
                 if (hasBeenRejected && rejectedEvent) {
                     const reason = rejectedEvent.reason || rejectedEvent.rejectReason || rejectedEvent.motivo || rejectedEvent.motivoRechazo || rejectedEvent.motivo_rechazo || rejectedEvent.comment || rejectedEvent.description || 'No especificado';
-                    html += `<div style="font-size:0.75rem; color:#ef4444; font-weight:600; margin-top:4px;">❌ Rechazo Calidad: ${reason}</div>`;
+                    let timeText = "";
+                    if (rejectedEvent.rejectionTimestamp) {
+                        const end = rejectedEvent.approvedTimestamp ? Number(rejectedEvent.approvedTimestamp) : (rejectedEvent.status === 'approved' || rejectedEvent.status === 'done' ? Date.now() : null);
+                        const diffMs = (end ? end : Date.now()) - Number(rejectedEvent.rejectionTimestamp);
+                        const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(1);
+                        timeText = ` <span style="color:#ef4444; font-weight:600; font-size:0.7rem; background:#fee2e2; padding:2px 6px; border-radius:10px; margin-left:4px; font-family:'Inter', sans-serif !important; border: 1px solid #fca5a5;">⏱️ ${diffHrs} hs${end ? ' (Resuelto)' : ' (En Curso)'}</span>`;
+                    }
+                    html += `<div style="font-size:0.75rem; color:#ef4444; font-weight:600; margin-top:4px; display:flex; align-items:center; flex-wrap:wrap;">❌ Rechazo Calidad: ${reason}${timeText}</div>`;
                 }
                 return html;
             })(),
@@ -3863,6 +3907,11 @@ async function reprogramEvent(eventId) {
 
             ev.date = result.date;
             ev.time = result.time;
+
+            if (ev.status === 'rejected') {
+                ev.status = ''; // Reset status to pending so it can be manufactured again!
+                ev.rejectionTimestamp = ev.rejectionTimestamp || Date.now();
+            }
 
             // Add to history list on the event
             ev.rescheduleHistory = ev.rescheduleHistory || [];

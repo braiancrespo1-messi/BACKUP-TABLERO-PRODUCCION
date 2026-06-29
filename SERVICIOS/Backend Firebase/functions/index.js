@@ -1313,6 +1313,8 @@ exports.saveCalendarEvent = onRequest({ cors: true }, async (req, res) => {
     if (event.reason !== undefined) docData.reason = String(event.reason);
     if (event.motivo !== undefined) docData.motivo = String(event.motivo);
     if (event.comment !== undefined) docData.comment = String(event.comment);
+    if (event.rejectionTimestamp !== undefined) docData.rejectionTimestamp = Number(event.rejectionTimestamp);
+    if (event.approvedTimestamp !== undefined) docData.approvedTimestamp = Number(event.approvedTimestamp);
     
     await db.collection("calendar_events").doc(eventId).set(docData, { merge: true });
     return res.json({ success: true, message: `Evento #${eventId} guardado correctamente` });
@@ -3188,7 +3190,7 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
       }
 
     } else if (action === "actualizarCalidadLoteTablero") {
-      const { sku, pedidoId, cant, cliente, revert, rejected, reason, rejectReason, motivo, comment, text } = req.body;
+      const { sku, pedidoId, cant, cliente, revert, rejected, reason, rejectReason, motivo, comment, text, approvedCant } = req.body;
       const finalReason = reason || rejectReason || motivo || comment || text || "";
       if (!sku) {
         return res.status(400).json({ error: "Falta el parametro sku" });
@@ -3250,8 +3252,40 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
         
         // 2. Actualizar estado y motivo del evento
         const updateData = { status: newStatus };
-        if (rejected && finalReason) {
-          updateData.rejectReason = finalReason;
+        if (newStatus === "approved") {
+          updateData.approvedTimestamp = Date.now();
+        }
+        
+        if (rejected && approvedCant !== undefined && Number(approvedCant) > 0) {
+          // RECEPCIÓN PARCIAL (Escenario C):
+          // Actualizar el evento original a 'approved' con la cantidad aprobada
+          updateData.status = "approved";
+          updateData.qty = Number(approvedCant);
+          
+          // Crear un nuevo evento de saldo rechazado
+          const newEventId = String(Date.now());
+          const failedEventData = {
+            sku: matchedEvent.sku || sku || "",
+            name: matchedEvent.name || "",
+            qty: Number(cant) || 1,
+            date: matchedEvent.date || "",
+            pedidoId: matchedEvent.pedidoId || pedidoId || "STOCK",
+            grupo: matchedEvent.grupo || "",
+            text: matchedEvent.text || "",
+            status: "rejected",
+            reason: finalReason,
+            rejectReason: finalReason,
+            time: matchedEvent.time || "",
+            rejectionTimestamp: Date.now()
+          };
+          await db.collection("calendar_events").doc(newEventId).set(failedEventData);
+        } else {
+          // Aprobación o rechazo total ordinario
+          if (rejected && finalReason) {
+            updateData.reason = finalReason;
+            updateData.rejectReason = finalReason;
+            updateData.rejectionTimestamp = Date.now();
+          }
         }
         await db.collection("calendar_events").doc(matchedEvent.id).update(updateData);
 
