@@ -3225,7 +3225,8 @@ exports.controlCalidadApi = onRequest({ cors: true }, async (req, res) => {
           
           let isStatusMatch = false;
           if (rejected) {
-            isStatusMatch = evStatus !== "rejected";
+            const currentReason = String(data.reason || data.rejectReason || "").trim();
+            isStatusMatch = evStatus !== "rejected" || !currentReason || currentReason === "No especificado";
           } else if (revert) {
             isStatusMatch = evStatus === "approved";
           } else {

@@ -1957,6 +1957,7 @@ function renderCalendar() {
                         <div style="font-family:'Inter', sans-serif !important; font-size:0.92rem !important; font-weight:${titleWeight} !important; color:${titleColor} !important; text-decoration:${titleDecoration} !important; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.35 !important; margin: 2px 0;">
                             ${parsed.name}
                         </div>
+                        ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#475569 !important; background:#f1f5f9 !important; border-left: 3px solid #cbd5e1 !important; padding:4px 8px !important; border-radius:0 4px 4px 0 !important; font-style:normal !important; margin-top:2px;">⚠️ ${ev.text}</div>` : ''}
                         <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:2px 6px; font-size:0.75rem !important; color:#64748b !important; border-top:1px solid #f1f5f9 !important; padding-top:6px; margin-top:2px; width: 100%;">
                             <span style="font-weight:400 !important; display:inline-flex; align-items:center; gap:3px; min-width: 0; flex-grow: 1; flex-shrink: 1;">
                                 <span style="font-size:0.85rem !important; line-height: 1 !important; flex-shrink: 0; white-space:nowrap !important;">👤</span>
@@ -1970,7 +1971,6 @@ function renderCalendar() {
                             ${diasDespacho !== null ? `<span style="opacity:0.85;">(${diasDespacho} días)</span>` : ''}
                         </div>
                         ` : ''}
-                        ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#dc2626 !important; background:#fef2f2 !important; border-left: 3px solid #ef4444 !important; padding:4px 8px !important; border-radius:0 4px 4px 0 !important; font-style:normal !important; margin-top:2px;">⚠️ ${ev.text}</div>` : ''}
                         ${ev.status === 'rejected' ? `
                         <div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#dc2626 !important; background:#fee2e2 !important; border: 1px dashed #fca5a5 !important; padding:4px 8px !important; border-radius:4px !important; font-style:normal !important; margin-top:2px; font-weight:600;">
                             ❌ Motivo: ${ev.reason || ev.rejectReason || ev.motivo || ev.motivoRechazo || ev.motivo_rechazo || ev.comment || ev.description || 'No especificado'}
@@ -4349,6 +4349,7 @@ async function openDayDetailModal(dateStr) {
                         <div style="font-family:'Inter', sans-serif !important; font-weight: ${titleWeight}; font-size: 1rem; color: ${titleColor}; text-decoration: ${titleDecoration}; line-height: 1.35; word-break: break-word;">
                             ${parsed.name}
                         </div>
+                        ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.8rem !important; background: #f1f5f9; border-left: 3px solid #cbd5e1; padding: 6px 8px; border-radius: 0 4px 4px 0; font-style: normal; color: #475569;">⚠️ ${ev.text}</div>` : ''}
                         <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 6px; font-size: 0.8rem; color: #475569; background: #f8fafc; border: 1px solid #f1f5f9; padding: 8px; border-radius: 6px;">
                             <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><strong>SKU:</strong> <span style="color:#2563eb; font-weight:600;">${ev.sku}</span></div>
                             <div><strong>Cant:</strong> <span style="font-weight:700; color:#0f172a;">${ev.qty || 1} u.</span></div>
@@ -4357,7 +4358,6 @@ async function openDayDetailModal(dateStr) {
                                 <strong>Cliente:</strong> <span style="font-size:0.85rem !important; line-height: 1 !important; display:inline-block;">👤</span> ${clientName}
                             </div>
                         </div>
-                        ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.8rem !important; background: #fffde7; border: 1px dashed #fdd835; padding: 6px 8px; border-radius: 4px; font-style: italic; color: #555;">📝 ${ev.text}</div>` : ''}
                         ${ev.status === 'rejected' ? `
                         <div style="font-family:'Inter', sans-serif !important; font-size:0.8rem !important; background: #fee2e2; border: 1px dashed #ef4444; padding: 6px 8px; border-radius: 4px; font-weight: 600; color: #b91c1c;">
                             🚨 Motivo de Rechazo: ${ev.reason || ev.rejectReason || ev.motivo || ev.motivoRechazo || ev.motivo_rechazo || ev.comment || ev.description || 'No especificado'}
