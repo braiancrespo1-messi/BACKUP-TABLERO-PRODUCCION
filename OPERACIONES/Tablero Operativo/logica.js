@@ -1954,7 +1954,7 @@ function renderCalendar() {
                                 ${ev.time ? `<span style="font-family:'Inter', sans-serif !important; font-size:0.7rem !important; font-weight:600 !important; color:#d97706 !important; background:#fef3c7 !important; border: 1px solid #fde68a !important; padding:2px 6px !important; border-radius:4px !important; display:inline-flex; align-items:center; gap:2px; line-height: 1 !important; white-space:nowrap !important;">⏰ ${ev.time}</span>` : ''}
                             </div>
                         </div>
-                        <div style="font-family:'Inter', sans-serif !important; font-size:0.92rem !important; font-weight:${titleWeight} !important; color:${titleColor} !important; text-decoration:${titleDecoration} !important; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.35 !important; margin: 2px 0;">
+                        <div style="font-family:'Inter', sans-serif !important; font-size:0.92rem !important; font-weight:${titleWeight} !important; color:${titleColor} !important; text-decoration:${titleDecoration} !important; display:block !important; word-break:break-word !important; line-height:1.35 !important; margin: 2px 0;">
                             ${parsed.name}
                         </div>
                         ${ev.text ? `<div style="font-family:'Inter', sans-serif !important; font-size:0.75rem !important; color:#475569 !important; background:#f1f5f9 !important; border-left: 3px solid #cbd5e1 !important; padding:4px 8px !important; border-radius:0 4px 4px 0 !important; font-style:normal !important; margin-top:2px;">⚠️ ${ev.text}</div>` : ''}
